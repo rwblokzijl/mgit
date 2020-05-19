@@ -145,7 +145,7 @@ def get_all_repos_from_local(path="~"):
             pass
     return repos
 
-def get_all_repos_from_local_and_remotes(path="~"):
+def get_all_repos_from_local_and_their_remotes(path="~"):
     return [
             (repo.working_dir, repo.remotes["origin"].url if "origin" in repo.remotes else "")
             for repo in get_all_repos_from_local(path=path)]

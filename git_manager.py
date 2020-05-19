@@ -15,7 +15,7 @@ COMMAND = args.command
 # Info Commands
 if COMMAND == "list":
     if args.local:
-        for path, remote in get_all_repos_from_local_and_remotes(args.local):
+        for path, remote in get_all_repos_from_local_and_their_remotes(args.local):
             print(path, remote)
     else:
         print("Remotes:")
