@@ -23,27 +23,26 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Flip a switch by setting a flag")
     subparsers = parser.add_subparsers(dest="command")
 
-    p1 = subparsers.add_parser("init")
-    p1.add_argument("repo", help="Path to repo", metavar="DIR", nargs="?", default=".", type=str)
+    p1 = subparsers.add_parser("init", help="Create a new local/remote repo pair")
+    p1.add_argument("repo", help="Path to local repo", metavar="DIR", nargs="?", default=".", type=str)
+    p1.add_argument("remote", help="Name of remote repo", metavar="remote", nargs="?", type=str)
 
-    p2 = subparsers.add_parser("install")
+    p2 = subparsers.add_parser("install", help="Install a remote repo")
     p2.add_argument("remote", help="name of remote repo", metavar="remote", type=str)
     p2.add_argument("path", help="Path to install", metavar="DIR", nargs="?", type=str)
 
-    p3 = subparsers.add_parser("list")
+    p3 = subparsers.add_parser("list", help="List remote repos")
 
     # Monitor based commands
 
-    p4 = subparsers.add_parser("status")
+    p4 = subparsers.add_parser("status", help="Print the status of listed repos")
     p4.add_argument("repos", help="Path to local repos", metavar="DIR", nargs="*",
                     type=lambda x: valid_dir(parser, x))
     p4.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
                     type=lambda x: valid_file(parser, x))
     p4.add_argument("-a", help="Include all locally installed repos", action="store_true")
 
-    p5 = subparsers.add_parser("create")
-    p5.add_argument("repos", help="Path to local repos", metavar="DIR", nargs="*",
-                    type=lambda x: valid_dir(parser, x))
+    p5 = subparsers.add_parser("create", help="Create missing repos from files")
     p5.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
                     type=lambda x: valid_file(parser, x))
 
@@ -83,11 +82,13 @@ def valid_path(parser, arg):
 
 def get_config_files():
     path = os.path.expanduser(CONFIG_DIR)
-    files = [path+f for f in os.listdir(path)]
-    return files
+    if os.path.exists(path):
+        return [path+f for f in os.listdir(path)]
+    else:
+        log_error(CONFIG_DIR, "doesn't exist")
+        return []
 
 def process_args(args):
-
     if not (args.repos or args.files or args.a):
         return process_files(get_config_files())
 

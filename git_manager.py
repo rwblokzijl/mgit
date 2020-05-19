@@ -31,7 +31,7 @@ elif COMMAND == "install": # directory, name
 
 elif COMMAND == "init": #create a new repo
     abspath = os.path.abspath(args.repo)
-    basename = os.path.basename(abspath)
+    basename = args.remote or os.path.basename(abspath)
     print("Will create local git repo:", abspath)
     print("With new remote:", REMOTE_BASE_URL+basename)
     if not query_yes_no("Do you want to continue?"):
