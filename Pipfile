@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 gitpython = "*"
 fabric = "*"
+configparser = "*"
 
 [requires]
 python_version = "3.7"

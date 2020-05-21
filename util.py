@@ -1,4 +1,5 @@
 import argparse
+import configparser
 import os
 import subprocess
 import sys
@@ -14,40 +15,54 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Flip a switch by setting a flag")
     subparsers = parser.add_subparsers(dest="command")
 
-    p1 = subparsers.add_parser("init", help="Create a new local/remote repo pair")
-    p1.add_argument("repo", help="Path to local repo", metavar="DIR", nargs="?", default=".", type=str)
-    p1.add_argument("remote", help="Name of remote repo", metavar="remote", nargs="?", type=str)
+    # Repo specific, single repo multiple remotes
 
-    p2 = subparsers.add_parser("install", help="Install a remote repo")
-    p2.add_argument("remote", help="name of remote repo", metavar="remote", type=str)
-    p2.add_argument("path", help="Path to install", metavar="DIR", nargs="?", type=str)
+    cmd_init = subparsers.add_parser("init", help="Create a new local/remote repo pair")
+    cmd_init.add_argument("path", help="Path to local repo", metavar="DIR", nargs="?", default=".", type=str)
+    cmd_init.add_argument("remote", help="Name of remote repo", metavar="remote", nargs="?", type=str)
 
-    p3 = subparsers.add_parser("list", help="List remote repos")
-    p3.add_argument("-l", "--local", help="List from local path instead", metavar="DIR", nargs="?", default=None,
-            const="~", type=str)
+    cmd_install = subparsers.add_parser("install", help="Install a remote repo")
+    cmd_install.add_argument("remote", help="name of remote repo", metavar="remote", type=str)
+    cmd_install.add_argument("path", help="Path to install", metavar="DIR", nargs="?", type=str)
 
-    # Monitor based commands
 
-    p4 = subparsers.add_parser("status", help="Print the status of listed repos")
-    p4.add_argument("repos", help="Path to local repos", metavar="DIR", nargs="*",
+    # Repo general, multiple repos multiple remotes
+
+    cmd_remotes = subparsers.add_parser("remotes", help="Manage repos")
+    cmd_remotes.add_argument("-l", "--list", help="List known remotes", action="store_true")
+    cmd_remotes.add_argument("-d", "--default", help="Default routes", action="store_true")
+    cmd_remotes.add_argument("-a", "--add", help="Add remotes", metavar="DIR", nargs="?", default=None,
+            const=".", type=str)
+    cmd_remotes.add_argument("name", help="Name of remote", type=str)
+    cmd_remotes.add_argument("url", help="Remote url", type=str)
+
+    cmd_create = subparsers.add_parser("create", help="Create missing repos from files")
+    cmd_create.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
+                    type=lambda x: valid_file(parser, x))
+
+
+    cmd_list = subparsers.add_parser("list", help="List remote repos")
+    cmd_list.add_argument("-l", "--local", help="List from local path instead", metavar="DIR", nargs="?", default=None,
+            const=".", type=str)
+
+    cmd_status = subparsers.add_parser("status", help="Print the status of listed repos")
+    cmd_status.add_argument("repos", help="Path to local repos", metavar="DIR", nargs="*",
                     type=lambda x: valid_dir(parser, x))
-    p4.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
+    cmd_status.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
                     type=lambda x: valid_file(parser, x))
-    p4.add_argument("-a", "--all", help="Include all locally installed repos", metavar="DIR", nargs="?", default=None,
+    cmd_status.add_argument("-a", "--all", help="Include all locally installed repos", metavar="DIR", nargs="?", default=None,
             const="~", type=str)
-    p4.add_argument("-d", help="Include dirty only", action="store_true")
+    cmd_status.add_argument("--dirty", "-d", help="Include dirty only", action="store_true")
 
-    p5 = subparsers.add_parser("create", help="Create missing repos from files")
-    p5.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
-                    type=lambda x: valid_file(parser, x))
 
-    p6 = subparsers.add_parser("dirty", help="Returns true if there is at lease one dirty repo")
-    p6.add_argument("repos", help="Path to local repos", metavar="DIR", nargs="*",
+    cmd_dirty = subparsers.add_parser("dirty", help="Returns true if there is at lease one dirty repo")
+    cmd_dirty.add_argument("repos", help="Path to local repos", metavar="DIR", nargs="*",
                     type=lambda x: valid_dir(parser, x))
-    p6.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
+    cmd_dirty.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
                     type=lambda x: valid_file(parser, x))
-    p6.add_argument("-a", "--all", help="Include all locally installed repos", metavar="DIR", nargs="?", default=None,
+    cmd_dirty.add_argument("-a", "--all", help="Include all locally installed repos", metavar="DIR", nargs="?", default=None,
             const="~", type=str)
+
 
     return parser.parse_args()
 
@@ -77,7 +92,7 @@ def valid_path(parser, arg):
         return arg
 
 ### Arg processing
-def process_args(args, config_dir):
+def get_repos_from_args(args, config_dir):
     if not (
             "repos" in args and args.repos or
             "files" in args and args.files or
@@ -124,7 +139,7 @@ def get_repos_from_string_list(paths):
     return repos, missing
 
 def get_local_git_paths(path="~"):
-    command = "find "+path+" -name '.git' | grep -v /.vim | grep -v /.local"
+    command = "find "+path+" -name '.git' | grep -v /.vim"
     result = run_command(command)
     repos = list()
     for line in result:
@@ -135,7 +150,7 @@ def get_local_git_paths(path="~"):
     return repos
 
 def get_all_repos_from_local(path="~"):
-    command = "find "+path+" -name '.git' | grep -v /.vim | grep -v /.local"
+    command = "find "+path+" -name '.git' | grep -v /.vim"
     result = run_command(command)
     repos = list()
     for line in result:
@@ -251,7 +266,7 @@ def query_yes_no(question, default="yes"):
 ### Function without side effects
 
 def exists_remote(remote_path, username, remote):
-    ans = run_ssh('[ -d "'+remote_path+'" ]', username, remote)
+    ans = run_ssh('[ -d "'+remote_path+'" ]', username=username, remote=remote)
     if ans.return_code is 0:
         return True
     else:
@@ -299,7 +314,7 @@ def run_ssh(*args, username, remote, **kwargs):
 def init_remote(project_name, remote, username, remote_project_dir):
     remote_path = os.path.join(remote_project_dir, project_name)
     remote_url = username+"@"+remote+":"+remote_path
-    if exists_remote(remote_path, username, remote):
+    if exists_remote(remote_path, username=username, remote=remote):
         # print("Remote folder already exists, not creating remote repo")
         return remote_url
     print("Creating remote: " + remote_url)
