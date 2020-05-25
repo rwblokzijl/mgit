@@ -3,120 +3,27 @@ import configparser
 import os
 import subprocess
 import sys
+import tabulate
 
 from fabric import Connection
 from git import Repo
 from git.exc import InvalidGitRepositoryError
 
+# from config import RepoTree # Keep these imports to a minimum
+
 def log_error(*args, **kwargs):
     print("ERROR:", *args, file=sys.stderr, **kwargs)
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Flip a switch by setting a flag")
-    subparsers = parser.add_subparsers(dest="command")
-
-    # Repo specific, single repo multiple remotes
-
-    cmd_init = subparsers.add_parser("init", help="Create a new local/remote repo pair")
-    cmd_init.add_argument("path", help="Path to local repo", metavar="DIR", nargs="?", default=".", type=str)
-    cmd_init.add_argument("remote", help="Name of remote repo", metavar="remote", nargs="?", type=str)
-
-    cmd_install = subparsers.add_parser("install", help="Install a remote repo")
-    cmd_install.add_argument("remote", help="name of remote repo", metavar="remote", type=str)
-    cmd_install.add_argument("path", help="Path to install", metavar="DIR", nargs="?", type=str)
-
-
-    # Repo general, multiple repos multiple remotes
-
-    cmd_remotes = subparsers.add_parser("remotes", help="Manage repos")
-    cmd_remotes.add_argument("-l", "--list", help="List known remotes", action="store_true")
-    cmd_remotes.add_argument("-d", "--default", help="Default routes", action="store_true")
-    cmd_remotes.add_argument("-a", "--add", help="Add remotes", metavar="DIR", nargs="?", default=None,
-            const=".", type=str)
-    cmd_remotes.add_argument("name", help="Name of remote", type=str)
-    cmd_remotes.add_argument("url", help="Remote url", type=str)
-
-    cmd_create = subparsers.add_parser("create", help="Create missing repos from files")
-    cmd_create.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
-                    type=lambda x: valid_file(parser, x))
-
-
-    cmd_list = subparsers.add_parser("list", help="List remote repos")
-    cmd_list.add_argument("-l", "--local", help="List from local path instead", metavar="DIR", nargs="?", default=None,
-            const=".", type=str)
-
-    cmd_status = subparsers.add_parser("status", help="Print the status of listed repos")
-    cmd_status.add_argument("repos", help="Path to local repos", metavar="DIR", nargs="*",
-                    type=lambda x: valid_dir(parser, x))
-    cmd_status.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
-                    type=lambda x: valid_file(parser, x))
-    cmd_status.add_argument("-a", "--all", help="Include all locally installed repos", metavar="DIR", nargs="?", default=None,
-            const="~", type=str)
-    cmd_status.add_argument("--dirty", "-d", help="Include dirty only", action="store_true")
-
-
-    cmd_dirty = subparsers.add_parser("dirty", help="Returns true if there is at lease one dirty repo")
-    cmd_dirty.add_argument("repos", help="Path to local repos", metavar="DIR", nargs="*",
-                    type=lambda x: valid_dir(parser, x))
-    cmd_dirty.add_argument("-f", dest="files", help="Files specifying repos to monitor", metavar="FILE", nargs="*",
-                    type=lambda x: valid_file(parser, x))
-    cmd_dirty.add_argument("-a", "--all", help="Include all locally installed repos", metavar="DIR", nargs="?", default=None,
-            const="~", type=str)
-
-
-    return parser.parse_args()
-
-### TYPES ###
-def command(s):
-    commands = ["status", "dirty", "install", "list"]
-    if s in commands:
-        return s
-    raise argparse.ArgumentTypeError(s + " not in " + commands)
-
-def valid_file(parser, arg):
-    if not os.path.isfile(arg):
-        parser.error("No file called %s found!" % arg)
-    else:
-        return arg
-
-def valid_dir(parser, arg):
-    if not os.path.isdir(arg):
-        parser.error("No directory called %s found!" % arg)
-    else:
-        return arg
-
-def valid_path(parser, arg):
-    if not os.path.exists(arg):
-        parser.error("No file or directory called %s found!" % arg)
-    else:
-        return arg
-
-### Arg processing
-def get_repos_from_args(args, config_dir):
-    if not (
-            "repos" in args and args.repos or
-            "files" in args and args.files or
-            "all"     in args and args.all):
-        return process_files(get_config_files(config_dir))
-
-    repos = list()
-    missing = list()
-
-    if "repos" in args and args.repos:
-        # l_repos, l_missing =
-        repos += get_repos_from_string_list(args.repos)
-        # missing += l_missing
-
-    if args.files:
-        l_repos, l_missing = process_files(args.files)
-        repos += l_repos
-        missing += l_missing
-
-    if "all" in args and args.all:
-        l_repos = get_all_repos_from_local(args.all)
-        repos += l_repos
-
-    return repos, missing
+### Util helpers:
+def get_repo_id_from_path(path):
+    try:
+        Repo(path)
+    except:
+        assert False, "Git repo doesn't exist"
+    git_id = "".join([str(x.strip().decode("utf-8")) for x in run_command(f"cd {path} && git rev-list --parents HEAD | tail -1")])
+    if ' ' in git_id: #Git repo exists, but has no commits yet
+        return None
+    return(git_id)
 
 def get_config_files(config_dir):
     path = os.path.expanduser(config_dir)
@@ -126,13 +33,23 @@ def get_config_files(config_dir):
         log_error(config_dir, "doesn't exist")
         return []
 
-def get_repos_from_string_list(paths):
-    return [x for x in [get_repo_or_string(path) for path in paths] if x]
+def get_repos_and_missing_from_paths(paths):
     repos = list()
     missing = list()
 
     for path in paths:
         l_repos, l_missing = get_repo_or_string(path)
+        repos += l_repos
+        missing += l_missing
+    return repos, missing
+
+def get_repos_from_string_list(paths):
+    return [x for x in [get_repo_or_none(path) for path in paths] if x]
+    repos = list()
+    missing = list()
+
+    for path in paths:
+        l_repos, l_missing = get_repo_or_none(path)
         repos += l_repos
         missing += l_missing
 
@@ -178,56 +95,17 @@ def get_all_repos_from_remote(remote, username, remote_project_dir):
 
 def get_repo_or_string(path, remote=None):
     try:
+        return [Repo(path)], []
+    except:
+        return [], [(path, remote)]
+
+def get_repo_or_none(path, remote=None):
+    try:
         # return [Repo(path)], []
         return Repo(path)
     except:
         return None
         # return [], [(path, remote)]
-
-def process_line(line):
-    try:
-        s = [x for x in line.split(' ') if x]
-        path = os.path.expanduser(s[0])
-        if path[0] not in ['/', '~']:
-            log_error(path + " is not absolute", file=sys.stderr)
-            return None
-        if len(s) == 2:
-            remote = s[1]
-        else:
-            raise
-
-        if os.path.isdir(path):
-            try:
-                return Repo(path)
-            except:
-                if os.listdir(path):
-                    log_error("path exists but is not a valid git directory and is not empty")
-                    return None
-                else:
-                    "Path exists but is empty"
-                    return path, remote
-        else:
-            "path doesnt exist"
-            return path, remote
-    except:
-        log_error("Couldn't process line")
-        return None
-
-def process_files(files=None):
-    processed_lines = list()
-    for f in files:
-        if not os.path.isfile(f):
-            log_error("Not a file:", f)
-            exit(1)
-        with open(f, 'r') as conf:
-            processed_line = [process_line(l.strip()) for l in conf]
-            processed_lines += [x for x in processed_line if x ]
-
-    repos   = [x for x in processed_lines if type(x) is not tuple]
-    missing = [x for x in processed_lines if type(x) is tuple]
-
-    return repos, missing
-
 
 ### General helpers
 def query_yes_no(question, default="yes"):
@@ -261,7 +139,6 @@ def query_yes_no(question, default="yes"):
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' "
                              "(or 'y' or 'n').\n")
-
 
 ### Function without side effects
 
@@ -325,4 +202,21 @@ def init_remote(project_name, remote, username, remote_project_dir):
         log_error("Created folder but could not init repo, manual action required")
         raise
     return remote_url
+
+### Config stuff
+
+def pprint(data, header=None):
+    if not header:
+        header = data[0].keys()
+    rows   = [x.values() for x in data]
+    print(tabulate.tabulate(rows, header))
+
+def perform_config_check(repos_config, remotes_config):
+    print("""
+    Not implemented, this should perform a number of sanity checks on the config:
+    1. Does everything have a parent
+    2. Does everything have an origin
+    3. ...
+    """)
+    return True
 
