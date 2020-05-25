@@ -14,6 +14,7 @@ def parse_args():
     cmd_config            = subparsers.add_parser("config", help="Commands relating to the config")
     cmd_config_subparsers = cmd_config.add_subparsers(dest="config")
     cmd_config_list       = cmd_config_subparsers.add_parser("show", help="List all repos and their remotes")
+    cmd_config_list       = cmd_config_subparsers.add_parser("remotes", help="List all remotes")
     cmd_config_check      = cmd_config_subparsers.add_parser("check", help="List remotes")
 
     cmd_config_subparsers.required = True

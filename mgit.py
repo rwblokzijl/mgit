@@ -38,11 +38,40 @@ from config import RepoTree, RemotesConfig
 
     ## Configs:
 
-    - will live in .config/mgit
-    - or in .mgit files inside an existing git repo
+    - live in CONFIG_DIR
+    - or in .mgit files inside an existing git repo (or not??)
 
     They specify the repos to manage
+
+    # Commands so far:
+
+    repo adding:
+        init - init a repo local and remote
+        add TODO - add a repo (init remote?)
+
+    repo actions:
+        install - install a repo from remote by name
+
+    mutli repo actions:
+        list - list repos
+        create - mass repo creation
+        dirty - is any repo dirty
+        status - show status of all repos
+
+        maybe delete:
+        fetch - mass fetch
+        pull - mass pull
+        push - mass push (after shutdown)
+
+    remote actions:
+        remotes - manage remotes
+        clone - clone all repos ina  remote to another (integrate into remotes?)
+
+    general actions:
+        sanity - full sanity check of all repos/remotes/configs
+        config - commands for handling the configs (merge with sanity?)
 """
+
 
 REMOTE="git.blokzijl.family"
 USERNAME="bloodyfool"
@@ -57,34 +86,6 @@ REMOTE_BASE_URL = USERNAME+"@"+REMOTE+":"+REMOTE_PROJECT_DIR
 
 args = parse_args()
 COMMAND = args.command
-
-"""
-repo adding:
-    init - init a repo local and remote
-    add TODO - add a repo (init remote?)
-
-repo actions:
-    install - install a repo from remote by name
-
-mutli repo actions:
-    list - list repos
-    create - mass repo creation
-    dirty - is any repo dirty
-    status - show status of all repos
-
-    maybe delete:
-    fetch - mass fetch
-    pull - mass pull
-    push - mass push (after shutdown)
-
-remote actions:
-    remotes
-    clone
-
-general actions:
-    sanity - full sanity check of all repos/remotes/configs
-    config - commands for handling the configs (merge with sanity?)
-"""
 
 # Repo specific, single repo multiple remotes
 
@@ -198,6 +199,7 @@ def main():
                         'name' : name,
                         'url' : url,
                         'path' : path,
+                        'type' : None,
                         'is_default' : bool(args.default)
                         }
 
@@ -210,6 +212,8 @@ def main():
             if args.config == "show":
                 repos = RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes)
                 print(repos)
+            elif args.config == "remotes": # Perform config sanity check
+                print(remotes)
             elif args.config == "check": # Perform config sanity check
                 exit(not perform_config_check(repos_config=REPOS_CONFIG_FILE, remotes_config=REMOTES_CONFIG_FILE))
 

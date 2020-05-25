@@ -34,20 +34,53 @@ class RemotesConfig:
 
         self.config.read(self.configPath)
 
-        def get_remote(remote, configObj=None):
-            return {
-                    'name': remote,
-                    'url': configObj[remote]['url'],
-                    'path': configObj[remote]['path'],
-                    'is_default': remote in configObj['defaults']
-                    }
 
         if default:
-            rlist =  [get_remote(x, self.config) for x in self.config['defaults'] if self.remote_in_config(x, self.config)]
+            rlist =  [self.remote_or_none_from_config(x, self.config) for x in self.config['defaults'] if self.remote_in_config(x, self.config)]
         else:
-            rlist =  [get_remote(x, self.config) for x in self.config if self.remote_in_config(x, self.config)]
+            rlist =  [self.remote_or_none_from_config(x, self.config) for x in self.config if self.remote_in_config(x, self.config)]
 
-        self.remotes = {r["name"]: self.Remote(vals=r) for r in rlist}
+        self.remotes = {r["name"]: r for r in rlist if r}
+
+    def remote_or_none(self, name, url, path, rtype, default):
+        if rtype is None:
+            rtype = get_type_from_url(url)
+        if rtype is None:
+            return None
+        return self.RemoteConfig(vals={
+            'name': name,
+            'url': url,
+            'path': path,
+            'type': rtype,
+            'is_default': default
+            })
+
+    def remote_or_none_from_vals(self, vals):
+        if "name"       not in vals:
+            print("Missing name in " + json.dumps(vals))
+            return None
+        if "path"       not in vals:
+            print('Missing path for {vals["name"]}')
+            return None
+        if "url"        not in vals:
+            print('Missing url for {vals["name"]}')
+            return None
+        if "is_default" not in vals:
+            print('Missing is_default for {vals["name"]}')
+            return None
+
+        if "type" in vals:
+            rtype = vals["type"]
+        else:
+            rtype = None
+        return remote_or_none(vals["name"], vals["url"], vals["path"], rtype, vals["is_default"])
+
+    def remote_or_none_from_config(self, remote, configObj):
+        try:
+            rtype = configObj[remote]['type']
+        except:
+            rtype = None
+        return self.remote_or_none( remote, configObj[remote]['url'], configObj[remote]['path'], rtype, remote in configObj['defaults'] )
 
     def remote_in_config(self, remote, configObj):
         return (remote in configObj and
@@ -66,19 +99,25 @@ class RemotesConfig:
             return None
 
     def as_dict(self):
-        return [ v for k,v in self.remotes.items() ]
+        return [ v.as_dict() for k,v in self.remotes.items() ]
+
+    def __str__(self):
+        return json.dumps(self.as_dict(), indent=4)
 
     def __setitem__(self, key, item):
         assert isinstance(item, dict)
         assert item["name"] == key, f"Key '{key}' does not match remote name '" + item["name"] + "'"
 
-        r = self.Remote(vals=item)
-        self.remotes[key] = r
-        self.config[key] = r.as_config()
-        if self.default:
-            self.config['defaults'][key] = 1
-        print(f'Added remote {key} at {item["url"]}:{item["path"]}')
-        self.changed = True
+        r = self.remote_or_none_from_vals(vals=item)
+        if r:
+            self.remotes[key] = r
+            self.config[key] = r.as_config()
+            if self.default:
+                self.config['defaults'][key] = 1
+            print(f'Added remote {key} at {item["url"]}:{item["path"]}')
+            self.changed = True
+        else:
+            print(f"Missing values for {key}")
 
     def remove(self, remotes):
         for remote in remotes:
@@ -108,17 +147,18 @@ class RemotesConfig:
     def __iter__(self):
         return iter(self.remotes.values())
 
-    class Remote:
-        def __init__(self, vals=None, name=None, url=None, path=None, default=False):
+    class RemoteConfig:
+        def __init__(self, vals=None, name=None, url=None, path=None, remote_type=None, default=False):
             assert (
                     vals or
-                    (name and url and path)
+                    (name and url and path and remote_type)
                     ), "Either set vals, or name and url and path"
             if vals:
                 self.vals = {
                         "name" : vals['name'],
                         "url" : vals['url'],
                         "path" : vals['path'],
+                        "type" : vals['type'],
                         "is_default" : vals['is_default']
                         }
             else:
@@ -126,6 +166,7 @@ class RemotesConfig:
                         "name" : name,
                         "url" : url,
                         "path" : path,
+                        "type" : remote_type,
                         "is_default" : default
                         }
 

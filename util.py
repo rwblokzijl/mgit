@@ -161,6 +161,16 @@ def is_local_git(path):
     except InvalidGitRepositoryError:
         return False
 
+def get_type_from_url(url):
+    if "github" in url:
+        return "github"
+    elif "gitlab" in url:
+        return "gitlab"
+    elif "bitbucket" in url:
+        return "bitbucket"
+    else:
+        return None
+
 ### Functions with side effects
 
 ### Local edits
