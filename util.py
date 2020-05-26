@@ -56,7 +56,7 @@ def get_repos_from_string_list(paths):
     return repos, missing
 
 def get_local_git_paths(path="~"):
-    command = "find "+path+" -name '.git' | grep -v /.vim"
+    command = "find "+path+" -xdev -name '.git' | grep -v /.vim"
     result = run_command(command)
     repos = list()
     for line in result:
@@ -67,7 +67,7 @@ def get_local_git_paths(path="~"):
     return repos
 
 def get_all_repos_from_local(path="~"):
-    command = "find "+path+" -name '.git' | grep -v /.vim"
+    command = "find "+path+" -xdev -name '.git' | grep -v /.vim"
     result = run_command(command)
     repos = list()
     for line in result:
@@ -144,7 +144,7 @@ def query_yes_no(question, default="yes"):
 
 def exists_remote(remote_path, username, remote):
     ans = run_ssh('[ -d "'+remote_path+'" ]', username=username, remote=remote)
-    if ans.return_code is 0:
+    if ans.return_code == 0:
         return True
     else:
         return False
