@@ -11,15 +11,116 @@ from git.exc import InvalidGitRepositoryError
 
 # from config import RepoTree # Keep these imports to a minimum
 
-def log_error(*args, **kwargs):
-    print("ERROR:", *args, file=sys.stderr, **kwargs)
+def log_error(*args, verbose=True, **kwargs):
+    if verbose:
+        print("ERROR:", *args, file=sys.stderr, **kwargs)
 
 ### Util helpers:
+
+def relpath_list(paths, rel=os.getcwd()):
+    return [os.path.relpath(path, rel) for path in paths]
+
+def tag_repos(repos, root="~"):
+    unarchived_missing  = list()
+    archived_missing    = list()
+    installed           = list()
+
+    root = os.path.abspath(os.path.expanduser(root))
+    for repo in repos:
+        abspath = os.path.abspath(os.path.expanduser(repo.path))
+        if root in abspath:
+            if repo.missing:
+                if repo.archived:
+                    archived_missing   += [repo.name]
+                else:
+                    unarchived_missing += [repo.name]
+            else:
+                installed += [repo.name]
+
+    # unarchived_missing  = relpath_list(unarchived_missing)
+    # archived_missing    = relpath_list(archived_missing)
+    # installed           = relpath_list(installed)
+
+    return unarchived_missing, archived_missing, installed
+
+def tag_repo_strings(repo_strings, repos):
+    untracked           = [os.path.abspath(os.path.expanduser(rs)) for rs in repo_strings]
+    unarchived_missing  = list()
+    archived_missing    = list()
+    installed           = list()
+    for repo in repos:
+        abspath = os.path.abspath(os.path.expanduser(repo.path))
+        if repo.missing:
+            if repo.archived:
+                archived_missing   += [abspath]
+            else:
+                unarchived_missing += [abspath]
+        else:
+            if abspath in untracked:
+                untracked.remove(abspath)
+                installed += [abspath]
+
+    untracked           = relpath_list(untracked)
+    unarchived_missing  = relpath_list(unarchived_missing)
+    archived_missing    = relpath_list(archived_missing)
+    installed           = relpath_list(installed)
+
+    return untracked, unarchived_missing, archived_missing, installed
+
+def move_repo(path, name, repos, verbose=False):
+    abspath = os.path.abspath(os.path.expanduser(path))
+    rid = get_repo_id_from_path(abspath)
+
+    if not get_repo_or_none(abspath):
+        log_error(f"'{abspath}' is not a git repo", verbose=verbose)
+        return 1
+
+    if name:
+        conf_repo = repos[name]
+        if not conf_repo:
+            log_error(f"Counldn't find a project called '{name}'", verbose=verbose)
+            return 1
+        rid_repo = repos.get_from_id(rid)
+        if rid_repo is not conf_repo:
+            log_error(f"Found '{rid_repo.name}' while you specified '{name}'", verbose=verbose)
+            return 1
+    else:
+        conf_repo = repos.get_from_id(rid)
+        if not conf_repo:
+            log_error("Counldn't infer project, please specify name", verbose=verbose)
+            return 1
+
+    path_repo = repos.get_from_path(abspath)
+    if path_repo:
+        if path_repo is conf_repo:
+            print("Filesystem and config are already consistent")
+            return 0
+        else:
+            log_error(f"Repo '{conf_repo.name}' already exists here", verbose=verbose)
+            return 1
+
+    conf_repo.set_path(abspath)
+    return 0
+
+def collapse_user(path):
+    user_prefix = os.path.expanduser("~")
+    if path.startswith(user_prefix):
+        return path.replace(user_prefix, "~")
+    else:
+        return path
+
+def get_remote_repo_id(username, remote, repo_path): # Untested
+    command = f"cd {repo_path} && git rev-list --parents HEAD | tail -1"
+    git_id = "".join([str(x.strip()) for x in run_ssh(command, username=username, remote=remote, hide=True).stdout.strip().splitlines()])
+    if ' ' in git_id: #Git repo exists, but has no commits yet
+        return None
+    return(git_id)
+
 def get_repo_id_from_path(path):
     try:
         Repo(path)
     except:
-        assert False, "Git repo doesn't exist"
+        return None
     git_id = "".join([str(x.strip().decode("utf-8")) for x in run_command(f"cd {path} && git rev-list --parents HEAD | tail -1")])
     if ' ' in git_id: #Git repo exists, but has no commits yet
         return None
@@ -55,25 +156,31 @@ def get_repos_from_string_list(paths):
 
     return repos, missing
 
-def get_local_git_paths(path="~"):
-    command = "find "+path+" -xdev -name '.git' | grep -v /.vim"
-    result = run_command(command)
-    repos = list()
+def exclude(line, excludes):
+    for exclude in excludes:
+        if line.startswith(exclude):
+            return False
+    return True
+
+def get_local_git_paths(path="~", ignore_paths=[]):
+    excludes = [os.path.abspath(os.path.expanduser(path)) for path in ignore_paths]
+    command  = "find "+path+" -xdev -name '.git'"
+    result   = [os.path.abspath(os.path.expanduser(line.strip().decode("utf-8"))) for line in run_command(command)]
+    result   = [line for line in result if exclude(line, excludes)]
+    repos    = list()
     for line in result:
         try:
-            repos.append(line.strip().decode("utf-8")[:-4])
+            repos.append(line[:-4])
         except:
             pass
     return repos
 
-def get_all_repos_from_local(path="~"):
-    command = "find "+path+" -xdev -name '.git' | grep -v /.vim"
-    result = run_command(command)
-    repos = list()
-    for line in result:
+def get_all_repos_from_local(path="~", ignore_paths=[]):
+    repos=list()
+    for line in get_local_git_paths(path, ignore_paths):
         try:
-            repos.append(Repo(line.strip().decode("utf-8")+'/..'))
-        except:
+            repos.append(Repo(line))
+        except Exception as e:
             pass
     return repos
 
@@ -176,7 +283,7 @@ def get_type_from_url(url):
 ### Local edits
 
 def init_local(path, remote_path=None, ):
-    abspath = os.path.abspath(path)
+    abspath = os.path.abspath(os.path.expanduser(path))
     if not exists_local(path):
         print("Creating new local directory:", abspath)
         os.mkdir(path)
@@ -214,6 +321,13 @@ def init_remote(project_name, remote, username, remote_project_dir):
     return remote_url
 
 ### Config stuff
+
+def get_ignore_paths(settings_config):
+    configPath = os.path.abspath(os.path.expanduser(settings_config))
+    config = configparser.ConfigParser()
+    config.read(configPath)
+    if "settings" in config and "local-ignore" in config["settings"]:
+        return config["settings"]["local-ignore"].split()
 
 def pprint(data, header=None):
     if not header:
