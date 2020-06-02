@@ -330,20 +330,21 @@ def main():
         if not (args.installed or
                 args.missing or
                 args.untracked or
-                args.remotes != "Defaults"):
+                args.remotes):
             inc_all = True
         else:
             inc_all = False
 
-        if args.remotes:
-            with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes:
+        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
+        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
+
+            if args.remotes is not None:
+                rems = args.remotes or remotes.defaults
                 for remote in args.remotes:
                     if remote in remotes:
                         print(remote)
-            return 0
+                return 0
 
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
             if args.untracked or inc_all:
                 exclude = get_ignore_paths(SETTINGS_CONFIG_FILE)
                 repo_strings = get_local_git_paths(args.path, exclude)

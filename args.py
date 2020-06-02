@@ -85,14 +85,6 @@ def add_single_repo_commands(subparsers):
 def add_multi_repo_commands(subparsers):
     "All muli repo commands"
 
-    # # ---- List
-    # cmd_list = subparsers.add_parser("list",   help="List remote repos")
-    # cmd_list_subparsers = cmd_remotes.add_subparsers(dest="list")
-
-    # cmd_list_local      = cmd_list_subparsers.add_parser("local", help="List for local")
-    # cmd_list_local.add_argument("-u", "--untracked", help="Include local repos that arent tracked ", action="store_true")
-    # cmd_list_local.add_argument("-a", "--archived",  help="Include archived", action="store_true")
-
     # cmd_list_remote     = cmd_list_subparsers.add_parser("remote", help="List for remotes")
     # cmd_list_remote.add_argument("remotes", help="Name of remote to list", metavar="DIR", nargs="?", type=str)
     # # cmd_list_remote.add_argument("-a", "--archived",  help="Include archived", action="store_true")
@@ -104,7 +96,7 @@ def add_multi_repo_commands(subparsers):
     cmd_list.add_argument("-u", "--untracked", help="List local untracked", action="store_true")
     cmd_list.add_argument("-m", "--missing",   help="List missing", action="store_true")
     cmd_list.add_argument("-a", "--archived",  help="Include archived", action="store_true")
-    cmd_list.add_argument("-r", "--remotes",   help="Remotes to list from", nargs="*", default="Defaults", type=str)
+    cmd_list.add_argument("-r", "--remotes",   help="Remotes to list from", nargs="*", type=str)
 
     # ---- Status
     cmd_status = subparsers.add_parser("status", help="Print the status of listed repos")
@@ -160,15 +152,6 @@ def add_category_commands(subparsers):
     cmd_category_remove              = cmd_category_subparsers.add_parser("remove", help="Remove a category from a repo")
     cmd_category_remove.add_argument("project", help="Name of the project", type=str)
     cmd_category_remove.add_argument("category", help="Name of the category", type=str)
-
-def add_deprecated_commands(subparsers):
-    "All commands that weren't needed but need to stick around a little"
-
-    # ---- List
-    cmd_old_list = subparsers.add_parser("list_retired", help="List remote repos")
-    cmd_old_list.add_argument("-l", "--local", help="List from local path instead", metavar="DIR", nargs="?", default=None,
-            const=".", type=str)
-
 
 ### TYPES ###
 def command(s):

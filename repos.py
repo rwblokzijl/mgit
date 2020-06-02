@@ -171,15 +171,18 @@ class RepoTree:
             log_error(f"{path} is not a git repo")
             return
         val, parent = self.get_best_parent(self, path)
-        config_dict["parent"] = parent.name or ""
         if parent == None:
             log_error(f"Only paths in the home directoy are currently supported")
             return
         if path == parent.path:
             log_error(f"Path {path} used by {parent.name}")
             return False
+        config_dict["parent"] = parent.name or ""
         # print(f"Best parent for {path} is {parent.path} with {val}")
-        config_dict["path"] = os.path.relpath(path, parent.path)
+        if parent.name != None:
+            config_dict["path"] = os.path.relpath(path, parent.path)
+        else:
+            config_dict["path"] = "~/" +os.path.relpath(path, parent.path)
         # print(f"Adding {path} to {parent.path}/")
         origin = None
         for r in repo.remotes:

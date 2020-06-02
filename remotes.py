@@ -9,6 +9,7 @@ class Remotes:
 
         self.config.read(self.configPath)
 
+        # self.remotes
 
         if default:
             rlist =  [self.remote_or_none_from_config(x, self.config) for x in self.config['defaults'] if self.remote_in_config(x, self.config)]
