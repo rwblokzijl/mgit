@@ -4,6 +4,8 @@ from args import *
 from repos import RepoTree
 from remotes import Remotes
 
+import os
+
 """ On this project:
     .     !######################!         .
     .     !##                  ##!         .
@@ -23,6 +25,9 @@ from remotes import Remotes
 
     They specify the repos to manage
 
+    # Features for later:
+    infer repo from current dir
+
     # Commands so far:
 
     General:
@@ -33,25 +38,25 @@ from remotes import Remotes
     | TODO |        | where to back them up and keep them consistent across remotes and machines |
 
     repo config actions:
-    |------+-----------+--------+-------------------------+---------------------------------------|
-    |      | show      |        | name                    | show a repo by name                   |
-    | TODO | init      |        | path, [[remote name]..] | init a repo local and remote          |
-    |      | add       |        | path, name              | add a repo (init remote?)             |
-    |      | move      |        | path, name              | move a repo to another path           |
-    |      | remove    |        | name                    | stop tracking a repo                  |
-    |      | rename    |        | name, name              | rename the repo in the config         |
-    |      | archive   |        | name                    | add archive flag to                   |
-    |      | unarchive |        | name                    | remove archive flag to                |
-    |      | install   |        | name                    | install a repo from remote by name    |
-    |      | category  |        |                         | category actions                      |
-    |      |           | list   |                         | lists all categories                  |
-    |      |           | show   | category                | show the category and children        |
-    |      |           | add    | repo, category          | add category                          |
-    |      |           | remove | repo, category          | remote category                       |
-    | TODO | remote    |        |                         | Repo remote actions                   |
-    | TODO |           | add    | repo, remote, name      | add a remote to the repo, and vv      |
-    | TODO |           | remove | repo, remote, name      | remove a remote from the repo, and vv |
-    | TODO |           | origin | repo, remote, name      | set a remote as origin, and vv        |
+    |------+-----------+--------+-------------------------+---------------------------------------------------------|
+    |      | show      |        | name                    | show a repo by name                                     |
+    | TODO | init      |        | path, [[remote name]..] | init a repo local and remote                            |
+    |      | add       |        | path, name              | add a repo (init remote?)                               |
+    |      | move      |        | path, name              | move a repo to another path                             |
+    |      | remove    |        | name                    | stop tracking a repo                                    |
+    |      | rename    |        | name, name              | rename the repo in the config                           |
+    |      | archive   |        | name                    | add archive flag to                                     |
+    |      | unarchive |        | name                    | remove archive flag to                                  |
+    | TODO | install   |        | name                    | install a repo from remote by name (add listed remotes) |
+    |      | category  |        |                         | category actions                                        |
+    |      |           | list   |                         | lists all categories                                    |
+    |      |           | show   | category                | show the category and children                          |
+    |      |           | add    | repo, category          | add category                                            |
+    |      |           | remove | repo, category          | remote category                                         |
+    | TODO | remote    |        |                         | Repo remote actions                                     |
+    | TODO |           | add    | repo, remote, name      | add a remote to the repo, and vv                        |
+    | TODO |           | remove | repo, remote, name      | remove a remote from the repo, and vv                   |
+    | TODO |           | origin | repo, remote, name      | set a remote as origin, and vv                          |
 
     mutli repo actions:
     |------+--------+----------------+----------------------------------------------|
@@ -120,8 +125,14 @@ def main():
                     print(f"'{abspath}' is not a managed repo")
 
     elif COMMAND == "sanity": #Checks if all remotes match the configs
+        """
+        Should implement sanity checkes for:
+            1. remtes
+
+        """
+
+
         print("Not yet implemented")
-        print("Nor is the config structure ready for this")
         pass
 
     elif COMMAND == "config": #Manages the remotes of one or multiple repos
@@ -144,8 +155,12 @@ def main():
         if not query_yes_no("Do you want to continue?"):
             print("Doing nothing")
             return
-        remote = init_remote(basename, remote=REMOTE, username=USERNAME, remote_project_dir=REMOTE_PROJECT_DIR)
-        init_local(abspath, remote)
+        try:
+            remote = init_remote(basename, remote=REMOTE, username=USERNAME, remote_project_dir=REMOTE_PROJECT_DIR)
+            init_local(abspath, remote)
+        except:
+            return 1
+        return 0
 
     elif COMMAND == "add": # directory, name
         path = os.path.abspath(os.path.expanduser(args.path))
@@ -237,12 +252,53 @@ def main():
                 if args.project in repos:
                     repos[args.project].remove_category(args.category)
 
+    elif COMMAND == "remote": # install projects
+        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
+        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
+            if args.action == "list":
+                if args.project in repos:
+                    for remote in repos[args.project].remotes.values():
+                        if args.verbose:
+                            print(remote)
+                        else:
+                            print(remote["name"])
+            elif args.action == "add":
+                if not args.project in repos:
+                    log_error(f"'{args.project}' is not a project")
+                    return 1
+                if not args.remote in remotes:
+                    log_error(f"'{args.remote}' is not a known remote, choose one of the options options:")
+                    for remote in remotes:
+                        print(f' {remote["name"]}')
+                    print(f"Or add it with: 'mgit remotes add {args.remote} [url]'")
+                    return 1
+
+                project = repos[args.project]
+                remote = remotes[args.remote]
+                if args.name:
+                    name = args.name
+                else:
+                    name = args.project
+
+                print(project.name)
+                print(remote["name"])
+                print(name)
+
+                log_error("Not yet fully implemented")
+                return 1
+
+
+            elif args.action == "remove":
+                pass
+            elif args.action == "origin":
+                pass
+
     elif COMMAND == "remotes": #Manages the remotes of one or multiple repos
-        if args.remotes == "list":
+        if args.action == "list":
             with Remotes(remotes_config=REMOTES_CONFIG_FILE, default=bool(args.default) or False) as remotes:
                 remotes.print(args.verbose)
 
-        elif args.remotes == "add":
+        elif args.action == "add":
             with Remotes(remotes_config=REMOTES_CONFIG_FILE, default=bool(args.default) or False) as remotes:
                 name = args.name
                 if name in remotes:
@@ -257,7 +313,7 @@ def main():
                         'is_default' : bool(args.default)
                         }
 
-        elif args.remotes == "remove":
+        elif args.action == "remove":
             with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes:
                 remotes.remove(args.remote)
 
@@ -285,7 +341,6 @@ def main():
         #     if query_yes_no("Do you want to clone all these repos to their specified location?"):
         #         for path,remote in missing:
         #             os.system("git clone " + remote + " " + path)
-        pass
 
     elif COMMAND == "dirty": #If any dirty
         if args.local:
@@ -339,7 +394,7 @@ def main():
         RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
 
             if args.remotes is not None:
-                rems = args.remotes or remotes.defaults
+                # rems = args.remotes or remotes.default
                 for remote in args.remotes:
                     if remote in remotes:
                         print(remote)

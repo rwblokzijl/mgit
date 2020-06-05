@@ -4,6 +4,7 @@ import copy
 import os
 
 from util import *
+from remotes import MissingRepoException, EmptyRepoException
 
 """
 All config behaviour is contained in the following 4 classes:
@@ -62,12 +63,9 @@ class RepoTree:
 
         # 2. Link all the objects into a tree
         self.children   = dict()
-        self.categories = dict()
 
-        # assert False, "Adding to non-categories is allowed, but loading isnt"
         for section, rt in self.repotrees.items():
             parent      = section_get(self.config[section], "parent")
-            categories    = (section_get(section, "categories") or "").split()
             if parent:
                 if parent in self.repotrees:
                     rt.add_parent(self.repotrees[parent])
@@ -75,14 +73,44 @@ class RepoTree:
                     print("WARNING: Parent for {section}: {parent} doesn't exist" )
             else:
                 self.children[section] = rt
-            # else:
-            #     print("WARNING:", section, "is neither parent nor top level, ignoring")
-            for category in categories:
-                self.add_to_cat(category, rt)
 
-        # 3. Finally update paths according to parent
+        # 3. update paths according to parent
         for section, rt in self.repotrees.items():
             rt.final_update()
+
+        # 4.1 Generate loopup maps (categories)
+        self.categories = dict()
+        uncategorized = list()
+        for section, rt in self.repotrees.items():
+            categories    = (section_get(self.config[section], "categories") or "").split()
+            for category in categories:
+                self.add_to_cat(category, rt)
+            if not categories:
+                uncategorized.append(rt)
+
+        for rt in uncategorized:
+            self.add_to_cat("uncategorized", rt)
+
+        # 4.2 Generate loopup maps (remotes)
+        self.remote_repo_map = dict()
+        for name, rt in self.repotrees.items():
+            for remote in rt.remotes.values():
+                self.add_to_remote_map(remote.name, remote.repo, rt)
+
+        # Set in remotes
+        for remote, repo_map in self.remote_repo_map.items():
+            if remote in remotes:
+                remotes[remote].set_repo_map(repo_map)
+            else:
+                log_warning(f"Remote '{remote}' doesn't exist, listed for projects:")
+                for repo in repo_map:
+                    print(" ", repo.name)
+
+    def add_to_remote_map(self, remote_name, repo_name, rt):
+        if remote_name not in self.remote_repo_map:
+            self.remote_repo_map[remote_name] = dict()
+
+        self.remote_repo_map[remote_name][repo_name] = rt
 
     def add_to_cat(self, cat, rt):
         if cat not in self.categories:
@@ -114,7 +142,7 @@ class RepoTree:
     # Getters
 
     def __iter__(self):
-        return iter(self.repotrees.values())
+            return iter(self.repotrees.values())
 
     def __contains__(self, item):
         return item in self.repotrees
@@ -160,7 +188,7 @@ class RepoTree:
         """
         config_dict = {}
         config_dict["repo_id"] = get_repo_id_from_path(path) or ""
-        config_dict["category"] = categories
+        config_dict["categories"] = categories
         if name in self.config.sections():
             print(f"{name} is already used")
             print(self.config.sections())
@@ -170,7 +198,7 @@ class RepoTree:
         except:
             log_error(f"{path} is not a git repo")
             return
-        val, parent = self.get_best_parent(self, path)
+        _, parent = self.get_best_parent(self, path)
         if parent == None:
             log_error(f"Only paths in the home directoy are currently supported")
             return
@@ -184,7 +212,6 @@ class RepoTree:
         else:
             config_dict["path"] = "~/" +os.path.relpath(path, parent.path)
         # print(f"Adding {path} to {parent.path}/")
-        origin = None
         for r in repo.remotes:
             urls = list(r.urls)
             url, path = urls[0].split(":")
@@ -216,13 +243,17 @@ class RepoTree:
         self.config.remove_section(name)
         self.changed = True
 
-    def print_cat(self, cat):
-        if cat in self.categories:
-            print(f"{cat}:")
-            for name in [rep.name for rep in self.categories[cat]]:
-                print(name)
-            return 0
-        return 1
+    def print_cats(self, cats=[]):
+        if cats == list():
+            cats = self.categories.keys()
+        for cat in cats:
+            if cat in self.categories:
+                print(f"{cat}:")
+                for name in [rep.name for rep in self.categories[cat]]:
+                    print(" ", name)
+            else:
+                log_warning(f"'{cat}' is not a category")
+        return 0
 
     def rename(self, old_name, new_name): #remove from config
         if not old_name in self:
@@ -290,6 +321,29 @@ class RepoNode:
         ignore          = 1
     """
 
+    class Remote:
+        def __init__(self, repo, remote):
+            self.name = remote["name"]
+            self.repo = repo
+            self.remote = remote
+
+        # def __getitem__(self, item):
+        #     return self.remote[item]
+
+        def get_url(self):
+            return (f'{self.remote["url"]}:{os.path.join(self.remote["path"], self.repo)}')
+
+        def equals_url(self, url):
+            return url == self.get_url()
+
+        def get_remote_repo_id(self):
+            return self.remote.get_remote_repo_id(self.repo)
+
+        def as_dict(self):
+            dic =  self.remote.as_dict()
+            dic["remote-repo"] = self.repo
+            return dic
+
     def __init__(self, name, section, remotes, repotree):
         self.root = repotree
         self.section  = section
@@ -305,27 +359,142 @@ class RepoNode:
         self.parent_name   = section_get(section, "parent") or None
         self.rid           = section_get(section, "repo_id") or None
         self.archived      = section_get(section, "archived")
-        self.categories    = (section_get(section, "category") or "").split()
-
-        def add_remote(remote, name):
-            if not remote:
-                return None
-            return {
-                    'name':           remote['name'],
-                    'url':            remote['url'],
-                    'path':           remote['path'],
-                    'repo':           name
-                    }
+        self.categories    = (section_get(section, "categories") or "").split()
 
         self.remotes = dict()
 
         for remote_repo in section:
-            remote_name = remote_repo[:-5]
-            if remote_repo.endswith("-repo") and remote_name in remotes:
-                remote = add_remote( remotes[remote_name], section[remote_repo] )
-                self.remotes[remote_name] = remote
+            remote_name      = remote_repo[:-5]
+            remote_repo_name = section[remote_repo]
+            if remote_repo.endswith("-repo"):
+                if remote_name in remotes:
+                    self.remotes[remote_name] = self.Remote(remote_repo_name, remotes[remote_name])
+                    # remote = add_remote( remotes[remote_name], section[remote_repo] )
+                    # self.remotes[remote_name] = remote
+                else:
+                    log_warning(f"Remote '{remote_name}', listed in '{self.name}', doesn't exist, skipping")
 
         self.children = dict()
+
+    def check_rid(self, fix=False):
+        if not self.rid:
+            if fix:
+                self.set_id()
+                if not self.rid:
+                    log_warning(f"{self.rid} is missing and couldn't be fixed")
+                    return 1
+        else:
+            return
+
+    def check_origin(self, context, fix=False):
+        if not self.origin:
+            if self.originUrl and self.originPath:
+                return 0
+            else:
+                log_error(f"Repo '{self.name}' should have origin or (originPath and originUrl)")
+                return 1
+        if self.origin not in self.remotes:
+            if self.origin in context['remotes']:
+                log_error(f"Origin '{self.origin}' for Repo '{self.name}' should have a -repo")
+            else:
+                log_error(f"Origin '{self.origin}' for Repo '{self.name}' does not exist")
+            return 1
+
+    def check_config_remotes(self, fix=False):
+        "Checks if remotes in config exist in the repo"
+        actual_remotes = {x.name : list(x.urls)[0] for x in list(self.repo.remotes)}
+        for rname, remote in self.remotes.items():
+            if rname not in actual_remotes:
+                if fix:
+                    self.add_remote(remote)
+                    actual_remotes = {x.name : list(x.urls)[0] for x in list(self.repo.remotes)}
+                    if rname not in actual_remotes:
+                        log_error(f"Repo '{self.name}' is missing remote '{rname}', and couldn't be fixed")
+                        return 1
+                    print(f"Added remote '{rname}' to repo '{self.name}'")
+                else:
+                    log_warning(f"Repo '{self.name}' is missing remote {rname}")
+                    return 1
+            if not remote.equals_url(actual_remotes[rname]):
+                if fix:
+                    self.fix_remote(remote)
+                    if not remote.equals_url(actual_remotes[rname]):
+                        log_error(f"Repo '{self.name}' has INCORRECT remote {rname}, and couldn't be fixed")
+                        return 1
+                    print(f"Fixed incorrect remote '{rname}' for '{self.name}'")
+                else:
+                    log_error(f"Repo '{self.name}' has INCORRECT remote {rname}")
+
+    def check_remote_repo_existence(self, fix=False):
+        def check(rname, remote, fix=False):
+            try:
+                remote_id = remote.get_remote_repo_id()
+                if remote_id == self.rid:
+                    return 0
+                else:
+                    log_error(f"Remote '{rname}' for '{self.name}' is a different repo! Fix manual")
+                    return 1
+            except MissingRepoException:
+                if fix:
+                    self.add_to_remote(rname)
+                    check(rname, remote, fix=False)
+                else:
+                    log_error(f"Repo '{remote.repo}' in '{rname}' for '{self.name}' is missing")
+                    return 1
+            except EmptyRepoException:
+                log_warning(f"Remote '{rname}' for '{self.name}' exists but is empty")
+                return 1
+
+        for rname, remote in self.remotes.items():
+            check(rname, remote, fix)
+
+    def check_disk_path(self, context, fix=False):
+        paths = [k for k, v in context["local_repos"].items() if v == self.rid]
+        if not self.rid:
+            return 0
+        if self.path in paths:
+            if len(paths) > 1:
+                log_warning(f"Repo '{self.name}' exists in more than one place:")
+                for path in paths:
+                    if path == self.path:
+                        print("", "(configured)", path)
+                    else:
+                        print("", path)
+                    return 0
+            else:
+                return 0
+        else:
+            if len(paths) > 1:
+                log_error(f"Repo '{self.name}' exists in more than one place but not the confgured one, cannot auto-fix")
+                return 1
+            else:
+                if fix:
+                    # move directory
+                    print(f"CAN FIX, but not implemented")
+                else:
+                    log_warning(f"Repo '{self.name}' exists in {paths[0]} instead of configured {self.path}")
+                    return 1
+
+    def do_sanity_checks(self, context, fix=False):
+        if self.missing:
+            return
+        # run checks
+        self.check_rid(fix)
+        self.check_config_remotes(fix)
+        self.check_remote_repo_existence(fix)
+        self.check_disk_path(context, fix)
+        self.check_origin(fix)
+
+    def fix_remote(self, remote):
+        "Change the remote url to match the config"
+
+    def add_remote(self, remote):
+        "Add remote to the repo"
+        self.repo.create_remote(remote.name, remote.get_url())
+
+    def add_to_remote(self, remote):
+        "Add repo to the remote and vv"
+        print("adding repo to", type(remote))
 
     def add_parent(self, parent):
         parent.add_child(self)
@@ -336,18 +505,19 @@ class RepoNode:
 
     def install(self):
         # print(self.remotes)
-        remote = self.remotes[self.origin]
-        url = f'{remote["url"]}'
-        path = os.path.join(remote["path"], remote["repo"])
-        command = f"git clone {url}:{path} {self.path}"
+        origin = self.remotes[self.origin]
+        command = f"git clone {origin.get_url()} {self.path}"
         os.system(f"mkdir -p {self.path}")
         os.system(command)
+        self.repo = Repo(self.path)
+        for remote in self.remotes.values():
+            self.add_remote(remote)
 
     def final_update(self):
         if self.parent:
-            self.path = os.path.join(self.parent.path, self.relative_path)
+            self.path = os.path.realpath(os.path.join(self.parent.path, self.relative_path))
         else:
-            self.path = os.path.abspath(os.path.expanduser(self.relative_path))
+            self.path = os.path.realpath(os.path.abspath(os.path.expanduser(self.relative_path)))
         for child in self.children.values():
             child.final_update()
         try:
@@ -365,7 +535,7 @@ class RepoNode:
                 "origin": self.origin,
                 "children": [x.as_dict() for x in self.children.values()],
                 "categories": self.categories,
-                "remotes": self.remotes,
+                "remotes": [r.as_dict() for r in self.remotes.values()],
                 "archived": bool(self.archived),
                 # "remotes": [remote.as_dict() for remote in self.remotes],
                 }
@@ -379,7 +549,7 @@ class RepoNode:
             for remote in self.remotes.values():
                 user, remo = remote["url"].split("@")
                 repo_path = os.path.join(remote["path"], remote["repo"])
-                rid = get_remote_repo_id(username=user, remote=remo, repo_path=repo_path)
+                rid = remote.get_remote_repo_id()
                 if rid:
                     break
         if rid:
@@ -388,9 +558,10 @@ class RepoNode:
             self.root.changed = True
         else:
             if self.missing:
-                print(f"couldnt get id for missing {self.path}")
+                log_error(f"Couldn't set id for missing {self.path}")
             else:
-                print(f"couldnt get id for local {self.path}")
+                log_error(f"Couldn't set id for local {self.path}")
+            return 1
 
     def status(self, root="~", recursive=False, dirty=False, missing=True, indent=0):
         if self.missing:
@@ -432,13 +603,13 @@ class RepoNode:
     def add_category(self, category):
         if category not in self.categories:
             self.categories.append(category)
-            self.section["category"] = " ".join(self.categories)
+            self.section["categories"] = " ".join(self.categories)
             self.root.changed=True
 
     def remove_category(self, category):
         if category in self.categories:
             self.categories.remove(category)
-            self.section["category"] = " ".join(self.categories)
+            self.section["categories"] = " ".join(self.categories)
             self.root.changed=True
 
     def archive(self, archived):
@@ -464,12 +635,6 @@ class RepoNode:
         return json.dumps(self.as_dict(), indent=4)
 
 # Helpers
-
-def section_get(section, field, default=None):
-    if field in section:
-        return section[field]
-    else:
-        return default
 
 def get_remote(url, remotes):
     url, path = url.split(":")

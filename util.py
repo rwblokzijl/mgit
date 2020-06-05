@@ -11,9 +11,18 @@ from git.exc import InvalidGitRepositoryError
 
 # from config import RepoTree # Keep these imports to a minimum
 
+def pairwise(iterable):
+    "s -> (s0, s1), (s2, s3), (s4, s5), ..."
+    a = iter(iterable)
+    return zip(a, a)
+
 def log_error(*args, verbose=True, **kwargs):
     if verbose:
         print("ERROR:", *args, file=sys.stderr, **kwargs)
+
+def log_warning(*args, verbose=True, **kwargs):
+    if verbose:
+        print("WARNING:", *args, file=sys.stderr, **kwargs)
 
 ### Util helpers:
 
@@ -109,13 +118,6 @@ def collapse_user(path):
     else:
         return path
 
-def get_remote_repo_id(username, remote, repo_path): # Untested
-    command = f"cd {repo_path} && git rev-list --parents HEAD | tail -1"
-    git_id = "".join([str(x.strip()) for x in run_ssh(command, username=username, remote=remote, hide=True).stdout.strip().splitlines()])
-    if ' ' in git_id: #Git repo exists, but has no commits yet
-        return None
-    return(git_id)
-
 def get_repo_id_from_path(path):
     try:
         Repo(path)
@@ -125,6 +127,9 @@ def get_repo_id_from_path(path):
     if ' ' in git_id: #Git repo exists, but has no commits yet
         return None
     return(git_id)
+
+def get_repo_id_from_paths(paths):
+    return [get_repo_id_from_path(path) for path in paths]
 
 def get_config_files(config_dir):
     path = os.path.expanduser(config_dir)
@@ -146,15 +151,15 @@ def get_repos_and_missing_from_paths(paths):
 
 def get_repos_from_string_list(paths):
     return [x for x in [get_repo_or_none(path) for path in paths] if x]
-    repos = list()
-    missing = list()
+    # repos = list()
+    # missing = list()
 
-    for path in paths:
-        l_repos, l_missing = get_repo_or_none(path)
-        repos += l_repos
-        missing += l_missing
+    # for path in paths:
+    #     l_repos, l_missing = get_repo_or_none(path)
+    #     repos += l_repos
+    #     missing += l_missing
 
-    return repos, missing
+    # return repos, missing
 
 def exclude(line, excludes):
     for exclude in excludes:
@@ -170,7 +175,7 @@ def get_local_git_paths(path="~", ignore_paths=[]):
     repos    = list()
     for line in result:
         try:
-            repos.append(line[:-4])
+            repos.append(os.path.realpath(line[:-4]))
         except:
             pass
     return repos
@@ -180,7 +185,7 @@ def get_all_repos_from_local(path="~", ignore_paths=[]):
     for line in get_local_git_paths(path, ignore_paths):
         try:
             repos.append(Repo(line))
-        except Exception as e:
+        except Exception:
             pass
     return repos
 
@@ -278,6 +283,13 @@ def get_type_from_url(url):
     else:
         return None
 
+def section_get(section, field, default=None):
+    if field in section:
+        return section[field]
+    else:
+        return default
+
+
 ### Functions with side effects
 
 ### Local edits
@@ -301,8 +313,8 @@ def init_local(path, remote_path=None, ):
 
 ### REMOTE edits
 
-def run_ssh(*args, username, remote, **kwargs):
-    with Connection(remote, user=username) as ssh:
+def run_ssh(*args, username, remote, port=22, **kwargs):
+    with Connection(remote, user=username, port=port) as ssh:
         return ssh.run(*args, warn=True, **kwargs)
 
 def init_remote(project_name, remote, username, remote_project_dir):
