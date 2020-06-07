@@ -3,8 +3,8 @@ import configparser
 import copy
 import os
 
-from util import *
-from remotes import MissingRepoException, EmptyRepoException
+from mgit.util import *
+from mgit.remotes import MissingRepoException, EmptyRepoException
 
 """
 All config behaviour is contained in the following 4 classes:
@@ -569,7 +569,7 @@ class RepoNode:
                 path = os.path.relpath(self.path, self.parent.path)
             else:
                 if root == "~":
-                    path = "~/" + os.path.relpath(self.path, os.path.expanduser(root))
+                    path = "~/" + os.path.relpath(self.path, os.path.expanduser(root)) + str(self.parent) + "asdf"
                 else:
                     path = os.path.relpath(self.path, os.path.expanduser(root))
             if missing:
@@ -577,10 +577,7 @@ class RepoNode:
             return
 
         if self.parent:
-            if root == "~":
-                path = "~/" + os.path.relpath(self.repo.working_dir, self.parent.path)
-            else:
-                path = os.path.relpath(self.repo.working_dir, self.parent.path)
+            path = "/" + os.path.relpath(self.repo.working_dir, self.parent.path)
         else:
             if root == "~":
                 path = "~/" + os.path.relpath(self.repo.working_dir, os.path.expanduser(root))
@@ -589,8 +586,15 @@ class RepoNode:
         if self.repo.is_dirty():
             print("dirty  ", " "*indent + path)
         else:
-            commits_behind = len(list(self.repo.iter_commits('master..origin/master')))
-            commits_ahead  = len(list(self.repo.iter_commits('origin/master..master')))
+            try:
+                commits_behind = len(list(self.repo.iter_commits('master..origin/master')))
+            except:
+                commits_behind = 0
+            try:
+                commits_ahead  = len(list(self.repo.iter_commits('origin/master..master')))
+            except:
+                commits_ahead  = 0
+
             if commits_ahead or commits_behind:
                 print(f"{commits_ahead}+ {commits_behind}-  ", " "*indent + path)
             else:

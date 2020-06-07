@@ -1,4 +1,4 @@
-from util import *
+from mgit.util import *
 
 import json
 

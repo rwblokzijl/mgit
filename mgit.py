@@ -1,10 +1,9 @@
 #!/usr/bin/env pipenv-shebang
-from util import *
-from args import *
-from repos import RepoTree
-from remotes import Remotes
 
-import os
+from abc import ABC
+
+from mgit import commands
+from mgit.args import parse_args
 
 """ On this project:
     .     !######################!         .
@@ -26,7 +25,7 @@ import os
     They specify the repos to manage
 
     # Features for later:
-    infer repo from current dir
+    generally infer repo from current dir
 
     # Commands so far:
 
@@ -83,360 +82,84 @@ import os
     | TODO |         | show   | name           | show the remote and its repos                                                                                      |
     | TODO |         | check  | repos, remotes | find non up to date repos across all remotes                                                                       |
     | TODO |         | sync   | repos, remotes | fix non up to date repos across all remotes                                                                        |
-
 """
-
-
-REMOTE="git.blokzijl.family"
-USERNAME="bloodyfool"
-REMOTE_PROJECT_DIR="/data/git/projects/"
-CONFIG_DIR="~/.config/mgit/"
-
-REMOTES_CONFIG_FILE= os.path.join( CONFIG_DIR, "remotes.ini" )
-REPOS_CONFIG_FILE= os.path.join( CONFIG_DIR, "repos.ini" )
-SETTINGS_CONFIG_FILE= os.path.join( CONFIG_DIR, "settings.ini" )
-
-REMOTE_BASE_URL = USERNAME+"@"+REMOTE+":"+REMOTE_PROJECT_DIR
-
-args = parse_args()
-COMMAND = args.command
 
 # Repo specific, single repo multiple remotes
 
-def main():
-
+def main(args):
+    kwargs = vars(args)
+    COMMAND = kwargs.pop("command")
 
     # General Commands:
     if COMMAND == "update": #create a new repo
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            if args.all:
-                for repo in repos:
-                    repo.set_id()
-            elif args.name:
-                if args.name in repos:
-                    repos[args.name].set_id()
-            elif args.path:
-                abspath = os.path.abspath(os.path.expanduser(args.path))
-                repo = repos.get_from_path(abspath)
-                if repo:
-                    repo.set_id()
-                else:
-                    print(f"'{abspath}' is not a managed repo")
-
+        commands.update(**kwargs)
     elif COMMAND == "sanity": #Checks if all remotes match the configs
-        """
-        Should implement sanity checkes for:
-            1. remtes
-
-        """
-
-
-        print("Not yet implemented")
-        pass
-
+        if args.action == "check":
+            commands.sanity(fix=False, **kwargs)
+        elif args.action == "fix":
+            commands.sanity(**kwargs)
     elif COMMAND == "config": #Manages the remotes of one or multiple repos
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes:
-            if args.config == "show":
-                repos = RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes)
-                print(repos)
-            elif args.config == "remotes": # Perform config sanity check
-                print(remotes)
-            elif args.config == "check": # Perform config sanity check
-                return not perform_config_check(repos_config=REPOS_CONFIG_FILE, remotes_config=REMOTES_CONFIG_FILE)
-
-
-    # Repo / config management
+        commands.config(**kwargs)
     elif COMMAND == "init": #create a new repo
-        abspath = os.path.abspath(os.path.expanduser(args.path))
-        basename = args.remote or os.path.basename(abspath)
-        print("will create local git repo:", abspath)
-        print("With new remote:", REMOTE_BASE_URL+basename)
-        if not query_yes_no("Do you want to continue?"):
-            print("Doing nothing")
-            return
-        try:
-            remote = init_remote(basename, remote=REMOTE, username=USERNAME, remote_project_dir=REMOTE_PROJECT_DIR)
-            init_local(abspath, remote)
-        except:
-            return 1
-        return 0
-
-    elif COMMAND == "add": # directory, name
-        path = os.path.abspath(os.path.expanduser(args.path))
-        name = args.name or os.path.basename(path)
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            repos.add(name, path, args.category or "")
-
+        commands.init(args.path, args.remote)
+    elif COMMAND == "track": # directory, name
+        commands.track(args.path, args.name, args.category)
     elif COMMAND == "show": # show info on the configured repo
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            if args.name in repos:
-                print(repos[args.name])
-
+        commands.show(args.name)
     elif COMMAND == "move": # move a repo to another path
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            if args.recursive:
-                exclude = get_ignore_paths(SETTINGS_CONFIG_FILE)
-                for path in get_local_git_paths(args.path, exclude):
-                    move_repo(path, None, repos, verbose=args.verbose)
-            else:
-                move_repo(args.path, args.name, repos, verbose=True)
-
+        commands.move(args.recursive, args.path, args.verbose, args.name)
     elif COMMAND == "remove": # stop tracking a repo
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            if args.name in repos:
-                repos.remove(args.name)
-            else:
-                log_error(f"'{args.name}' is not a project")
-                return 1
-
+        commands.remove(args.name)
     elif COMMAND == "rename": # rename the repo in the config
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            if args.name in repos:
-                repos.rename(args.name, args.new_name)
-            else:
-                log_error(f"'{args.name}' is not a project")
-                return 1
-
+        commands.rename(args.name, args.new_name)
     elif COMMAND == "archive": # archive the current repo
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            if args.name in repos:
-                repos[args.name].archive(True)
-            else:
-                log_error(f"'{args.name}' is not a project")
-                return 1
-
+        commands.archive(args.name)
     elif COMMAND == "unarchive": # archive the current repo
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            if args.name in repos:
-                repos[args.name].archive(False)
-            else:
-                log_error(f"'{args.name}' is not a project")
-                return 1
-
+        commands.unarchive(args.name)
     elif COMMAND == "install": # install projects
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            exit = False
-            for name in args.names:
-                if name not in repos:
-                    log_error(f"'{name}' is not a project")
-                    exit = True
-            if exit:
-                return 1
-
-            for name in args.names:
-                print(f"Installing '{name}'")
-                repos[name].install()
-            return 0
-
+        commands.install(args.names)
     elif COMMAND == "category": # install projects
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            if args.action == "list":
-                for category in repos.categories:
-                    print(category)
-            elif args.action == "show":
-                return repos.print_cat(args.category)
-            elif args.action == "add":
-                if args.project in repos:
-                    repos[args.project].add_category(args.category)
-            elif args.action == "remove":
-                if args.project in repos:
-                    repos[args.project].remove_category(args.category)
-
+        if args.action == "list":
+            commands.category_list()
+        elif args.action == "show":
+            commands.category_show(args.category)
+        elif args.action == "add":
+            commands.category_add(args.project, args.category)
+        elif args.action == "remove":
+            commands.category_remove(args.project, args.category)
     elif COMMAND == "remote": # install projects
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-            if args.action == "list":
-                if args.project in repos:
-                    for remote in repos[args.project].remotes.values():
-                        if args.verbose:
-                            print(remote)
-                        else:
-                            print(remote["name"])
-            elif args.action == "add":
-                if not args.project in repos:
-                    log_error(f"'{args.project}' is not a project")
-                    return 1
-                if not args.remote in remotes:
-                    log_error(f"'{args.remote}' is not a known remote, choose one of the options options:")
-                    for remote in remotes:
-                        print(f' {remote["name"]}')
-                    print(f"Or add it with: 'mgit remotes add {args.remote} [url]'")
-                    return 1
-
-                project = repos[args.project]
-                remote = remotes[args.remote]
-                if args.name:
-                    name = args.name
-                else:
-                    name = args.project
-
-                print(project.name)
-                print(remote["name"])
-                print(name)
-
-                log_error("Not yet fully implemented")
-                return 1
-
-
-            elif args.action == "remove":
-                pass
-            elif args.action == "origin":
-                pass
-
+        if args.action == "list":
+            commands.remote_list(args.project, args.verbose)
+        elif args.action == "add":
+            commands.remote_add(args.project, args.remote, args.name)
+        elif args.action == "remove":
+            commands.remote_remove()
+        elif args.action == "origin":
+            commands.remote_origin()
     elif COMMAND == "remotes": #Manages the remotes of one or multiple repos
         if args.action == "list":
-            with Remotes(remotes_config=REMOTES_CONFIG_FILE, default=bool(args.default) or False) as remotes:
-                remotes.print(args.verbose)
-
+            commands.remotes_list(args.default, args.verbose)
         elif args.action == "add":
-            with Remotes(remotes_config=REMOTES_CONFIG_FILE, default=bool(args.default) or False) as remotes:
-                name = args.name
-                if name in remotes:
-                    print(f"Remote '{name}' already exists, use 'update' instead")
-                    return 1
-                url, path = args.url.split(":")
-                remotes[name] = {
-                        'name' : name,
-                        'url' : url,
-                        'path' : path,
-                        'type' : None,
-                        'is_default' : bool(args.default)
-                        }
-
+            commands.remotes_add(args.default, args.name, args.url)
         elif args.action == "remove":
-            with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes:
-                remotes.remove(args.remote)
-
-    # Repo general, multiple repos multiple remotes
-
+            commands.remotes_remove(args.remote)
     elif COMMAND == "fetch": #Fetch from all
-        print("Not yet implemented")
-        pass
-
+        commands.fetch()
     elif COMMAND == "pull": #Fetch from all, and merge latest, or raise conflict
-        print("Not yet implemented")
-        pass
-
+        commands.pull()
     elif COMMAND == "push": #Fetch from all, and push latest, or raise conflict (check first for conflicts on all, before pushing any)
-        print("Not yet implemented")
-        pass
-
+        commands.push()
     elif COMMAND == "create": #Create repos from files
-        return 1
-        # with Remotes(remotes_config=REMOTES_CONFIG_FILE, default=False) as remotes:
-        #     repos, missing = get_repos_from_args(args, repos_config=REPOS_CONFIG_FILE, remotes=remotes)
-        #     print("Will clone:", "To:")
-        #     for path,remote in missing:
-        #         print(remote, "\n  in", path)
-        #     if query_yes_no("Do you want to clone all these repos to their specified location?"):
-        #         for path,remote in missing:
-        #             os.system("git clone " + remote + " " + path)
-
+        commands.create()
     elif COMMAND == "dirty": #If any dirty
-        if args.local:
-            repos = get_all_repos_from_local(args.local)
-        else:
-            with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes:
-                repos, _ = RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes).get_repos()
-
-        for repo in repos:
-            if repo.is_dirty():
-                # print(f"{repo.working_dir} is dirty")
-                return 0
-        return 1
-
+        commands.dirty(args.local)
     elif COMMAND == "status":
-        if not args.local:
-            with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-            RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-                if args.recursive:
-                    if args.name:
-                        repos.status(args.name, category=False, recursive=True, dirty=args.dirty, missing=args.missing)
-                    else:
-                        repos.status(".", category=False, recursive=True, dirty=args.dirty, missing=args.missing)
-                else:
-                    if args.name:
-                        repos.status(args.name, category=True, recursive=True, dirty=args.dirty, missing=args.missing)
-                    else:
-                        repos.status("~", category=False, recursive=True, dirty=args.dirty, missing=args.missing)
-                    # log_error(f"'{args.name}' is not a project")
-            return 0
-        else:
-            repos = get_all_repos_from_local(args.local)
-
-            for repo in repos:
-                if repo.is_dirty():
-                    print("dirty  ", repo.working_dir)
-                else:
-                    if not args.dirty:
-                        print("clean  ", repo.working_dir)
-
+        commands.status(args.local, args.recursive, args.name, args.dirty, args.missing)
     elif COMMAND == "list": # List existing repos
-        if not (args.installed or
-                args.missing or
-                args.untracked or
-                args.remotes):
-            inc_all = True
-        else:
-            inc_all = False
-
-        with Remotes(remotes_config=REMOTES_CONFIG_FILE) as remotes, \
-        RepoTree(repos_config=REPOS_CONFIG_FILE, remotes=remotes) as repos:
-
-            if args.remotes is not None:
-                # rems = args.remotes or remotes.default
-                for remote in args.remotes:
-                    if remote in remotes:
-                        print(remote)
-                return 0
-
-            if args.untracked or inc_all:
-                exclude = get_ignore_paths(SETTINGS_CONFIG_FILE)
-                repo_strings = get_local_git_paths(args.path, exclude)
-                untracked, unarchived_missing, archived_missing, installed = \
-                        tag_repo_strings(repo_strings, repos)
-            else:
-                untracked = []
-                unarchived_missing, archived_missing, installed = \
-                        tag_repos(repos, root=args.path)
-
-            if args.installed or inc_all:
-                for repo in installed:
-                    print("installed  " + repo)
-
-            if args.missing or inc_all:
-                for repo in unarchived_missing:
-                    print("missing    " + repo)
-                if args.archived or inc_all:
-                    for repo in archived_missing:
-                        print("missing(a) " + repo)
-
-            if args.untracked or inc_all:
-                for repo in untracked:
-                    print("untracked  " + repo)
-
-    elif COMMAND == "list_retired": # List existing repos (old)
-        if args.local:
-            for path, remote in get_all_repos_from_local_and_their_remotes(args.local):
-                print(path, remote)
-        else:
-            print("Remotes:")
-            for repo in get_all_repos_from_remote(remote=REMOTE, username=USERNAME, remote_project_dir=REMOTE_PROJECT_DIR):
-                print(repo)
-
+        commands.list_repos(args.installed, args.missing, args.untracked, args.archived, args.remotes, args.path)
     elif COMMAND == "clone": #Clones the listed repos from one remote to another
-        print("Not yet implemented")
-        pass
+        commands.clone()
 
 if __name__ == '__main__':
-    exit(main() or 0)
+    args = parse_args()
+    exit(main(args) or 0)

@@ -1,0 +1,8 @@
+{
+  "mgit/*/*.py": {"alternate": "test/{}/test_{}.py"},
+  "mgit/*.py": {"alternate": "test/test_{}.py"},
+  "test/*/test_*.py": {"alternate": "mgit/{}/{}.py"},
+  "test/test_*.py": {"alternate": "mgit/{}.py"},
+  "*.py": {"alternate": "test/__main__/test_{}.py"},
+  "test/__main__/test_*.py": {"alternate": "{}.py"}
+}
