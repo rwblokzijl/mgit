@@ -1,8 +1,7 @@
 {
-  "mgit/*/*.py": {"alternate": "test/{}/test_{}.py"},
-  "mgit/*.py": {"alternate": "test/test_{}.py"},
-  "test/*/test_*.py": {"alternate": "mgit/{}/{}.py"},
-  "test/test_*.py": {"alternate": "mgit/{}.py"},
-  "*.py": {"alternate": "test/__main__/test_{}.py"},
-  "test/__main__/test_*.py": {"alternate": "{}.py"}
+    "mgit*.py": {"alternate": "test{dirname}/test_{basename}.py"},
+    "test**/test_*.py": {"alternate": "mgit/{dirname}/{basename}.py"},
+
+    "*.py": {"alternate": "test/__main__/test_{}.py"},
+    "test/__main__/test_*.py": {"alternate": "{}.py"}
 }

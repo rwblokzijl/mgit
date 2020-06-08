@@ -32,7 +32,6 @@ def update(all, name, path): #create a new repo
                 print(f"'{abspath}' is not a managed repo")
 
 def sanity(fix=False): #Checks if all remotes match the configs
-
     print("Not yet implemented")
     pass
 
