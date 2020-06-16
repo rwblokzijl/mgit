@@ -1,30 +1,85 @@
 from mgit.util import *
 
 import json
+import copy
 
-class MissingRepoException(Exception):
-    "Git repo doesn't exist"
+class RemotesCreator:
 
-class EmptyRepoException(Exception):
-    "Git repo doesn't exist"
-
-class Remotes:
-    def __init__(self, remotes_config, default=False):
+    def __init__(self, remotePersistence):
         self.changed = False
-        self.configPath = os.path.abspath(os.path.expanduser(remotes_config))
-        self.default = default
-        self.config = configparser.ConfigParser()
+        remote_data = remotePersistence.read_all()
+        self.save_as_remotes(remote_data)
 
-        self.config.read(self.configPath)
+    def save_as_remotes(self, remote_data):
+        self.remotes = dict()
+        for k, v in remote_data.items():
+            self.validate_and_add_remote(k, v)
 
-        # self.remotes
+    def validate_and_add_remote(self, key, remote_dict):
+        if self.should_ignore_dict(remote_dict):
+            return
+        self.validate_remote_dict_name(key, remote_dict)
+        self.validate_remote_dict_required_fields(key, remote_dict)
+        self.validate_remote_dict_type(key, remote_dict)
 
-        if default:
-            rlist =  [self.remote_or_none_from_config(x, self.config) for x in self.config['defaults'] if self.remote_in_config(x, self.config)]
+        default = remote_dict.get("is_default", False)
+        self.validate_remote_dict_default(key, default)
+
+        port = remote_dict.get("port", 22)
+        self.validate_remote_dict_port(key, port)
+
+        # self.remotes[name]  = Remote(vals={
+        self.remotes[key]  = {
+            'name': remote_dict["name"],
+            'url': remote_dict["url"],
+            'path': remote_dict["path"],
+            'type': remote_dict["type"],
+            'port': port,
+            'is_default': default
+            }#)
+
+    def validate_remote_dict_name(self, key, remote_dict):
+        if "name" not in remote_dict:
+            raise self.InvalidConfigError(f"'name' for {key} should exist in dict")
+        if key != remote_dict["name"]:
+            raise self.InvalidConfigError(f"""'name' for {key} should be equal in dict, found {remote_dict["name"]}""")
+
+    def validate_remote_dict_required_fields(self, key, remote_dict):
+        err = None
+        try:
+            name    = remote_dict["name"]
+            url     = remote_dict["url"]
+            path    = remote_dict["path"]
+        except KeyError as e:
+            err = self.InvalidConfigError(f"Dict {key} should contain {e}")
+        if err:
+            raise err
+
+    def validate_remote_dict_type(self, key, remote_dict):
+        rtype    = remote_dict.get("type", None)
+        if rtype is None:
+            return
         else:
-            rlist =  [self.remote_or_none_from_config(x, self.config) for x in self.config if self.remote_in_config(x, self.config)]
+            if HandlerHandler().check_type(rtype):
+                return
+            else:
+                raise self.InvalidConfigError(f"Dict {key} has invalid type {rtype}")
 
-        self.remotes = {r["name"]: r for r in rlist if r}
+    def validate_remote_dict_default(self, key, default):
+        if type(default) is not bool:
+            raise self.InvalidConfigError(f"'is_default' for {key} should be a boolean, not {default}")
+
+    def validate_remote_dict_port(self, key, port):
+        err = None
+        try:
+            port    = int(port)
+        except ValueError:
+            err = self.InvalidConfigError(f"'port' for {key} should be an integer, not {port}")
+        if err:
+            raise err
+
+    def should_ignore_dict(self, remote_dict):
+        return "ignore" in remote_dict and remote_dict["ignore"]
 
     def remote_or_none(self, name, url, path, rtype, default, port=22):
         if rtype is None:
@@ -61,13 +116,6 @@ class Remotes:
             rtype = None
         return self.remote_or_none(vals["name"], vals["url"], vals["path"], rtype, vals["is_default"], vals.get("port", 22))
 
-    def remote_or_none_from_config(self, remote, configObj):
-        try:
-            rtype = configObj[remote]['type']
-        except:
-            rtype = None
-        return self.remote_or_none( remote, configObj[remote]['url'], configObj[remote]['path'], rtype, remote in configObj['defaults'], section_get(remote, "port") )
-
     def remote_in_config(self, remote, configObj):
         return (remote in configObj and
                 "url" in configObj[remote] and
@@ -90,6 +138,15 @@ class Remotes:
     def __str__(self):
         return json.dumps(self.as_dict(), indent=4)
 
+    def add(self, name, url, type, is_default=False):
+        # assert name not in self, f"'{name}' already exists"
+        to_add = dict()
+        to_add["name"] = name
+        to_add["url"], to_add["path"] = url.split(":")
+        to_add["type"] = type
+        to_add["is_default"] = is_default
+        self.__setitem__(name, to_add)
+
     def __setitem__(self, key, item):
         assert isinstance(item, dict)
         assert item["name"] == key, f"Key '{key}' does not match remote name '" + item["name"] + "'"
@@ -98,12 +155,13 @@ class Remotes:
         if r:
             self.remotes[key] = r
             self.config[key] = r.as_config()
-            if self.default:
+            if item["is_default"]:
                 self.config['defaults'][key] = 1
-            print(f'Added remote {key} at {item["url"]}:{item["path"]}')
+            # print(f'Added remote {key} at {item["url"]}:{item["path"]}')
             self.changed = True
         else:
-            print(f"Missing values for {key}")
+            raise
+            # print(f"Missing values for {key}")
 
     def remove(self, remotes):
         for remote in remotes:
@@ -133,6 +191,14 @@ class Remotes:
     def __iter__(self):
         return iter(self.remotes.values())
 
+    class InvalidConfigError(Exception):
+        pass
+
+class Remotes(RemotesCreator):
+    def __init__(self, path):
+        persistence = RemoteConfigFilePersistence(path)
+        super().__init__(persistence)
+
 class Remote:
     def __init__(self, vals=None, name=None, url=None, path=None, remote_type=None, default=False, port=22):
         self.repo_map = None # init None, not dict, if we accidentally use it witout settign later, we get an active error
@@ -160,7 +226,7 @@ class Remote:
                     }
 
         username, nurl = self.vals["url"].split("@")
-        self.handler = get_handler( username, nurl, self.vals["path"], self.vals["type"], self.vals["port"])# .get_handler(self.vals["type"])
+        self.handler = HandlerHandler().get_handler( username, nurl, self.vals["path"], self.vals["type"], self.vals["port"])# .get_handler(self.vals["type"])
 
     def set_repo_map(self, repo_map):
         self.repo_map = repo_map
@@ -215,10 +281,6 @@ class Remote:
                 untracked.append(repo_name)
 
         return installed, missing, archived, untracked
-
-
-
-
 
 class RemoteHandler:
     def __init__(self, username, url, path, htype, port=22):
@@ -287,6 +349,12 @@ class SSHHandler(RemoteHandler):
             self.repo_id_map[name] = git_id
         return self.repo_id_map[name]
 
+    class MissingRepoException(Exception):
+        "Git repo doesn't exist"
+
+    class EmptyRepoException(Exception):
+        "Git repo is empty"
+
 class GithubHandler(RemoteHandler):
     pass
 
@@ -297,12 +365,24 @@ class BitbucketHandler(RemoteHandler):
     pass
 
 # Helper
-def get_handler(username, url, path, htype, port=22):
-    type_map = {
-            "ssh" : SSHHandler,
-            "github" : GithubHandler,
-            "gitlab" : GitlabHandler,
-            "bitbucket" : BitbucketHandler
-            }
-    return type_map.get(htype, None)(username, url, path, htype, port)
+class HandlerHandler:
+    def __init__(self):
+        self.type_map = {
+                "ssh" : SSHHandler,
+                "github" : GithubHandler,
+                "gitlab" : GitlabHandler,
+                "bitbucket" : BitbucketHandler
+                }
+
+    def check_type(self, type):
+        if type in self.type_map:
+            return True
+        else:
+            return False
+
+    def get_handler(self, username, url, path, htype, port=22):
+        handler = self.type_map.get(htype, None)
+        if self.type_map is None:
+            raise TypeError("Invalid type {htype}")
+        return handler(username, url, path, htype, port)
 
