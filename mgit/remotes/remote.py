@@ -44,6 +44,9 @@ class Remote:
     def as_dict(self):
         return self.vals
 
+    def get_url(self):
+        return f"{self.vals['url']}:{self.vals['path']}"
+
     # def as_config(self):
     #     return {
     #             "url" : self.vals['url'],

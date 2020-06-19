@@ -1,7 +1,7 @@
 
 from abc import ABC, abstractmethod, abstractproperty
 
-class RemotePersistence(ABC):
+class Persistence(ABC):
     @abstractmethod
     def read_all(self):
         pass

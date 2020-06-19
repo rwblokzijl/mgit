@@ -1,18 +1,18 @@
-from mgit.persistence.remotes_persistence import RemotePersistence
+from mgit.persistence.config_persistence import ConfigFilePersistence
+
+from abc import abstractmethod
 
 import os
 import copy
 import configparser
 
-class RemotesConfigFilePersistence(RemotePersistence):
-    def __init__(self, configFile):
-        self.configPath = os.path.abspath(os.path.expanduser(configFile))
+class RemotesConfigFilePersistence(ConfigFilePersistence):
 
-    def config_to_dict(self):
+    def config_to_dict(self, config):
         ans_dict = dict()
         last = list()
 
-        for k, v in self.config.items():
+        for k, v in config.items():
             if k == "DEFAULT":
                 continue
             elif k.lower() == "defaults":
@@ -24,21 +24,13 @@ class RemotesConfigFilePersistence(RemotePersistence):
                 ans_dict[k] = vdict
 
         for defaults in last:
-            for c in self.config[defaults]:
+            for c in config[defaults]:
                 if c in ans_dict:
                     ans_dict[c]["is_default"] = True
 
         return ans_dict
 
-    def read_all(self):
-        self.config = configparser.ConfigParser()
-        data = self.config.read(self.configPath)
-        if len(data) == 0:
-            raise self.FileNotFoundError("Failed to open/find files")
-
-        return self.config_to_dict()
-
-    def write_all(self, remotes_dict):
+    def dict_to_config(self, remotes_dict):
         write_dict = copy.deepcopy(remotes_dict)
         write_dict["defaults"] = {}
         for k, v in remotes_dict.items():
@@ -48,9 +40,4 @@ class RemotesConfigFilePersistence(RemotePersistence):
 
         config = configparser.ConfigParser()
         config.read_dict(write_dict)
-        with open(self.configPath, 'w') as configfile:
-            config.write(configfile)
-
-    class FileNotFoundError(Exception):
-        pass
-
+        return config

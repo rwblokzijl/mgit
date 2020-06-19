@@ -1,12 +1,10 @@
 from mgit.util import *
-from mgit.remote import Remote, HandlerHandler
+from mgit.remotes.remote import Remote, HandlerHandler
 
 import json
 import copy
 
 class RemotesBuilder:
-    def __init__(self):
-        self.changed = False
 
     def build(self, remote_data):
         self.remotes = dict()

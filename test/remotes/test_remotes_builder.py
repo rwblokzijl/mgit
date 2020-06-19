@@ -1,4 +1,4 @@
-from mgit.remotes_builder import RemotesBuilder
+from mgit.remotes.remotes_builder import RemotesBuilder
 from test.test_util import TestPersistence
 
 import unittest

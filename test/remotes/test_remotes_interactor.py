@@ -1,6 +1,6 @@
-from mgit.remotes_interactor import RemotesInteractor
-from mgit.remotes_builder    import RemotesBuilder
-from mgit.remote             import Remote
+from mgit.remotes.remotes_interactor import RemotesInteractor
+from mgit.remotes.remotes_builder    import RemotesBuilder
+from mgit.remotes.remote             import Remote
 from test.test_util          import TestPersistence
 
 import unittest
