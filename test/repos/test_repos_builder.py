@@ -16,7 +16,6 @@ class TestReposBuilder(unittest.TestCase):
                     "originurl" : "bloodyfool@git.bloodyfool.family:/direct_repo",
                     "origin" : "home",
                     "categories" : "config",
-                    # "ignore" : "1",
                     "home-repo" : "example-name-in-home",
                     "github-repo" : "different-example-name",
                     "repo_id" : "1234567890f39a8a19a8364fbed2fa317108abe6",
@@ -28,7 +27,6 @@ class TestReposBuilder(unittest.TestCase):
                     "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
                     "origin" : "home",
                     "categories" : "config",
-                    # "ignore" : "1",
                     "home-repo" : "example-name-in-home",
                     "github-repo" : "different-example-name",
                     "repo_id" : "1234567890f39a8a19a8364fbed2fa317112341",
@@ -59,14 +57,6 @@ class TestReposBuilder(unittest.TestCase):
         self.assertEqual(repos["example"].remotes["github"].repo_name, "different-example-name")
         self.assertEqual(repos["example"].repo_id , "1234567890f39a8a19a8364fbed2fa317108abe6")
         self.assertEqual(repos["example"].archived , True)
-
-    def test_ignore(self):
-        self.example_dict["example"]["ignore"] = 1
-        self.persistence.set_all(self.example_dict)
-
-        repos = ReposBuilder().build(self.persistence.read_all(), self.test_remotes)
-        self.assertNotIn("example", repos)
-        self.assertIn("example2", repos)
 
     def test_different_name(self):
         self.persistence.set_all({

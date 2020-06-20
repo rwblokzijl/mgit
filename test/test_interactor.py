@@ -32,4 +32,3 @@ class TestInteractor(unittest.TestCase):
                 "~/.config/dotfiles",
                 interactor.as_dict()["dotfiles"]["path"]
                 )
-        # print(interactor)

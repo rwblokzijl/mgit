@@ -1,7 +1,6 @@
-from mgit.persistence.remotes_config_persistence import RemotesConfigFilePersistence
-from mgit.remotes.remotes_interactor             import RemotesInteractor
-from mgit.remotes.remotes_builder                import RemotesBuilder
-from mgit.remotes.remote                         import Remote
+from mgit.remotes.remotes_interactor import RemotesInteractor
+from mgit.remotes.remotes_builder    import RemotesBuilder
+from mgit.remotes.remote             import Remote
 
 from test.test_util                  import TestPersistence
 
@@ -38,28 +37,28 @@ class TestRemotesInteractor(unittest.TestCase):
         pass
 
     def test_init(self):
-        ri = RemotesInteractor(self.persistence, self.builder)
+        remotes = RemotesInteractor(self.persistence, self.builder)
 
-        self.assertIn("test", ri.remotes)
-        self.assertIn("test2", ri.remotes)
-        self.assertTrue(len(ri.remotes) == 2)
+        self.assertIn("test", remotes)
+        self.assertIn("test2", remotes)
+        self.assertTrue(len(remotes) == 2)
 
     def test_contains(self):
         remotes = RemotesInteractor(self.persistence, self.builder)
         self.assertIn("test2", remotes)
 
     def test_get_remotes(self):
-        ri = RemotesInteractor(self.persistence, self.builder)
+        remotes_interactor = RemotesInteractor(self.persistence, self.builder)
         remotes = self.builder.build(self.persistence.read_all())
 
-        gotten_data = ri.get_remotes()
+        gotten_data = remotes_interactor.get_items()
         self.assertEqual(gotten_data.keys(), remotes.keys())
 
     def test_add(self):
-        ri = RemotesInteractor(self.persistence, self.builder)
+        remotes = RemotesInteractor(self.persistence, self.builder)
 
-        self.assertNotIn("test3", ri.get_remotes())
-        ri.add(
+        self.assertNotIn("test3", remotes)
+        remotes.add(
                 name = "test3",
                 url = "test3@example.com",
                 path = "/test3/path",
@@ -67,12 +66,12 @@ class TestRemotesInteractor(unittest.TestCase):
                 port = "24",
                 default = True
                 )
-        self.assertIn("test3", ri.get_remotes())
+        self.assertIn("test3", remotes)
 
     def test_add_exists(self):
-        ri = RemotesInteractor(self.persistence, self.builder)
-        with self.assertRaises(RemotesInteractor.RemoteExistsError):
-            ri.add(
+        remotes = RemotesInteractor(self.persistence, self.builder)
+        with self.assertRaises(RemotesInteractor.ItemExistsError):
+            remotes.add(
                     name = "test2",
                     url = "test3@example.com",
                     path = "/test3/path",
@@ -82,11 +81,11 @@ class TestRemotesInteractor(unittest.TestCase):
                     )
 
     def test_edit(self):
-        ri = RemotesInteractor(self.persistence, self.builder)
+        remotes = RemotesInteractor(self.persistence, self.builder)
 
-        self.assertIn("test2", ri.get_remotes())
-        self.assertEqual("test2@example.com", ri.get_remotes()["test2"].url)
-        ri.edit(
+        self.assertIn("test2", remotes)
+        self.assertEqual("test2@example.com", remotes["test2"].url)
+        remotes.edit(
                 name = "test2",
                 url = "test3@example.com",
                 path = "/test3/path",
@@ -94,13 +93,13 @@ class TestRemotesInteractor(unittest.TestCase):
                 port = "24",
                 default = True
                 )
-        self.assertEqual("test3@example.com", ri.get_remotes()["test2"].url)
+        self.assertEqual("test3@example.com", remotes["test2"].url)
 
     def test_edit_not_exists(self):
-        ri = RemotesInteractor(self.persistence, self.builder)
-        self.assertNotIn("test3", ri.get_remotes())
-        with self.assertRaises(RemotesInteractor.RemoteExistsError):
-            ri.edit(
+        remotes = RemotesInteractor(self.persistence, self.builder)
+        self.assertNotIn("test3", remotes)
+        with self.assertRaises(RemotesInteractor.ItemExistsError):
+            remotes.edit(
                     name = "test3",
                     url = "test3@example.com",
                     path = "/test3/path",
@@ -110,10 +109,10 @@ class TestRemotesInteractor(unittest.TestCase):
                     )
 
     def test_save(self):
-        ri = RemotesInteractor(self.persistence, self.builder)
+        remotes = RemotesInteractor(self.persistence, self.builder)
 
-        self.assertNotIn("test3", ri.get_remotes())
-        ri.add(
+        self.assertNotIn("test3", remotes)
+        remotes.add(
                 name = "test3",
                 url = "test3@example.com",
                 path = "/test3/path",
@@ -121,14 +120,14 @@ class TestRemotesInteractor(unittest.TestCase):
                 port = "24",
                 default = True
                 )
-        ri.save()
+        remotes.save()
         self.assertIn("test3", self.persistence.read_all())
 
     def test_edit_not_save(self):
-        ri = RemotesInteractor(self.persistence, self.builder)
+        remotes = RemotesInteractor(self.persistence, self.builder)
 
-        self.assertNotIn("test3", ri.get_remotes())
-        ri.add(
+        self.assertNotIn("test3", remotes)
+        remotes.add(
                 name = "test3",
                 url = "test3@example.com",
                 path = "/test3/path",

@@ -2,11 +2,11 @@ from mgit.persistence.remotes_config_persistence import RemotesConfigFilePersist
 from mgit.remotes.remotes_builder                import RemotesBuilder
 from mgit.remotes.remotes_interactor             import RemotesInteractor
 
-from mgit.repos.repos_builder     import ReposBuilder
+from mgit.persistence.repo_config_persistence import ReposConfigFilePersistence
+from mgit.repos.repos_builder                  import ReposBuilder
+from mgit.repos.repos_interactor               import ReposInteractor
 
 from mgit.persistence.repo_config_persistence    import ReposConfigFilePersistence
-
-
 
 import json
 
@@ -15,18 +15,18 @@ class Builder:
         remotes_persistence = RemotesConfigFilePersistence(remotes_config)
         remotes_interactor = RemotesInteractor(persistence=remotes_persistence, builder=RemotesBuilder())
 
-        repo_data = ReposConfigFilePersistence(repos_config).read_all()
-        repos = ReposBuilder().build(repo_data=repo_data, remotes=remotes_interactor.remotes)
+        repos_persistence = ReposConfigFilePersistence(repos_config)
+        repos_interactor  = ReposInteractor(persistence=repos_persistence, builder=ReposBuilder(), remotes=remotes_interactor)
 
-        return Interactor(repos, remotes_interactor)
+        return Interactor(repos_interactor, remotes_interactor)
 
 class Interactor:
-    def __init__(self, repos, remotes_interactor):
+    def __init__(self, repos_interactor, remotes_interactor):
         self.remotes_interactor = remotes_interactor
-        self.repos = repos
+        self.repos_interactor = repos_interactor
 
     def as_dict(self):
-        return {k : v.as_dict() for k, v in self.repos.items()}
+        return self.repos_interactor.as_dict()
 
     def __str__(self):
         return json.dumps(self.as_dict(), indent=2)

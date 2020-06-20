@@ -5,7 +5,6 @@ import json
 import copy
 
 class RemotesBuilder:
-
     def build(self, remote_data):
         self.remotes = dict()
         self.save_as_remotes(remote_data)
@@ -16,8 +15,9 @@ class RemotesBuilder:
             self.validate_and_add_remote(k, v)
 
     def validate_and_add_remote(self, key, remote_dict):
-        if self.should_ignore_dict(remote_dict):
-            return
+        self.remotes[key]  = self.validate_remote(key, remote_dict)
+
+    def validate_remote(self, key, remote_dict):
         self.validate_remote_dict_name(key, remote_dict)
         self.validate_remote_dict_required_fields(key, remote_dict)
         rtype = self.validate_remote_dict_type(key, remote_dict)
@@ -28,7 +28,7 @@ class RemotesBuilder:
         port = remote_dict.get("port", 22)
         self.validate_remote_dict_port(key, port)
 
-        self.remotes[key]  = Remote(
+        return Remote(
                 name        = remote_dict["name"],
                 url         = remote_dict["url"],
                 path        = remote_dict["path"],
@@ -73,9 +73,6 @@ class RemotesBuilder:
             err = self.InvalidConfigError(f"'port' for {key} should be an integer, not {port}")
         if err:
             raise err
-
-    def should_ignore_dict(self, remote_dict):
-        return "ignore" in remote_dict and remote_dict["ignore"]
 
     class InvalidConfigError(Exception):
         pass

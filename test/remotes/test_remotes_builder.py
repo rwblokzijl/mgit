@@ -29,29 +29,6 @@ class TestRemotesBuilder(unittest.TestCase):
         self.assertIn("test", remotes)
         self.assertIn("test2", remotes)
 
-    def test_ignore(self):
-        self.persistence.set_all({
-            "test" : {
-                "name" : "test",
-                "url" : "test@example.com",
-                "path" : "/test/path",
-                "type" : "ssh",
-                "is_default" : False,
-                "ignore" : 1
-                },
-            "test2" : {
-                "name" : "test2",
-                "url" : "test2@example.com",
-                "path" : "/test2/path",
-                "type" : "ssh",
-                "is_default" : True
-                }
-            })
-
-        remotes = RemotesBuilder().build(self.persistence.read_all())
-        self.assertNotIn("test", remotes)
-        self.assertIn("test2", remotes)
-
     def test_missing_name(self):
         self.persistence.set_all({
             "test" : {

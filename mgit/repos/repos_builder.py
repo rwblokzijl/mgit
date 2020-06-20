@@ -13,7 +13,6 @@ class ReposBuilder:
         "originurl" : "bloodyfool2@git.bloodyfool.family",
         "origin" : "home",
         "categories" : "config",
-        # "ignore" : "1",
         "home-repo" : "example-name-in-home",
         "ewi-gitlab-repo" : "different-example-name",
         }
@@ -30,43 +29,14 @@ class ReposBuilder:
 
         return self.repos
 
-    def resolve_parents(self):
-        for repo_name, repo in self.repos.items():
-            self.resolve_parent(repo)
-
-    def resolve_parent(self, repo):
-        if repo.parent is None:
-            return
-        if repo.parent in self.repos:
-            self.add_parent(repo)
-        else:
-            raise self.MissingParentError(f"Parent '{repo.parent}' for repo '{repo.name}' doesn't exist")
-
-    def add_parent(self, repo):
-        repo.parent = self.repos[repo.parent]
-        repo.parent.children.append(repo)
-
-    def resolve_and_verify_paths(self):
-        for repo_name, repo in self.repos.items():
-            self.resolve_and_verify_path(repo)
-
-    def resolve_and_verify_path(self, repo):
-        if repo.parent is None:
-            if not os.path.isabs(os.path.expanduser(repo.path)):
-                raise self.PathError("Repo '{repo.name}' without absolute path mush have parent")
-            return
-        if os.path.isabs(os.path.expanduser(repo.path)):
-            raise self.PathError("Repo '{repo.name}' with parent '{repo.parent}' cannot have an absolute path")
-        repo.path = os.path.join(repo.parent.path, repo.path)
-
     def save_as_repos(self, repo_data):
         for key, repo_dict in repo_data.items():
             self.validate_and_add_repo(key, repo_dict)
 
     def validate_and_add_repo(self, key, repo_dict):
-        if self.should_ignore_dict(repo_dict):
-            return
+        self.repos[key] = self.validate_repo(key, repo_dict)
 
+    def validate_repo(self, key, repo_dict):
         name       = self.validate_repo_dict_name(       key, repo_dict)
         path       = self.validate_repo_dict_path(       key, repo_dict)
         parent     = self.validate_repo_dict_parent(     key, repo_dict)
@@ -76,7 +46,7 @@ class ReposBuilder:
         remotes    = self.validate_repo_dict_remotes(    key, repo_dict)
         origin     = self.validate_repo_dict_origin(     key, repo_dict, remotes)
 
-        self.repos[key] = Repo(
+        return Repo(
                 name       = name,
                 path       = path,
                 parent     = parent,
@@ -153,8 +123,34 @@ class ReposBuilder:
             return UnnamedRepoOrigin(repo_dict["originurl"])
         raise self.MissingOriginError(f"Missing origin and originurl for repo '{key}'")
 
-    def should_ignore_dict(self, repo_dict):
-        return "ignore" in repo_dict and repo_dict["ignore"]
+    def resolve_parents(self):
+        for repo_name, repo in self.repos.items():
+            self.resolve_parent(repo)
+
+    def resolve_parent(self, repo):
+        if repo.parent is None:
+            return
+        if repo.parent in self.repos:
+            self.add_parent(repo)
+        else:
+            raise self.MissingParentError(f"Parent '{repo.parent}' for repo '{repo.name}' doesn't exist")
+
+    def add_parent(self, repo):
+        repo.parent = self.repos[repo.parent]
+        repo.parent.children.append(repo)
+
+    def resolve_and_verify_paths(self):
+        for repo_name, repo in self.repos.items():
+            self.resolve_and_verify_path(repo)
+
+    def resolve_and_verify_path(self, repo):
+        if repo.parent is None:
+            if not os.path.isabs(os.path.expanduser(repo.path)):
+                raise self.PathError(f"Repo '{repo.name}' without absolute path mush have parent")
+            return
+        if os.path.isabs(os.path.expanduser(repo.path)):
+            raise self.PathError(f"Repo '{repo.name}' with parent '{repo.parent}' cannot have an absolute path")
+        repo.path = os.path.join(repo.parent.path, repo.path)
 
     class InvalidConfigError(Exception):
         pass
