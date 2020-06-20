@@ -10,5 +10,5 @@ class TestConfigFilePersistence(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_persistence(self):
+    def test_init(self):
         pass

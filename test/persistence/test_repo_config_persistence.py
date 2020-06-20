@@ -27,8 +27,8 @@ class TestRepoConfigPersistence(unittest.TestCase):
 
     def test_whenMissingFile_TrowsException(self):
         path = "test/__files__/this_file_shouldnt_exist_please_delete.ini"
-        with self.assertRaises(ReposConfigFilePersistence.FileNotFoundError):
-            repos = ReposConfigFilePersistence(path).read_all()
+        repos = ReposConfigFilePersistence(path).read_all()
+        self.assertDictEqual({}, repos)
 
     def test_simpleRepoIsLoaded(self):
         test_file = \
@@ -105,7 +105,7 @@ class TestRepoConfigPersistence(unittest.TestCase):
     def test_write_all(self):
         # setup
 
-        repos_dict = {
+        expected = {
                 "example" : {
                     "name" : "example",
                     "path" : "example",
@@ -135,7 +135,11 @@ class TestRepoConfigPersistence(unittest.TestCase):
             os.remove(test_file)
 
         # execute test
-        ReposConfigFilePersistence(test_file).write_all(repos_dict)
+        persistence = ReposConfigFilePersistence(test_file)
+        persistence.set("example", expected["example"])
+        persistence.set("example2", expected["example2"])
+        persistence.write_all()
+
         repos_conf = ReposConfigFilePersistence(test_file).read_all()
 
         #teardown
@@ -143,4 +147,4 @@ class TestRepoConfigPersistence(unittest.TestCase):
             os.remove(test_file)
 
         #assert
-        self.assertDictEqual(repos_conf, repos_dict)
+        self.assertDictEqual(repos_conf, expected)

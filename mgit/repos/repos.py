@@ -1,173 +1,38 @@
 import json
 import configparser
-import copy
 import os
-
-from abc import ABC, abstractmethod
 
 from mgit.util import *
 # from mgit.remotes import MissingRepoException, EmptyRepoException
 
-"""
-All config behaviour is contained in the following 4 classes:
-    1. Remotes, contains multiple:
-        2. Remotes
-    3. RepoTree, structures multiple:
-        4. RepoNodes, into a tree
-
-    These classes provide all interaction with the config file
-    They could possibly eventually be the interfact for interacting with the
-    actual repos/remotes.
-
-    The flow of creating the repos is as follows:
-    1. The RepoTree inits a number of RepoNodes (using __init__)
-    2. When all the RepoNodes are created, they are organised into a tree (using add_parent)
-    3. When the tree is created all the relative paths are resolved (using final_update)
-    4. TODO Finally all repos that exist are instantiated
-"""
-
-class ReposBuilder:
-    """
-    "example2" : {
-        "name" : "example2",
-        "path" : "example2",
-        "originurl" : "bloodyfool2@git.bloodyfool.family",
-        "origin" : "home",
-        "categories" : "config",
-        # "ignore" : "1",
-        "home-repo" : "example-name-in-home",
-        "ewi-gitlab-repo" : "different-example-name",
-        }
-    """
-
-    def build(self, repo_data, remotes={}):
-        self.repos = dict()
-        self.remotes = remotes
-
-        self.save_as_repos(repo_data)
-
-        return self.repos
-
-    def save_as_repos(self, repo_data):
-        for key, repo_dict in repo_data.items():
-            self.validate_and_add_repo(key, repo_dict)
-
-    def validate_and_add_repo(self, key, repo_dict):
-        if self.should_ignore_dict(repo_dict):
-            return
-
-        name       = self.validate_repo_dict_name(       key, repo_dict)
-        path       = self.validate_repo_dict_path(       key, repo_dict)
-        categories = self.validate_repo_dict_categories( key, repo_dict)
-        remotes    = self.validate_repo_dict_remotes(    key, repo_dict)
-        origin     = self.validate_repo_dict_origin(     key, repo_dict, remotes)
-
-        self.repos[key] = Repo(
-                name       = name,
-                path       = path,
-                origin     = origin,
-                categories = categories,
-                remotes    = remotes,
-                )
-
-    def validate_repo_dict_name(self, key, repo_dict):
-        if "name" not in repo_dict:
-            raise self.InvalidConfigError(f"'name' for {key} should exist in dict")
-        if key != repo_dict["name"]:
-            raise self.InvalidConfigError(f"""'name' for {key} should be equal in dict, found {repo_dict["name"]}""")
-        return repo_dict["name"]
-
-    def validate_repo_dict_path(self, key, repo_dict):
-        if "path" not in repo_dict:
-            raise self.InvalidConfigError(f"'path' for {key} should exist in dict")
-        return repo_dict["path"]
-
-    def validate_repo_dict_categories(self, key, repo_dict):
-        if "categories" in repo_dict:
-            return repo_dict["categories"].split(" ")
-
-    def validate_repo_dict_remotes(self, key, repo_dict):
-        remotes_dict = dict()
-        for key, repo_name in repo_dict.items():
-            if not key.endswith("-repo"):
-                continue
-            remote_name      = key[:-5]
-            remote = self.validate_remote(key, remote_name, repo_name)
-            if remote is not None:
-                remotes_dict[remote_name] = remote
-        return remotes_dict
-
-    def validate_remote(self, key, remote_name, repo_name):
-        # if remote_name in self.remotes:
-        #     self.remotes[remote_name] = self.Remote(remote_repo_name, remotes[remote_name])
-        # else:
-        #     log_warning(f"Remote '{remote_name}', listed in '{self.name}', doesn't exist, skipping")
-        if remote_name in self.remotes:
-            return DerivedRepoRemote(self.remotes[remote_name], repo_name)
-        else:
-            raise self.MissingRemoteReferenceError(f"Missing referenced remote '{remote_name}' for repo '{key}'")
-
-    def validate_repo_dict_origin(self, key, repo_dict, remotes):
-        if "origin" in repo_dict:
-            origin_name = repo_dict["origin"]
-            if origin_name in remotes:
-                return remotes[repo_dict["origin"]]
-            else:
-                raise self.MissingOriginReferenceError(f"Missing origin referenced remote '{origin_name}' for repo '{key}'")
-        if "originurl" in repo_dict:
-            return UnnamedRepoOrigin(repo_dict["originurl"])
-        raise self.MissingOriginError(f"Missing origin and originurl for repo '{key}'")
-
-    def should_ignore_dict(self, repo_dict):
-        return "ignore" in repo_dict and repo_dict["ignore"]
-
-    class InvalidConfigError(Exception):
-        pass
-
-    class MissingRemoteReferenceError(Exception):
-        pass
-
-    class MissingOriginReferenceError(Exception):
-        pass
-
-    class MissingOriginError(Exception):
-        pass
-
-class RepoRemote(ABC):
-    @abstractmethod
-    def get_url(self):
-        pass
-
-class DerivedRepoRemote(RepoRemote):
-    def __init__(self, remote, repo_name):
-        self.remote = remote.get_url()
-        self.repo_name = repo_name
-
-    def get_url(self):
-        if self.remote.endswith(":"):
-                return self.remote + self.repo_name
-        else:
-            if self.repo_name.startswith("/"):
-                raise self.InvalidPathError("Cannot append absolute path to relative URL not ending in ':', ")
-            return os.path.join(self.remote, self.repo_name)
-
-    class InvalidPathError(Exception):
-        pass
-
-class UnnamedRepoOrigin(RepoRemote):
-    def __init__(self, url):
-        self.url = url
-
-    def get_url(self):
-        return self.url
-
 class Repo:
-    def __init__(self, name, path, origin, categories, remotes):
+    def __init__(self, name, path, parent, origin, categories, remotes, archived, repo_id):
         self.name       = name
         self.path       = path
         self.origin     = origin
+        self.parent     = parent
         self.categories = categories
         self.remotes    = remotes
+        self.archived   = archived
+        self.repo_id    = repo_id
+
+        self.children = []
+
+    def as_dict(self):
+        d = {
+                "name": self.name,
+                "path": self.path,
+                "origin": self.origin.as_dict(),
+                # "children": [x.as_dict() for x in self.children.values()],
+                "categories": self.categories,
+                "remotes": {k : v.as_dict() for k, v in self.remotes.items()},
+                "archived": self.archived,
+                "repo_id": self.repo_id,
+                # "remotes": [remote.as_dict() for remote in self.remotes],
+                }
+        if self.parent:
+            d["parent"] = self.parent.name
+        return d
 
 class RepoTree:
     def get_repos(self):

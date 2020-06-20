@@ -10,14 +10,30 @@ class ConfigFilePersistence(Persistence):
 
     def __init__(self, configFile):
         self.configPath = os.path.abspath(os.path.expanduser(configFile))
+        # if not os.path.exists(configFile):
+        #     os.tou
+        self.read_all()
 
     def read_all(self):
         config = configparser.ConfigParser()
-        data = config.read(self.configPath)
-        if len(data) == 0:
-            raise self.FileNotFoundError("Failed to open/find files")
+        self.data = config.read(self.configPath)
+        self.remotes_dict = self.config_to_dict(config)
+        # if len(self.data) == 0:
+        #     raise self.FileNotFoundError("Failed to open/find files")
+        return self.remotes_dict
 
-        return self.config_to_dict(config)
+    def read(self):
+        return self.remotes_dict
+
+    def set(self, key, item):
+        self.remotes_dict[key] = item
+
+    def remove(self, key):
+        if key in self.remotes_dict:
+            del(self.remotes_dict[key])
+
+    def __contains__(self, key):
+        return key in self.remotes_dict
 
     @abstractmethod
     def config_to_dict(self, config):
@@ -27,8 +43,8 @@ class ConfigFilePersistence(Persistence):
     def dict_to_config(self, config):
         pass
 
-    def write_all(self, remotes_dict):
-        config = self.dict_to_config(remotes_dict)
+    def write_all(self):
+        config = self.dict_to_config(self.remotes_dict)
         with open(self.configPath, 'w') as configfile:
             config.write(configfile)
 

@@ -7,11 +7,7 @@ from unittest import mock
 class TestRemotesBuilder(unittest.TestCase):
 
     def setUp(self):
-        self.persistence = TestPersistence()
-
-    def test_success(self):
-
-        self.persistence.write_all({
+        self.persistence = TestPersistence({
             "test" : {
                 "name" : "test",
                 "url" : "test@example.com",
@@ -28,12 +24,13 @@ class TestRemotesBuilder(unittest.TestCase):
                 }
             })
 
+    def test_success(self):
         remotes = RemotesBuilder().build(self.persistence.read_all())
         self.assertIn("test", remotes)
         self.assertIn("test2", remotes)
 
     def test_ignore(self):
-        self.persistence.write_all({
+        self.persistence.set_all({
             "test" : {
                 "name" : "test",
                 "url" : "test@example.com",
@@ -56,7 +53,7 @@ class TestRemotesBuilder(unittest.TestCase):
         self.assertIn("test2", remotes)
 
     def test_missing_name(self):
-        self.persistence.write_all({
+        self.persistence.set_all({
             "test" : {
                 "url" : "test@example.com",
                 "path" : "/test/path",
@@ -68,7 +65,7 @@ class TestRemotesBuilder(unittest.TestCase):
             RemotesBuilder().build(self.persistence.read_all())
 
     def test_missing_url(self):
-        self.persistence.write_all({
+        self.persistence.set_all({
             "test" : {
                 "name" : "test",
                 "path" : "/test/path",
@@ -80,7 +77,7 @@ class TestRemotesBuilder(unittest.TestCase):
             RemotesBuilder().build(self.persistence.read_all())
 
     def test_missing_path(self):
-        self.persistence.write_all({
+        self.persistence.set_all({
             "test" : {
                 "name" : "test",
                 "url" : "test@example.com",
@@ -92,7 +89,7 @@ class TestRemotesBuilder(unittest.TestCase):
             RemotesBuilder().build(self.persistence.read_all())
 
     def test_non_int_port(self):
-        self.persistence.write_all({
+        self.persistence.set_all({
             "test" : {
                 "name" : "test",
                 "url" : "test@example.com",
@@ -106,7 +103,7 @@ class TestRemotesBuilder(unittest.TestCase):
             RemotesBuilder().build(self.persistence.read_all())
 
     def test_non_bool_default(self):
-        self.persistence.write_all({
+        self.persistence.set_all({
             "test" : {
                 "name" : "test",
                 "url" : "test@example.com",
@@ -119,7 +116,7 @@ class TestRemotesBuilder(unittest.TestCase):
             RemotesBuilder().build(self.persistence.read_all())
 
     def test_unknown_type(self):
-        self.persistence.write_all({
+        self.persistence.set_all({
             "test" : {
                 "name" : "test",
                 "url" : "test@example.com",
@@ -132,7 +129,7 @@ class TestRemotesBuilder(unittest.TestCase):
             RemotesBuilder().build(self.persistence.read_all())
 
     def test_different_name(self):
-        self.persistence.write_all({
+        self.persistence.set_all({
             "test" : {
                 "name" : "test_different_name",
                 "url" : "test@example.com",

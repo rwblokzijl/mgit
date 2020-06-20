@@ -4,63 +4,35 @@ import json
 import copy
 
 class Remote:
-    def __init__(self, vals):#=None, name=None, url=None, path=None, remote_type=None, default=False, port=22):
+    def __init__(self, name, url, path, remote_type, default, port):
 
         self.repo_map = None # init None, not dict, if we accidentally use it witout settign later, we get an active error
 
-        # assert (
-        #         vals or
-        #         (name and url and path and remote_type)
-        #         ), "Either set vals, or name and url and path"
+        self.name       = name
+        self.url        = url
+        self.path       = path
+        self.type       = remote_type
+        self.port       = port
+        self.is_default = default
 
-        if vals:
-            self.vals = {
-                    "name" : vals['name'],
-                    "url" : vals['url'],
-                    "path" : vals['path'],
-                    "type" : vals['type'],
-                    "port" : vals['port'],
-                    "is_default" : vals['is_default']
-                    }
-        else:
-            self.vals = {
-                    "name" : name,
-                    "url" : url,
-                    "path" : path,
-                    "type" : remote_type,
-                    "port" : port,
-                    "is_default" : default
-                    }
-
-        username, nurl = self.vals["url"].split("@")
-        self.handler = HandlerHandler().get_handler( username, nurl, self.vals["path"], self.vals["type"], self.vals["port"])# .get_handler(self.vals["type"])
-
-    # def set_repo_map(self, repo_map):
-    #     self.repo_map = repo_map
-
-    def __getitem__(self, key):
-        return self.vals[key]
+        # username, nurl = self.url.split("@")
+        # self.handler = HandlerHandler().get_handler( username, nurl, self.path, self.type, self.port)# .get_handler(self.vals["type"])
 
     def as_dict(self):
-        return self.vals
+        return {
+                "name" : self.name,
+                "url" : self.url,
+                "path" : self.path,
+                "type" : self.type,
+                "port" : self.port,
+                "is_default" : self.is_default
+                }
 
     def get_url(self):
-        return f"{self.vals['url']}:{self.vals['path']}"
-
-    # def as_config(self):
-    #     return {
-    #             "url" : self.vals['url'],
-    #             "path" : self.vals['path'],
-    #             }
+        return f"{self.url}:{self.path}"
 
     def __str__(self):
-        return json.dumps(self.vals, indent=4)
-
-    # def values(self):
-    #     return self.vals.values()
-
-    # def pop(self, *args, **kwargs):
-    #     return self.vals.pop(*args, **kwargs)
+        return json.dumps(self.as_dict(), indent=4)
 
     # def get_remote_repo_id(self, name):
     #     return self.handler.get_remote_repo_id(name)

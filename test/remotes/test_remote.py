@@ -13,14 +13,13 @@ class TestRemote(unittest.TestCase):
         pass
 
     def test_init(self):
-        Remote({
-            "name" : "test",
-            "url" : "test@example.com",
-            "path" : "/test/path",
-            "type" : "ssh",
-            "port" : "22",
-            "is_default" : False,
-            })
+        Remote(name = "test",
+                url = "test@example.com",
+                path = "/test/path",
+                remote_type = "ssh",
+                port = "22",
+                default = False,
+                )
 
     def test_dict(self):
         remote_dict = {
@@ -31,48 +30,51 @@ class TestRemote(unittest.TestCase):
             "port" : "22",
             "is_default" : True
             }
-        remote = Remote(remote_dict)
-        self.assertDictEqual(remote_dict, remote_dict)
+        remote = Remote(
+                name = "test2",
+                url = "test2@example.com",
+                path = "/test2/path",
+                remote_type = "ssh",
+                port = "22",
+                default = True,
+                )
+        self.assertDictEqual(remote.as_dict(), remote_dict)
 
     def test_get_name(self):
-        remote_dict = {
-            "name" : "test2",
-            "url" : "test2@example.com",
-            "path" : "/test2/path",
-            "type" : "ssh",
-            "port" : "22",
-            "is_default" : True
-            }
-        remote = Remote(remote_dict)
-        get = remote["name"]
-        loc = remote_dict["name"]
-        self.assertEqual(get, loc)
+        remote = Remote(
+                name = "test2",
+                url = "test2@example.com",
+                path = "/test2/path",
+                remote_type = "ssh",
+                port = "22",
+                default = True,
+                )
+        get = remote.name
+        self.assertEqual(get, "test2")
 
     def test_get_url(self):
-        remote_dict = {
-            "name" : "test2",
-            "url" : "test2@example.com",
-            "path" : "/test2/path",
-            "type" : "ssh",
-            "port" : "22",
-            "is_default" : True
-            }
-        remote = Remote(remote_dict)
+        remote = Remote(
+                name = "test2",
+                url = "test2@example.com",
+                path = "/test2/path",
+                remote_type = "ssh",
+                port = "22",
+                default = True,
+                )
         self.assertEqual(
                 "test2@example.com:/test2/path",
                 remote.get_url()
                 )
 
     def test_get_url_empty(self):
-        remote_dict = {
-            "name" : "test2",
-            "url" : "test2@example.com",
-            "path" : "",
-            "type" : "ssh",
-            "port" : "22",
-            "is_default" : True
-            }
-        remote = Remote(remote_dict)
+        remote = Remote(
+                name = "test2",
+                url = "test2@example.com",
+                path = "",
+                remote_type = "ssh",
+                port = "22",
+                default = True,
+                )
         self.assertEqual(
                 "test2@example.com:",
                 remote.get_url()

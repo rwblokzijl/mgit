@@ -25,10 +25,10 @@ class TestRemoteConfigPersistence(unittest.TestCase):
         remotes = RemotesConfigFilePersistence(path)
         self.assertEqual(remotes.configPath, os.path.abspath(path))
 
-    def test_whenMissingFile_TrowsException(self):
+    def test_whenMissingFile_returnEmpty(self):
         path = "test/__files__/this_file_shouldnt_exist_please_delete.ini"
-        with self.assertRaises(RemotesConfigFilePersistence.FileNotFoundError):
-            remotes = RemotesConfigFilePersistence(path).read_all()
+        remotes = RemotesConfigFilePersistence(path).read_all()
+        self.assertDictEqual({}, remotes)
 
     def test_no_defaults(self):
         test_file = \
@@ -94,7 +94,7 @@ class TestRemoteConfigPersistence(unittest.TestCase):
 
     def test_write_all(self):
         # setup
-        remotes_dict = {
+        expected = {
                 "test" : {
                     "name" : "test",
                     "url" : "test@example.com",
@@ -115,7 +115,11 @@ class TestRemoteConfigPersistence(unittest.TestCase):
             os.remove(test_file)
 
         # execute test
-        RemotesConfigFilePersistence(test_file).write_all(remotes_dict)
+        persistence = RemotesConfigFilePersistence(test_file)
+        persistence.set("test", expected["test"])
+        persistence.set("test2", expected["test2"])
+        persistence.write_all()
+
         remotes_conf = RemotesConfigFilePersistence(test_file).read_all()
 
         #teardown
@@ -123,5 +127,5 @@ class TestRemoteConfigPersistence(unittest.TestCase):
             os.remove(test_file)
 
         #assert
-        self.assertDictEqual(remotes_conf, remotes_dict)
+        self.assertDictEqual(remotes_conf, expected)
 
