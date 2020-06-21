@@ -3,7 +3,11 @@ class GeneralInteractor:
     def __init__(self, persistence, builder):
         self.persistence = persistence
         self.builder = builder
+        self.build()
+
+    def build(self):
         self.build_items()
+        self.generate_maps()
 
     def build_items(self):
         self.entities = self.builder.build(self.persistence.read())
@@ -17,11 +21,39 @@ class GeneralInteractor:
     def __getitem__(self, key):
         return self.entities[key]
 
+    def by(self, property):
+        if property not in self.maps:
+            raise self.NonIdentifyablePropertyError(f"No mappings found for '{property}'")
+        return self.maps[property]
+
     def __contains__(self, key):
         return key in self.entities
 
     def entities(self):
         return self.entities.items()
+
+    def generate_maps(self):
+        for map in self.maps:
+            self.maps[map] = {}
+            self.maps.pop("name", None)
+        for entity in self.entities.values():
+            self.add_to_maps(entity)
+        self.maps["name"] = self.entities
+
+    def add_to_maps(self, repo):
+        for map in self.maps:
+            self.add_to_map_property(map, repo)
+
+    def add_to_map_property_item(self, property, key, value):
+        name = getattr(value, "name", key)
+        if key not in self.maps[property]:
+            self.maps[property][key] = list()
+
+        self.maps[property][key].append(value)
+
+    def add_to_map_property(self, property, value):
+        key = getattr(value, property, None)
+        self.add_to_map_property_item(property, key, value)
 
     def add(self, name, **kwargs):
         if name not in self.persistence:
@@ -42,6 +74,15 @@ class GeneralInteractor:
     def as_dict(self):
         return {k:v.as_dict() for k, v in self.entities.items()}
 
+    def get_by_property(self, property, value):
+        if property not in self.maps:
+            raise self.NonIdentifyablePropertyError(f"No mappings found for '{property}'")
+        if value not in self.maps[property]:
+            raise self.ItemDoesntExistError(f"No repo found with '{property}' '{value}'")
+
+        return self.maps[property][value]
+
+
     def save(self):
         self.persistence.write_all()
 
@@ -58,5 +99,8 @@ class GeneralInteractor:
         pass
 
     class ItemExistsError(Exception):
+        pass
+
+    class NonIdentifyablePropertyError(Exception):
         pass
 

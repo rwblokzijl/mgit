@@ -3,12 +3,13 @@ from mgit.remotes.remotes_builder                import RemotesBuilder
 from mgit.remotes.remotes_interactor             import RemotesInteractor
 
 from mgit.persistence.repo_config_persistence import ReposConfigFilePersistence
-from mgit.repos.repos_builder                  import ReposBuilder
-from mgit.repos.repos_interactor               import ReposInteractor
-
-from mgit.persistence.repo_config_persistence    import ReposConfigFilePersistence
+from mgit.repos.repos_builder                 import ReposBuilder
+from mgit.repos.repos_interactor              import ReposInteractor
 
 import json
+
+def build_interactor():
+    pass
 
 class Builder:
     def build(self, repos_config, remotes_config):
@@ -30,3 +31,6 @@ class Interactor:
 
     def __str__(self):
         return json.dumps(self.as_dict(), indent=2)
+
+    def list(self):
+        pass

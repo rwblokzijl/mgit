@@ -1,5 +1,3 @@
-from mgit.remotes.remotes_interactor import RemotesInteractor
-
 from mgit.repos.repos_interactor import ReposInteractor
 from mgit.repos.repos_builder    import ReposBuilder
 from mgit.repos.repos            import Repo
@@ -84,7 +82,7 @@ class TestReposInteractor(unittest.TestCase):
                     "categories" : "config",
                     "home-repo" : "example-name-in-home",
                     "github-repo" : "different-example-name",
-                    "repo_id" : "1234567890f39a8a19a8364fbed2fa317112341",
+                    "repo_id" : "1234567890f39a8a19a8364fbed2fa317112343",
                     "archived" : False,
                     }
                 )
@@ -215,4 +213,31 @@ class TestReposInteractor(unittest.TestCase):
         after = self.persistence.read_all()
         self.assertEqual(before, after)
 
+    def test_repo_id_map(self):
+        with ReposInteractor(self.persistence, self.builder, self.remotes) as repos:
+            self.assertEqual(
+                    [repos["example2"]],
+                    repos.by("repo_id")["1234567890f39a8a19a8364fbed2fa317112342"]
+                    )
+            self.assertEqual(
+                    [repos["example"]],
+                    repos.by("repo_id")["1234567890f39a8a19a8364fbed2fa317108abe6"]
+                    )
 
+    def test_repo_id_double(self):
+        rid = "1234567890f39a8a19a8364fbed2fa317112342"
+        self.repo_data["example"]["repo_id"] = rid
+        with ReposInteractor(self.persistence, self.builder, self.remotes) as repos:
+            q = repos.by("repo_id")[rid]
+            self.assertIn( repos["example"], q )
+            self.assertIn( repos["example2"], q )
+
+    def test_repo_id_missing(self):
+        with self.assertRaises(ReposInteractor.ItemDoesntExistError):
+            with ReposInteractor(self.persistence, self.builder, self.remotes) as repos:
+                repos.get_by_property("repo_id", "idk")
+
+    def test_get_by_missing_property(self):
+        with self.assertRaises(ReposInteractor.NonIdentifyablePropertyError):
+            with ReposInteractor(self.persistence, self.builder, self.remotes) as repos:
+                repos.get_by_property("jemoeder", "idk")
