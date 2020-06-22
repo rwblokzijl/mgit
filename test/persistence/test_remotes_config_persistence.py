@@ -116,8 +116,8 @@ class TestRemoteConfigPersistence(unittest.TestCase):
 
         # execute test
         persistence = RemotesConfigFilePersistence(test_file)
-        persistence.set("test", expected["test"])
-        persistence.set("test2", expected["test2"])
+        persistence["test"] = expected["test"]
+        persistence["test2"] = expected["test2"]
         persistence.write_all()
 
         remotes_conf = RemotesConfigFilePersistence(test_file).read_all()

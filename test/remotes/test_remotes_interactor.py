@@ -95,10 +95,22 @@ class TestRemotesInteractor(unittest.TestCase):
                 )
         self.assertEqual("test3@example.com", remotes["test2"].url)
 
+    def test_edit_single(self):
+        remotes = RemotesInteractor(self.persistence, self.builder)
+
+        self.assertIn("test2", remotes)
+        self.assertEqual("test2@example.com", remotes["test2"].url)
+        remotes.edit(
+                name = "test2",
+                url = "test3@example.com",
+                )
+        self.assertEqual("test3@example.com", remotes["test2"].url)
+        self.assertEqual("/test2/path", remotes["test2"].path)
+
     def test_edit_not_exists(self):
         remotes = RemotesInteractor(self.persistence, self.builder)
         self.assertNotIn("test3", remotes)
-        with self.assertRaises(RemotesInteractor.ItemExistsError):
+        with self.assertRaises(RemotesInteractor.ItemDoesntExistError):
             remotes.edit(
                     name = "test3",
                     url = "test3@example.com",
@@ -171,5 +183,4 @@ class TestRemotesInteractor(unittest.TestCase):
             before = self.persistence.read()
         after = self.persistence.read_all()
         self.assertEqual(before, after)
-
 

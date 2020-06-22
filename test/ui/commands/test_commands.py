@@ -1,4 +1,4 @@
-from mgit.ui.cli          import CLI
+from mgit.ui.cli               import CLI
 from mgit.ui.commands.commands import MgitCommand
 
 import unittest
@@ -8,29 +8,13 @@ class TestArgs(unittest.TestCase):
     """Test case docstring."""
 
     def setUp(self):
-        pass
+        self.interactor = Mock()
+        command         = MgitCommand(self.interactor)
+        self.ui         = CLI(command)
 
     def tearDown(self):
         pass
 
     def test_init(self):
-        CLI(interactor=Mock(), command=MgitCommand())
-
-    def test_config_called(self):
-        interactor=Mock()
-        ui = CLI(interactor=interactor, command=MgitCommand())
-        args = "category list".split()
-        self.assertEqual(
-                ui.run(args),
-                "list"
-                )
-
-    def test_category_called(self):
-        interactor=Mock()
-        ui = CLI(interactor=interactor, command=MgitCommand())
-        args = "category show".split()
-        self.assertEqual(
-                ui.run(args),
-                "show"
-                )
+        pass
 

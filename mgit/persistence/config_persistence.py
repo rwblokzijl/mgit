@@ -25,7 +25,10 @@ class ConfigFilePersistence(Persistence):
     def read(self):
         return self.remotes_dict
 
-    def set(self, key, item):
+    def __getitem__(self, item):
+        return self.remotes_dict[item]
+
+    def __setitem__(self, key, item):
         self.remotes_dict[key] = item
 
     def remove(self, key):

@@ -6,10 +6,10 @@ class ReposInteractor(GeneralInteractor):
         self.remotes = remotes
         self.maps    = {
                 "repo_id" : {},
+                "categories" : {},
                 }
 
         super().__init__(persistence, builder)
 
     def build_items(self):
         self.entities = self.builder.build(self.persistence.read(), self.remotes)
-

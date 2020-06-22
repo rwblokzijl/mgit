@@ -19,32 +19,30 @@ class ReposBuilder:
     """
 
     def build(self, repo_data, remotes={}):
-        self.repos = dict()
         self.remotes = remotes
 
-        self.save_as_repos(repo_data)
+        self.repos = self.validate_and_build_repos(repo_data)
 
-        self.resolve_parents()
+        self.resolve_parents_and_link()
         self.resolve_and_verify_paths()
 
         return self.repos
 
-    def save_as_repos(self, repo_data):
+    def validate_and_build_repos(self, repo_data):
+        ans = {}
         for key, repo_dict in repo_data.items():
-            self.validate_and_add_repo(key, repo_dict)
+            ans[key] = self.validate_and_build_repo(key, repo_dict)
+        return ans
 
-    def validate_and_add_repo(self, key, repo_dict):
-        self.repos[key] = self.validate_repo(key, repo_dict)
-
-    def validate_repo(self, key, repo_dict):
-        name       = self.validate_repo_dict_name(       key, repo_dict)
-        path       = self.validate_repo_dict_path(       key, repo_dict)
-        parent     = self.validate_repo_dict_parent(     key, repo_dict)
-        categories = self.validate_repo_dict_categories( key, repo_dict)
-        archived   = self.validate_repo_dict_archived(   key, repo_dict)
-        repo_id    = self.validate_repo_dict_id(         key, repo_dict)
-        remotes    = self.validate_repo_dict_remotes(    key, repo_dict)
-        origin     = self.validate_repo_dict_origin(     key, repo_dict, remotes)
+    def validate_and_build_repo(self, key, repo_dict):
+        name       = self.validate_name(       key, repo_dict)
+        path       = self.validate_path(       key, repo_dict)
+        parent     = self.validate_parent(     key, repo_dict)
+        categories = self.validate_categories( key, repo_dict)
+        archived   = self.validate_archived(   key, repo_dict)
+        repo_id    = self.validate_id(         key, repo_dict)
+        remotes    = self.validate_remotes(    key, repo_dict)
+        origin     = self.validate_origin(     key, repo_dict, remotes)
 
         return Repo(
                 name       = name,
@@ -55,31 +53,33 @@ class ReposBuilder:
                 remotes    = remotes,
                 archived   = archived,
                 repo_id    = repo_id,
+                base_data  = repo_dict
                 )
 
-    def validate_repo_dict_name(self, key, repo_dict):
+    def validate_name(self, key, repo_dict):
         if "name" not in repo_dict:
             raise self.InvalidConfigError(f"'name' for {key} should exist in dict")
         if key != repo_dict["name"]:
             raise self.InvalidConfigError(f"""'name' for {key} should be equal in dict, found {repo_dict["name"]}""")
         return repo_dict["name"]
 
-    def validate_repo_dict_path(self, key, repo_dict):
+    def validate_path(self, key, repo_dict):
         if "path" not in repo_dict:
             raise self.InvalidConfigError(f"'path' for {key} should exist in dict")
         return repo_dict["path"]
 
-    def validate_repo_dict_parent(self, key, repo_dict):
+    def validate_parent(self, key, repo_dict):
         if "parent" in repo_dict and repo_dict["parent"]:
             return repo_dict["parent"]
         else:
             return None
 
-    def validate_repo_dict_categories(self, key, repo_dict):
+    def validate_categories(self, key, repo_dict):
         if "categories" in repo_dict:
-            return repo_dict["categories"].split(" ")
+            assert type(repo_dict["categories"]) is list, f"Repo {key} has non list categories: {repo_dict['categories']}"
+            return repo_dict["categories"]
 
-    def validate_repo_dict_remotes(self, key, repo_dict):
+    def validate_remotes(self, key, repo_dict):
         remotes_dict = dict()
         for key, repo_name in repo_dict.items():
             if not key.endswith("-repo"):
@@ -90,13 +90,13 @@ class ReposBuilder:
                 remotes_dict[remote_name] = remote
         return remotes_dict
 
-    def validate_repo_dict_archived(self, key, repo_dict):
+    def validate_archived(self, key, repo_dict):
         if "archived" in repo_dict:
             return bool( repo_dict["archived"] )
         else:
             return False
 
-    def validate_repo_dict_id(self, key, repo_dict):
+    def validate_id(self, key, repo_dict):
         if "repo_id" in repo_dict:
             return repo_dict["repo_id"]
         else:
@@ -104,7 +104,7 @@ class ReposBuilder:
 
     def validate_remote(self, key, remote_name, repo_name):
         # if remote_name in self.remotes:
-        #     self.remotes[remote_name] = self.Remote(remote_repo_name, remotes[remote_name])
+        #     self.remotes[remote_name] = self.Remote(remote_name, remotes[remote_name])
         # else:
         #     log_warning(f"Remote '{remote_name}', listed in '{self.name}', doesn't exist, skipping")
         if remote_name in self.remotes:
@@ -112,7 +112,7 @@ class ReposBuilder:
         else:
             raise self.MissingRemoteReferenceError(f"Missing referenced remote '{remote_name}' for repo '{key}'")
 
-    def validate_repo_dict_origin(self, key, repo_dict, remotes):
+    def validate_origin(self, key, repo_dict, remotes):
         if "origin" in repo_dict:
             origin_name = repo_dict["origin"]
             if origin_name in remotes:
@@ -123,19 +123,19 @@ class ReposBuilder:
             return UnnamedRepoOrigin(repo_dict["originurl"])
         raise self.MissingOriginError(f"Missing origin and originurl for repo '{key}'")
 
-    def resolve_parents(self):
+    def resolve_parents_and_link(self):
         for repo_name, repo in self.repos.items():
-            self.resolve_parent(repo)
+            self.resolve_parent_and_link(repo)
 
-    def resolve_parent(self, repo):
+    def resolve_parent_and_link(self, repo):
         if repo.parent is None:
             return
         if repo.parent in self.repos:
-            self.add_parent(repo)
+            self.link_parent_and_child(repo)
         else:
             raise self.MissingParentError(f"Parent '{repo.parent}' for repo '{repo.name}' doesn't exist")
 
-    def add_parent(self, repo):
+    def link_parent_and_child(self, repo):
         repo.parent = self.repos[repo.parent]
         repo.parent.children.append(repo)
 

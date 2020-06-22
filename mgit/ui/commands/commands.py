@@ -9,7 +9,7 @@ class MgitCommand(AbstractNodeCommand):
     command = "mgit"
     def get_sub_commands(self):
         return [
-                CommandCategory()
+                CommandCategory(self.interactor)
                 ]
 
     def run(self, args):

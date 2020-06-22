@@ -6,7 +6,8 @@ from mgit.util import *
 # from mgit.remotes import MissingRepoException, EmptyRepoException
 
 class Repo:
-    def __init__(self, name, path, parent, origin, categories, remotes, archived, repo_id):
+    def __init__(self, name, path, parent, origin, categories, remotes, archived, repo_id, base_data):
+        self.base_data  = base_data
         self.name       = name
         self.path       = path
         self.origin     = origin

@@ -78,7 +78,7 @@ class TestRepoConfigPersistence(unittest.TestCase):
                     "originurl" : "bloodyfool@git.bloodyfool.family",
                     "originpath" : "/data/git/projects/example-name-in-origin",
                     "origin" : "home",
-                    "categories" : "config",
+                    "categories" : ["config"],
                     "ignore" : "1",
                     "home-repo" : "example-name-in-home",
                     "ewi-gitlab-repo" : "different-example-name",
@@ -89,7 +89,7 @@ class TestRepoConfigPersistence(unittest.TestCase):
                     "originurl" : "bloodyfool2@git.bloodyfool.family",
                     "originpath" : "/data/git/projects2/example-name-in-origin",
                     "origin" : "home",
-                    "categories" : "config",
+                    "categories" : ["config"],
                     "ignore" : "1",
                     "home-repo" : "example-name-in-home",
                     "ewi-gitlab-repo" : "different-example-name",
@@ -112,7 +112,7 @@ class TestRepoConfigPersistence(unittest.TestCase):
                     "originurl" : "bloodyfool@git.bloodyfool.family",
                     "originpath" : "/data/git/projects/example-name-in-origin",
                     "origin" : "home",
-                    "categories" : "config",
+                    "categories" : ["config"],
                     "ignore" : "1",
                     "home-repo" : "example-name-in-home",
                     "ewi-gitlab-repo" : "different-example-name",
@@ -123,7 +123,7 @@ class TestRepoConfigPersistence(unittest.TestCase):
                     "originurl" : "bloodyfool2@git.bloodyfool.family",
                     "originpath" : "/data/git/projects2/example-name-in-origin",
                     "origin" : "home",
-                    "categories" : "config",
+                    "categories" : ["config"],
                     "ignore" : "1",
                     "home-repo" : "example-name-in-home",
                     "ewi-gitlab-repo" : "different-example-name",
@@ -136,8 +136,8 @@ class TestRepoConfigPersistence(unittest.TestCase):
 
         # execute test
         persistence = ReposConfigFilePersistence(test_file)
-        persistence.set("example", expected["example"])
-        persistence.set("example2", expected["example2"])
+        persistence["example"] = expected["example"]
+        persistence["example2"] = expected["example2"]
         persistence.write_all()
 
         repos_conf = ReposConfigFilePersistence(test_file).read_all()
@@ -147,4 +147,5 @@ class TestRepoConfigPersistence(unittest.TestCase):
             os.remove(test_file)
 
         #assert
+        self.maxDiff = None
         self.assertDictEqual(repos_conf, expected)

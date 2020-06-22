@@ -19,6 +19,7 @@ class TestRemote(unittest.TestCase):
                 remote_type = "ssh",
                 port = "22",
                 default = False,
+                base_data = {},
                 )
 
     def test_dict(self):
@@ -37,6 +38,7 @@ class TestRemote(unittest.TestCase):
                 remote_type = "ssh",
                 port = "22",
                 default = True,
+                base_data = {},
                 )
         self.assertDictEqual(remote.as_dict(), remote_dict)
 
@@ -48,6 +50,7 @@ class TestRemote(unittest.TestCase):
                 remote_type = "ssh",
                 port = "22",
                 default = True,
+                base_data = {},
                 )
         get = remote.name
         self.assertEqual(get, "test2")
@@ -60,6 +63,7 @@ class TestRemote(unittest.TestCase):
                 remote_type = "ssh",
                 port = "22",
                 default = True,
+                base_data = {},
                 )
         self.assertEqual(
                 "test2@example.com:/test2/path",
@@ -74,6 +78,7 @@ class TestRemote(unittest.TestCase):
                 remote_type = "ssh",
                 port = "22",
                 default = True,
+                base_data = {},
                 )
         self.assertEqual(
                 "test2@example.com:",

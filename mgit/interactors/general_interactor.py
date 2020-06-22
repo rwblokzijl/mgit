@@ -32,10 +32,13 @@ class GeneralInteractor:
     def entities(self):
         return self.entities.items()
 
-    def generate_maps(self):
-        for map in self.maps:
+    def clear_maps(self):
+        for map in list(self.maps.keys()):
             self.maps[map] = {}
             self.maps.pop("name", None)
+
+    def generate_maps(self):
+        self.clear_maps()
         for entity in self.entities.values():
             self.add_to_maps(entity)
         self.maps["name"] = self.entities
@@ -53,23 +56,31 @@ class GeneralInteractor:
 
     def add_to_map_property(self, property, value):
         key = getattr(value, property, None)
-        self.add_to_map_property_item(property, key, value)
+        if type(key) is list:
+            for k in key:
+                if k:
+                    self.add_to_map_property_item(property, k, value)
+        else:
+            if key:
+                self.add_to_map_property_item(property, key, value)
 
     def add(self, name, **kwargs):
         if name not in self.persistence:
             kwargs["name"] = name
-            self.persistence.set(name, kwargs)
-            self.build_items()
+            self.persistence[name] = kwargs
+            self.build()
         else:
             raise self.ItemExistsError(f"Item '{name}' exists already")
 
     def edit(self, name, **kwargs):
         if name in self.persistence:
             kwargs["name"] = name
-            self.persistence.set(name, kwargs)
-            self.build_items()
+            base_data = self.persistence[name]
+            base_data.update(kwargs)
+            self.persistence[name] = base_data
+            self.build()
         else:
-            raise self.ItemExistsError(f"Item '{name}' doesn't exist")
+            raise self.ItemDoesntExistError(f"Item '{name}' doesn't exist")
 
     def as_dict(self):
         return {k:v.as_dict() for k, v in self.entities.items()}

@@ -7,7 +7,8 @@ from abc import ABC, abstractmethod
 class AbstractCommand(ABC):
     command = None
     help = None
-    def __init__(self):
+    def __init__(self, interactor):
+        self.interactor = interactor
         assert self.command is not None
         self.unique_key = str(id(self))
 
@@ -28,8 +29,8 @@ class AbstractCommand(ABC):
 
 class AbstractNodeCommand(AbstractCommand):
     def __init__(self, *args, **kwargs):
-        self.sub_commands = {c.command:c for c in self.get_sub_commands()}
         super().__init__(*args, **kwargs)
+        self.sub_commands = {c.command:c for c in self.get_sub_commands()}
 
     @abstractmethod
     def get_sub_commands(self):
@@ -51,8 +52,7 @@ class AbstractLeafCommand(AbstractCommand):
         pass
 
 class CLI(UI):
-    def __init__(self, interactor, command):
-        self.interactor = interactor
+    def __init__(self, command):
         self.command = command
 
     def run(self, args):

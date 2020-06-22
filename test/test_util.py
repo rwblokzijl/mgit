@@ -3,13 +3,29 @@ from contextlib import contextmanager
 from io import StringIO
 import copy
 
-class TestPersistence:
-    def __init__(self, persistence):
-        self.persistence = persistence
-        self.file = copy.copy(self.persistence)
+from mgit.persistence.persistence import Persistence
 
-    def set(self, key, item):
+class File_var:
+    def __init__(self):
+        self.file = {}
+
+    def set(self, data):
+        self.file = copy.copy(data)
+
+    def get(self):
+        return copy.copy(self.file)
+
+class TestPersistence(Persistence):
+    def __init__(self, persistence, file_var=None):
+        self.persistence = persistence
+        self.file = file_var or File_var()
+        self.file.set(self.persistence)
+
+    def __setitem__(self, key, item):
         self.persistence[key] = item
+
+    def __getitem__(self, item):
+        return self.persistence[item]
 
     def remove(self, key):
         del(self.persistence[key])
@@ -18,14 +34,14 @@ class TestPersistence:
         return key in self.persistence
 
     def read_all(self):
-        self.persistence = copy.copy(self.file)
+        self.persistence = self.file.get()
         return self.persistence
 
     def read(self):
         return self.persistence
 
     def write_all(self):
-        self.file = copy.copy(self.persistence)
+        self.file.set(self.persistence)
 
     def set_all(self, data):
         self.persistence = data

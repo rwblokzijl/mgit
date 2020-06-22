@@ -4,9 +4,9 @@ import json
 import copy
 
 class Remote:
-    def __init__(self, name, url, path, remote_type, default, port):
+    def __init__(self, name, url, path, remote_type, default, port, base_data):
 
-        self.repo_map = None # init None, not dict, if we accidentally use it witout settign later, we get an active error
+        self.base_data  = base_data
 
         self.name       = name
         self.url        = url

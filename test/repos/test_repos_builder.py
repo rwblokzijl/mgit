@@ -15,7 +15,7 @@ class TestReposBuilder(unittest.TestCase):
                     "parent" : "example2",
                     "originurl" : "bloodyfool@git.bloodyfool.family:/direct_repo",
                     "origin" : "home",
-                    "categories" : "config",
+                    "categories" : ["config"],
                     "home-repo" : "example-name-in-home",
                     "github-repo" : "different-example-name",
                     "repo_id" : "1234567890f39a8a19a8364fbed2fa317108abe6",
@@ -26,7 +26,7 @@ class TestReposBuilder(unittest.TestCase):
                     "path" : "~/example2",
                     "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
                     "origin" : "home",
-                    "categories" : "config",
+                    "categories" : ["config"],
                     "home-repo" : "example-name-in-home",
                     "github-repo" : "different-example-name",
                     "repo_id" : "1234567890f39a8a19a8364fbed2fa317112341",
@@ -86,7 +86,7 @@ class TestReposBuilder(unittest.TestCase):
             ReposBuilder().build(self.persistence.read_all(), self.test_remotes)
 
     def test_categories(self):
-        self.example_dict["example"]["categories"] = "test1 test2 123"
+        self.example_dict["example"]["categories"] = ["test1", "test2", "123"]
         self.persistence.set_all(self.example_dict)
 
         ans = ReposBuilder().build(self.persistence.read_all(), self.test_remotes)

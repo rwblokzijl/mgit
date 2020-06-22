@@ -89,13 +89,20 @@ class TestMain(unittest.TestCase):
     """
 
     def run_command(self, command):
-        main(command.split())
+        repos_config   = "test/__files__/test_repos.ini"
+        remotes_config = "test/__files__/test_remote.ini"
+
+        return main(
+                repos_config   = repos_config,
+                remotes_config = remotes_config,
+                args           = command.split()
+                )
 
     def test_update(self):
-        "update | update properties about the repos that can be infered                      |"
         pass
         # self.run_command("update")
 
+    "update | update properties about the repos that can be infered                      |"
     "sanity | full sanity check of all repos/remotes/configs                             |"
     "config | commands for handling the configs                                          |"
     "show      |        | name                    | show a repo by name                                     |"
@@ -107,10 +114,6 @@ class TestMain(unittest.TestCase):
     "archive   |        | name                    | add archive flag to                                     |"
     "unarchive |        | name                    | remove archive flag to                                  |"
     "install   |        | name                    | install a repo from remote by name (add listed remotes) |"
-    "category | list   |                         | lists all categories                                    |"
-    "category | show   | category                | show the category and children                          |"
-    "category | add    | repo, category          | add category                                            |"
-    "category | remove | repo, category          | remote category                                         |"
     "remote | add    | repo, remote, name      | add a remote to the repo, and vv                        |"
     "remote | remove | repo, remote, name      | remove a remote from the repo, and vv                   |"
     "remote | origin | repo, remote, name      | set a remote as origin, and vv                          |"
@@ -136,8 +139,11 @@ class TestMain(unittest.TestCase):
     def tearDown(self):
         pass
 
+    "category | list   |                | lists all categories"
+    "category | show   | category       | show the category and children"
+    "category | add    | repo, category | add category"
+    "category | remove | repo, category | remote category"
+
     def test_main(self):
         self.run_command("category list")
-
-
 

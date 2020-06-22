@@ -6,7 +6,18 @@ from unittest.mock import Mock
 class TestRepo(unittest.TestCase):
 
     def test_init(self):
-        Repo( "name", "path", "parent", "origin", "categories", "remotes" , "archived", "repo_id")
+        Repo(
+                "name",
+                "path",
+                "parent",
+                "origin",
+                "categories",
+                "remotes"
+                ,
+                "archived",
+                "repo_id",
+                {}
+                )
 
     def test_to_dict(self):
         github_dict = {
@@ -50,7 +61,16 @@ class TestRepo(unittest.TestCase):
                 "repo_id":    "asdf"
                 }
 
-        as_dict = Repo( name, path, parent, origin, categories, remotes , archived, repo_id).as_dict()
+        as_dict = Repo(
+                name,
+                path,
+                parent,
+                origin,
+                categories,
+                remotes,
+                archived,
+                repo_id,
+                {}).as_dict()
 
         self.maxDiff = None
         self.assertEqual(
@@ -98,7 +118,17 @@ class TestRepo(unittest.TestCase):
                 "repo_id":    "asdf"
                 }
 
-        as_dict = Repo( name, path, parent, origin, categories, remotes , archived, repo_id).as_dict()
+        as_dict = Repo(
+                name,
+                path,
+                parent,
+                origin,
+                categories,
+                remotes ,
+                archived,
+                repo_id,
+                {}
+                ).as_dict()
 
         self.maxDiff = None
         self.assertEqual(

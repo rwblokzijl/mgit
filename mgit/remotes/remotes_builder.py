@@ -34,7 +34,8 @@ class RemotesBuilder:
                 path        = remote_dict["path"],
                 remote_type = rtype,
                 port        = port,
-                default     = default
+                default     = default,
+                base_data = {},
                 )
 
     def validate_remote_dict_name(self, key, remote_dict):

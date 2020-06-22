@@ -18,7 +18,7 @@ class TestReposInteractor(unittest.TestCase):
                     "parent" : "example2",
                     "originurl" : "bloodyfool@git.bloodyfool.family:/direct_repo",
                     "origin" : "home",
-                    "categories" : "config",
+                    "categories" : ["config"],
                     # "ignore" : "1",
                     "home-repo" : "example-name-in-home",
                     "github-repo" : "different-example-name",
@@ -30,7 +30,7 @@ class TestReposInteractor(unittest.TestCase):
                     "path" : "~/example2",
                     "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
                     "origin" : "home",
-                    "categories" : "config",
+                    "categories" : ["config"],
                     # "ignore" : "1",
                     "home-repo" : "example-name-in-home",
                     "github-repo" : "different-example-name",
@@ -79,7 +79,7 @@ class TestReposInteractor(unittest.TestCase):
                     "path" : "~/example2",
                     "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
                     "origin" : "home",
-                    "categories" : "config",
+                    "categories" : ["config"],
                     "home-repo" : "example-name-in-home",
                     "github-repo" : "different-example-name",
                     "repo_id" : "1234567890f39a8a19a8364fbed2fa317112343",
@@ -96,7 +96,7 @@ class TestReposInteractor(unittest.TestCase):
                 "path" : "~/example2",
                 "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
                 "origin" : "home",
-                "categories" : "config",
+                "categories" : ["config"],
                 "home-repo" : "example-name-in-home",
                 "github-repo" : "different-example-name",
                 "repo_id" : "1234567890f39a8a19a8364fbed2fa317112341",
@@ -113,7 +113,7 @@ class TestReposInteractor(unittest.TestCase):
             "path" : "~/example2",
             "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
             "origin" : "home",
-            "categories" : "config",
+            "categories" : ["config"],
             "home-repo" : "example-name-in-home",
             "github-repo" : "different-example-name",
             "repo_id" : "1234567890f39a8a19a8364fbed2fa317112341",
@@ -124,18 +124,29 @@ class TestReposInteractor(unittest.TestCase):
     def test_edit_not_exists(self):
         repos = ReposInteractor(self.persistence, self.builder, self.remotes)
         self.assertNotIn("example3", repos)
-        with self.assertRaises(ReposInteractor.ItemExistsError):
+        with self.assertRaises(ReposInteractor.ItemDoesntExistError):
             repos.edit( **{
                 "name" : "example3",
                 "path" : "~/example2",
                 "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
                 "origin" : "home",
-                "categories" : "config",
+                "categories" : ["config"],
                 "home-repo" : "example-name-in-home",
                 "github-repo" : "different-example-name",
                 "repo_id" : "1234567890f39a8a19a8364fbed2fa317112341",
                 "archived" : False,
                 })
+
+    def test_edit_single(self):
+        repos = ReposInteractor(self.persistence, self.builder, self.remotes)
+
+        self.assertIn("example2", repos)
+        self.assertEqual("1234567890f39a8a19a8364fbed2fa317112342", repos["example2"].repo_id)
+        repos.edit( name="example2",
+            repo_id = "1234567890f39a8a19a8364fbed2fa317112341",
+            )
+        self.assertEqual("1234567890f39a8a19a8364fbed2fa317112341", repos["example2"].repo_id)
+        self.assertEqual("~/example2", repos["example2"].path)
 
     def test_save(self):
         repos = ReposInteractor(self.persistence, self.builder, self.remotes)
@@ -146,7 +157,7 @@ class TestReposInteractor(unittest.TestCase):
             "path" : "~/example2",
             "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
             "origin" : "home",
-            "categories" : "config",
+            "categories" : ["config"],
             "home-repo" : "example-name-in-home",
             "github-repo" : "different-example-name",
             "repo_id" : "1234567890f39a8a19a8364fbed2fa317112341",
@@ -164,7 +175,7 @@ class TestReposInteractor(unittest.TestCase):
             "path" : "~/example2",
             "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
             "origin" : "home",
-            "categories" : "config",
+            "categories" : ["config"],
             "home-repo" : "example-name-in-home",
             "github-repo" : "different-example-name",
             "repo_id" : "1234567890f39a8a19a8364fbed2fa317112341",
@@ -180,7 +191,7 @@ class TestReposInteractor(unittest.TestCase):
                 "path" : "~/example2",
                 "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
                 "origin" : "home",
-                "categories" : "config",
+                "categories" : ["config"],
                 "home-repo" : "example-name-in-home",
                 "github-repo" : "different-example-name",
                 "repo_id" : "1234567890f39a8a19a8364fbed2fa317112341",
@@ -196,7 +207,7 @@ class TestReposInteractor(unittest.TestCase):
                 "path" : "~/example2",
                 "originurl" : "bloodyfool2@git.bloodyfool.family:/direct_repo",
                 "origin" : "home",
-                "categories" : "config",
+                "categories" : ["config"],
                 "home-repo" : "example-name-in-home",
                 "github-repo" : "different-example-name",
                 "repo_id" : "1234567890f39a8a19a8364fbed2fa317112341",

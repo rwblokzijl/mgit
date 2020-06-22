@@ -15,7 +15,11 @@ class Persistence(ABC):
         pass
 
     @abstractmethod
-    def set(self, key, item):
+    def __getitem__(self, item):
+        pass
+
+    @abstractmethod
+    def __setitem__(self, key, item):
         pass
 
     @abstractmethod

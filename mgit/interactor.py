@@ -32,5 +32,56 @@ class Interactor:
     def __str__(self):
         return json.dumps(self.as_dict(), indent=2)
 
-    def list(self):
+    def save(self):
+        self.repos_interactor.save()
+        self.remotes_interactor.save()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.save()
+
+    ###
+    # General
+    ###
+
+    class RepoNotFoundError(Exception):
         pass
+
+    class CategoryNotFoundError(Exception):
+        pass
+
+    ###
+    # Categories
+    ###
+
+    def categories_list(self):
+        return self.repos_interactor.by("categories").keys()
+
+    def categories_show(self, categories):
+        ans = dict()
+        for category in categories:
+            ans[category] = [r.name for r in self.repos_interactor.by("categories").get(category, [])]
+        return ans
+
+    def categories_add(self, project, category):
+        if project not in self.repos_interactor:
+            raise(self.RepoNotFoundError(project))
+        repo_cats = list(self.repos_interactor[project].categories)
+        repo_cats.append(category)
+        repo_cats = list(set(repo_cats))
+        with self.repos_interactor:
+            self.repos_interactor.edit(project, categories=repo_cats)
+
+    def categories_remove(self, project, category):
+        if project not in self.repos_interactor:
+            raise(self.RepoNotFoundError(project))
+        repo_cats = list(self.repos_interactor[project].categories)
+        if category not in repo_cats:
+            raise self.CategoryNotFoundError(category)
+        repo_cats.remove(category)
+        repo_cats = list(set(repo_cats))
+        with self.repos_interactor:
+            self.repos_interactor.edit(project, categories=repo_cats)
+

@@ -118,4 +118,3 @@ class TestRemotesBuilder(unittest.TestCase):
         with self.assertRaises(RemotesBuilder.InvalidConfigError):
             RemotesBuilder().build(self.persistence.read_all())
 
-
