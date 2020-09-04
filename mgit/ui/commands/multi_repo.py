@@ -23,7 +23,7 @@ class CommandMultiRepoStatus(AbstractLeafCommand):
 
     def build(self, parser):
         parser.add_argument("path", help="Path to recursively explore", metavar="DIR", nargs="?", default=".", type=str)
-        parser.add_argument("-n", "--name", help="Name of the project", type=str)
+        parser.add_argument("-n", "--name", help="Name of the project", nargs="+", type=str)
         parser.add_argument("-d", "--dirty", help="Only show dirty repos", action='store_true')
 
     def run_command(self, args):

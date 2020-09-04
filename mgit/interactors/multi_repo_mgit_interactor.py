@@ -1,6 +1,7 @@
 from mgit.interactors.base_mgit_interactor import BaseMgitInteractor
 
 import copy
+import itertools
 
 class MultiRepoInteractor(BaseMgitInteractor):
 
@@ -61,15 +62,16 @@ class MultiRepoInteractor(BaseMgitInteractor):
 
     def repos_status(self, name, path, dirty):
         if name:
-            self.repo_should_exist(name)
+            ans = iter([])
+            for n in name:
+                self.repo_should_exist(n)
 
-            path = self.repos[name].path
-        return self.local_system.recursive_status(path, dirty)
-
-        # if name and name in self.repos:
-        #     repo = self.repos[name]
-        #     return self.local_system.
-
+                path = self.repos[n].path
+                ans = itertools.chain(ans, self.local_system.recursive_status(path, dirty))
+            return ans
+        else:
+            ans =  self.local_system.recursive_status(path, dirty)
+            return ans
 
         # installed?
         # missing?

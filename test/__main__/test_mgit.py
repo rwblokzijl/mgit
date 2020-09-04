@@ -257,3 +257,14 @@ class TestAcceptance(unittest.TestCase):
                 len(ans)
                 )
 
+    def test_status_name_multiple(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+        self.makeDirty()
+
+        ans = list(self.run_test_command(f"status --name test_repo_1 test_repo_2"))
+        self.assertEqual(
+                4,
+                len(ans)
+                )
+
