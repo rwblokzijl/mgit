@@ -59,3 +59,21 @@ class MultiRepoInteractor(BaseMgitInteractor):
 
         return retval
 
+    def repos_status(self, name, path, dirty):
+        if name:
+            self.repo_should_exist(name)
+
+            path = self.repos[name].path
+        return self.local_system.recursive_status(path, dirty)
+
+        # if name and name in self.repos:
+        #     repo = self.repos[name]
+        #     return self.local_system.
+
+
+        # installed?
+        # missing?
+        # in path?
+        # untracked???
+
+

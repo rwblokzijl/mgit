@@ -3,6 +3,7 @@ from mgit.interactor import Builder
 from mgit.ui.commands.commands import MgitCommand
 
 import sys
+import inspect
 
 def pprint(to_print, indent=0, step=2):
     if isinstance(to_print, dict):
@@ -14,6 +15,9 @@ def pprint(to_print, indent=0, step=2):
             pprint(value, indent=indent, step=step)
     elif to_print is None:
         pass
+    elif inspect.isgenerator(to_print):
+        for value in to_print:
+            pprint(value, indent=indent, step=step)
     else:
         print(' ' * (indent) + str(to_print))
 

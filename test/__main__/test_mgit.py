@@ -36,7 +36,6 @@ class TestAcceptance(unittest.TestCase):
         "mass repo"
         list      | -l -r [remotes] | list repos, (missing remote)
         dirty     | repos           | is any repo dirty
-        status    | repos           | show status of all repos (clean up ordering)
         fetch     | repos, remotes  | mass fetch
         pull      | repos, remotes  | mass pull
         push      | repos, remotes  | mass push (after shutdown)
@@ -78,6 +77,22 @@ class TestAcceptance(unittest.TestCase):
 
         self.create_test_dir("local/test_repo_2/test_repo_3/test_repo_5")
         self.create_test_dir("test_remote_1/test_repo_5")
+
+    def initGitForTestDir(self):
+        Repo.init(self.test_dir / "local/test_repo_1")
+        Repo.init(self.test_dir / "test_remote_1/test_repo_1")
+
+        Repo.init(self.test_dir / "local/test_repo_2")
+        Repo.init(self.test_dir / "test_remote_1/test_repo_2")
+
+        Repo.init(self.test_dir / "local/test_repo_2/test_repo_3")
+        Repo.init(self.test_dir / "test_remote_1/test_repo_3")
+
+        Repo.init(self.test_dir / "local/test_repo_2/test_repo_3/test_repo_5")
+        Repo.init(self.test_dir / "test_remote_1/test_repo_5")
+
+    def makeDirty(self):
+        (self.test_dir / 'local/test_repo_1/file.txt').touch()
 
     def clear_test_dir(self):
         shutil.rmtree("/tmp/mgit/acceptance/", ignore_errors=True)
@@ -196,3 +211,49 @@ class TestAcceptance(unittest.TestCase):
                 set([ 'test_repo_5']),
                 set(ans["test_remote_1"]['test_repo_2']['test_repo_3'])
                 )
+
+    "status    | [PATH] [--name NAME] [-d] | show status of all repos (clean up ordering)"
+    def test_status_path(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+        self.makeDirty()
+
+        ans = list(self.run_test_command(f"status {self.test_dir / 'local'} "))
+        self.assertEqual(
+                4,
+                len(ans)
+                )
+
+    def test_status_path_dirty(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+        self.makeDirty()
+
+        ans = list(self.run_test_command(f"status -d {self.test_dir / 'local'} "))
+        self.assertEqual(
+                3,
+                len(ans)
+                )
+
+    def test_status_name(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+        self.makeDirty()
+
+        ans = list(self.run_test_command(f"status --name test_repo_1"))
+        self.assertEqual(
+                1,
+                len(ans)
+                )
+
+    def test_status_name_recursive(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+        self.makeDirty()
+
+        ans = list(self.run_test_command(f"status --name test_repo_2"))
+        self.assertEqual(
+                3,
+                len(ans)
+                )
+
