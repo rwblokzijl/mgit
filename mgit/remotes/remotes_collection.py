@@ -1,6 +1,6 @@
-from mgit.interactors.general_interactor import GeneralInteractor
+from mgit.interactors.general_persistence_interactor import GeneralPersistenceInteractor
 
-class RemotesInteractor(GeneralInteractor):
+class RemotesCollection(GeneralPersistenceInteractor):
     def __init__(self, persistence, builder):
         self.maps = {
                 "type" : {}

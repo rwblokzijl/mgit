@@ -1,13 +1,11 @@
-# from mgit.util import *
+from mgit.util import *
 
 from pathlib import Path
-from fabric import Connection
 
 from git import Repo
 
 import json
 import copy
-import os
 
 class Remote:
     def __init__(self, name, url, path, remote_type, default, port, base_data):
@@ -56,9 +54,9 @@ class Remote:
         try:
             self.handler.get_remote_repo_id(repo)
             return True
-        except RemoteHandler.MissingRepoException:
+        except SSHHandler.MissingRepoException:
             return False
-        except RemoteHandler.EmptyRepoException:
+        except SSHHandler.EmptyRepoException:
             return True
 
     # def get_remote_repo_id(self, name):
@@ -67,8 +65,25 @@ class Remote:
     # def get_remote_repo_id_map(self):
     #     return self.handler.get_remote_repo_id_map()
 
-    def list(self):
-        return self.handler.list()
+    # def list(self):
+    #     installed = list()
+    #     missing = list()
+    #     archived = list()
+    #     untracked = list()
+    #     all_repos = self.handler.list()
+    #     for repo_name in all_repos:
+    #         if repo_name in self.repo_map:
+    #             repo = self.repo_map[repo_name]
+    #             if not repo.missing:
+    #                 installed.append(repo)
+    #             else:
+    #                 if repo.archived:
+    #                     archived.append(repo)
+    #                 else:
+    #                     missing.append(repo)
+    #         else:
+    #             untracked.append(repo_name)
+    #     return installed, missing, archived, untracked
 
 class RemoteHandler:
     def __init__(self, username, url, path, htype, port=22):
@@ -102,37 +117,14 @@ class RemoteHandler:
     class EmptyRepoException(Exception):
         "Git repo is empty"
 
+
 class SSHHandler(RemoteHandler):
-
-    def run_ssh(self, *args, username, remote, port=22, **kwargs):
-        with Connection(remote, user=username, port=port) as ssh:
-            return ssh.run(*args, warn=True, **kwargs)
-
-    def exists_remote(self, remote_path):
-        ans = self.run_ssh('[ -d "'+remote_path+'" ]', username=self.username, remote=self.url)
-        if ans.return_code == 0:
-            return True
-        else:
-            return False
-
-    def init_repo(self, project_name):
-        remote_path = os.path.join(self.path, project_name)
-        remote_url = self.username+"@"+self.url+":"+remote_path
-        if self.exists_remote(remote_path):
-            # print("Remote folder already exists, not creating remote repo")
-            return remote_url
-        # print("Creating remote: " + remote_url)
-        if not self.run_ssh('mkdir ' + remote_path, username=self.username, remote=self.url):
-            log_error("Couldn't create folder, check permissions")
-            raise
-        if not self.run_ssh('git init --bare ' + remote_path, username=self.username, remote=self.url, hide=True):
-            log_error("Created folder but could not init repo, manual action required")
-            raise
-        return remote_url
+    def init_repo(self, name):
+        pass
 
     def list(self):
         command = f"ls {self.path}"
-        return self.run_ssh(command, username=self.username, remote=self.url, hide=True).stdout.strip().splitlines()
+        return run_ssh(command, username=self.username, remote=self.url, hide=True).stdout.strip().splitlines()
 
     def get_remote_repo_id_map(self):
         if self.repo_id_map_all:
@@ -142,7 +134,7 @@ class SSHHandler(RemoteHandler):
         for name in names:
             path = os.path.join(self.path, name)
             command += f"echo {name}; cd {path} && (git rev-list --parents HEAD || echo false) | tail -1;"
-        result = self.run_ssh(command, username=self.username, remote=self.url, hide=True).stdout.strip().splitlines()
+        result = run_ssh(command, username=self.username, remote=self.url, hide=True).stdout.strip().splitlines()
         clean = [ str(x.strip()) for x in result ]
         self.repo_id_map = {name : rid for name, rid in pairwise(clean) if rid != "false"}
         self.repo_id_map_all = True
@@ -152,20 +144,17 @@ class SSHHandler(RemoteHandler):
         if name in self.repo_id_map:
             return self.repo_id_map[name]
         path = os.path.join(self.path, name)
-        if not self.exists_remote(path):
-            # print("Remote folder already exists, not creating remote repo")
-            raise self.MissingRepoException
         command = f"cd {path} && (git rev-list --parents HEAD || echo false) | tail -1"
-        git_id, = [str(x.strip()) for x in self.run_ssh(command, username=self.username, remote=self.url, hide=True).stdout.strip().splitlines()]
+        git_id, = [str(x.strip()) for x in run_ssh(command, username=self.username, remote=self.url, hide=True).stdout.strip().splitlines()]
         # print(git_id)
         if git_id == "false": #Git repo doesn't exist, OR Git repo exists, but has no commits yet
             command = f"cd {path} && git tag || echo false"
-            result = [str(x.strip()) for x in self.run_ssh(command, username=self.username, remote=self.url, hide=True).stdout.strip().splitlines()]
+            result = [str(x.strip()) for x in run_ssh(command, username=self.username, remote=self.url, hide=True).stdout.strip().splitlines()]
             self.repo_id_map[name] = None
             if result == ["false"]:
-                raise self.MissingRepoException
+                raise MissingRepoException
             else:
-                raise self.EmptyRepoException
+                raise EmptyRepoException
         else:
             self.repo_id_map[name] = git_id
         return self.repo_id_map[name]
@@ -175,6 +164,13 @@ class GithubHandler(RemoteHandler):
 
 class LocalRemoteHandler(RemoteHandler):
 
+    def run_command(self, command):
+        p = subprocess.Popen(command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+        return iter(p.stdout.readline, b'')
+
     def init_repo(self, name):
         path = Path(self.url) / self.path / name
         Repo.init(path)
@@ -182,9 +178,7 @@ class LocalRemoteHandler(RemoteHandler):
     def get_remote_repo_id(self, name):
         path = Path(self.url) / self.path / name
         if not os.path.exists(path):
-            raise self.MissingRepoException
-        if os.listdir(path):
-            raise self.EmptyRepoException
+            return None
         command = f"cd {path} && (git rev-list --parents HEAD || echo false) | tail -1"
         idd = self.run_command(command)
         print(list(idd))

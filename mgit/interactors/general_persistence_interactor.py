@@ -1,5 +1,5 @@
 
-class GeneralInteractor:
+class GeneralPersistenceInteractor:
     def __init__(self, persistence, builder):
         self.persistence = persistence
         self.builder = builder
@@ -19,6 +19,8 @@ class GeneralInteractor:
         return len(self.entities)
 
     def __getitem__(self, key):
+        if key not in self.entities:
+            raise self.ItemDoesntExistError(key)
         return self.entities[key]
 
     def by(self, property):
@@ -92,7 +94,6 @@ class GeneralInteractor:
             raise self.ItemDoesntExistError(f"No repo found with '{property}' '{value}'")
 
         return self.maps[property][value]
-
 
     def save(self):
         self.persistence.write_all()

@@ -254,13 +254,6 @@ def query_yes_no(question, default="yes"):
 
 ### Function without side effects
 
-def exists_remote(remote_path, username, remote):
-    ans = run_ssh('[ -d "'+remote_path+'" ]', username=username, remote=remote)
-    if ans.return_code == 0:
-        return True
-    else:
-        return False
-
 def exists_local(path):
     return os.path.isdir(path)
 
@@ -316,21 +309,6 @@ def init_local(path, remote_path=None, ):
 def run_ssh(*args, username, remote, port=22, **kwargs):
     with Connection(remote, user=username, port=port) as ssh:
         return ssh.run(*args, warn=True, **kwargs)
-
-def init_remote(project_name, remote, username, remote_project_dir):
-    remote_path = os.path.join(remote_project_dir, project_name)
-    remote_url = username+"@"+remote+":"+remote_path
-    if exists_remote(remote_path, username=username, remote=remote):
-        # print("Remote folder already exists, not creating remote repo")
-        return remote_url
-    print("Creating remote: " + remote_url)
-    if not run_ssh('mkdir ' + remote_path, username=username, remote=remote):
-        log_error("Couldn't create folder, check permissions")
-        raise
-    if not run_ssh('git init --bare ' + remote_path, username=username, remote=remote):
-        log_error("Created folder but could not init repo, manual action required")
-        raise
-    return remote_url
 
 ### Config stuff
 

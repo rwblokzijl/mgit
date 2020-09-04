@@ -121,7 +121,8 @@ class ReposBuilder:
                 raise self.MissingOriginReferenceError(f"Missing origin referenced remote '{origin_name}' for repo '{key}'")
         if "originurl" in repo_dict:
             return UnnamedRepoOrigin(repo_dict["originurl"])
-        raise self.MissingOriginError(f"Missing origin and originurl for repo '{key}'")
+        return None
+        # raise self.MissingOriginError(f"Missing origin and originurl for repo '{key}'")
 
     def resolve_parents_and_link(self):
         for repo_name, repo in self.repos.items():
@@ -146,7 +147,7 @@ class ReposBuilder:
     def resolve_and_verify_path(self, repo):
         if repo.parent is None:
             if not os.path.isabs(os.path.expanduser(repo.path)):
-                raise self.PathError(f"Repo '{repo.name}' without absolute path mush have parent")
+                raise self.PathError(f"Repo '{repo.name}' without absolute path '{repo.path}' mush have parent")
             return
         if os.path.isabs(os.path.expanduser(repo.path)):
             raise self.PathError(f"Repo '{repo.name}' with parent '{repo.parent}' cannot have an absolute path")

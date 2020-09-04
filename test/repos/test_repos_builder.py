@@ -206,6 +206,7 @@ class TestReposBuilder(unittest.TestCase):
         with self.assertRaises(ReposBuilder.MissingOriginReferenceError):
             ans = ReposBuilder().build(self.persistence.read_all(), self.test_remotes)
 
+    @unittest.skip("this behaviour will added later in the top level")
     def test_missing_origin_error(self):
         del(self.example_dict["example"]["originurl"])
         del(self.example_dict["example"]["origin"])

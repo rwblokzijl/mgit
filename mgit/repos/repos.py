@@ -23,7 +23,6 @@ class Repo:
         d = {
                 "name": self.name,
                 "path": self.path,
-                "origin": self.origin.as_dict(),
                 # "children": [x.as_dict() for x in self.children.values()],
                 "categories": self.categories,
                 "remotes": {k : v.as_dict() for k, v in self.remotes.items()},
@@ -31,6 +30,8 @@ class Repo:
                 "repo_id": self.repo_id,
                 # "remotes": [remote.as_dict() for remote in self.remotes],
                 }
+        if self.origin:
+            d["origin"] = self.origin.as_dict()
         if self.parent:
             d["parent"] = self.parent.name
         return d
