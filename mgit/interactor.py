@@ -7,6 +7,7 @@ from mgit.repos.repos_builder                 import ReposBuilder
 from mgit.repos.repos_collection              import ReposCollection
 
 from mgit.interactors.category_mgit_interactor    import CategoryInteractor
+from mgit.interactors.remote_mgit_interactor      import RemoteInteractor
 from mgit.interactors.single_repo_mgit_interactor import SingleRepoInteractor
 from mgit.interactors.multi_repo_mgit_interactor  import MultiRepoInteractor
 
@@ -30,6 +31,7 @@ class Builder:
 
 class MgitInteractor(
         CategoryInteractor,
+        RemoteInteractor,
         SingleRepoInteractor,
         MultiRepoInteractor):
     "The business logic is contained in several smaller interactors, just to keep the files at a managable size"

@@ -3,6 +3,7 @@ from git.exc import InvalidGitRepositoryError
 
 import os
 import subprocess
+import collections
 
 class LocalSystem:
 
@@ -14,7 +15,32 @@ class LocalSystem:
             while (line := p.stdout.readline()):
                 yield line # TODO make non blocking, idk how right now
 
+    def get_repo_id_from_path(self, path):
+        try:
+            Repo(path)
+        except:
+            return None
+        git_id = "".join([str(x.strip().decode("utf-8")) for x in self.run_command(f"cd {path} && git rev-list --parents HEAD | tail -1")])
+        if ' ' in git_id: #Git repo exists, but has no commits yet
+            return None
+        return(git_id)
+
+    def path_empty_or_missing(self, path):
+        if not os.path.exists(path):
+            return True
+        if os.path.isdir(path) and not os.listdir(path):
+            return True
+        return False
+
+    def is_empty_git_repo(self, path):
+        if not self.is_git_repo(path):
+            return False
+        if os.path.isdir(path) and os.listdir(path) == [".git"]:
+            return True
+
     def path_available(self, path):
+        if not os.path.exists(path):
+            return True
         if self.is_git_repo(path):
             return False
         return True
@@ -83,15 +109,49 @@ class LocalSystem:
                 pass
         return repos
 
-    def recursive_status(self, path, dirty=False):
+    # def list_repos_in_path(self)
+
+    def repos_status(self, repos, dirty, missing, recursive, untracked_files=False, top_level=True):
+        ans = {}
+        for repo in repos:
+            repo_children = None
+            repo_status = None
+
+            # Calculate children
+            if len(repo.children) and recursive:
+                repo_children = self.repos_status(repos=repo.children, dirty=dirty, missing=missing, recursive=recursive, top_level=False)
+
+            # Skip on top level if repo is child
+            if recursive and repo.parent is not None and top_level:
+                continue
+
+            try:
+                local_repo = Repo(repo.path)
+
+                if local_repo.is_dirty():
+                    repo_status = "dirty     " + repo.name
+                elif untracked_files and local_repo.untracked_files:
+                    repo_status = "untracked " + repo.name
+                elif not dirty or repo_children:
+                    repo_status = "clean     " +  repo.name
+            except Exception as e:
+                if missing:
+                    repo_status = "missing   " + repo.name
+            if repo_children or repo_status:
+                ans[repo_status] = repo_children
+        return collections.OrderedDict(sorted(ans.items()))
+
+    def recursive_status(self, path, dirty=False, untracked_files=False):
         repos = self.get_all_local_repos_in_path(path)
 
         for repo in repos:
-            if repo.is_dirty() or repo.untracked_files:
-                yield "dirty  " + repo.working_dir
+            if repo.is_dirty():
+                yield "dirty     " + repo.working_dir
+            elif untracked_files and repo.untracked_files:
+                yield "dirty(u)  " + repo.working_dir
             else:
                 if not dirty:
-                    yield "clean  " +  repo.working_dir
+                    yield "clean     " +  repo.working_dir
 
     class MissingRemoteError(Exception):
         pass

@@ -34,6 +34,8 @@ class TestLocalSystemInteractions(unittest.TestCase):
         self.rmdir("/tmp/mgit_is_git")
         self.rmdir("/tmp/mgit_dir_missing")
 
+        self.rmdir("/tmp/mgit/unittest")
+
     def setUp(self):
         self.local_system = LocalSystem()
         self.setUp_dirs()
@@ -114,3 +116,24 @@ class TestLocalSystemInteractions(unittest.TestCase):
             self.local_system.init(path, origin=origin, remotes=remotes)
 
         self.assertTrue(self.local_system.path_available(path))
+
+    def test_empty_git_repo(self):
+        path = "/tmp/mgit/unittest/test_repo"
+
+        self.assertFalse(self.local_system.is_empty_git_repo(path))
+
+        self.local_system.init(path)
+
+        self.assertTrue(self.local_system.is_empty_git_repo(path))
+
+    def test_path_empty_or_missing(self):
+        path = "/tmp/mgit/unittest/test_repo"
+
+        self.assertTrue(self.local_system.path_empty_or_missing(path))
+
+        self.local_system.init(path)
+
+        self.assertFalse(self.local_system.path_empty_or_missing(path))
+
+
+

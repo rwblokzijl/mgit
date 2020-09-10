@@ -82,6 +82,11 @@ class TestAcceptance(unittest.TestCase):
         Repo.init(self.test_dir / "local/test_repo_1")
         Repo.init(self.test_dir / "test_remote_1/test_repo_1")
 
+        (self.test_dir / 'local/test_repo_1/file.txt').touch()
+        repo = Repo(self.test_dir / 'local/test_repo_1/')
+        repo.git.add('--all')
+        repo.index.commit("test")
+
         Repo.init(self.test_dir / "local/test_repo_2")
         Repo.init(self.test_dir / "test_remote_1/test_repo_2")
 
@@ -92,7 +97,8 @@ class TestAcceptance(unittest.TestCase):
         Repo.init(self.test_dir / "test_remote_1/test_repo_5")
 
     def makeDirty(self):
-        (self.test_dir / 'local/test_repo_1/file.txt').touch()
+        with open(self.test_dir / 'local/test_repo_1/file.txt', 'w') as f:
+            f.write("hi")
 
     def clear_test_dir(self):
         shutil.rmtree("/tmp/mgit/acceptance/", ignore_errors=True)
@@ -191,10 +197,10 @@ class TestAcceptance(unittest.TestCase):
     # probs local needs a different command that takes path into account
     # unix philosophy bla bla, maybe make 'list' local and
     # 'query' or something else remote
-    def test_list_local(self):
+    def test_remote_list(self):
         self.setUpFullTestDir()
 
-        ans = self.run_test_command("list test_remote_1")
+        ans = self.run_test_command("remote list test_remote_1")
         self.assertIn(
                 "test_remote_1",
                 ans
@@ -212,13 +218,13 @@ class TestAcceptance(unittest.TestCase):
                 set(ans["test_remote_1"]['test_repo_2']['test_repo_3'])
                 )
 
-    "status    | [PATH] [--name NAME] [-d] | show status of all repos (clean up ordering)"
+    "status    | [NAME] [-l/--local [PATH]] [-d] | show status of all repos (clean up ordering)"
     def test_status_path(self):
         self.setUpFullTestDir()
         self.initGitForTestDir()
         self.makeDirty()
 
-        ans = list(self.run_test_command(f"status {self.test_dir / 'local'} "))
+        ans = list(self.run_test_command(f"status -l {self.test_dir / 'local'} "))
         self.assertEqual(
                 4,
                 len(ans)
@@ -229,9 +235,9 @@ class TestAcceptance(unittest.TestCase):
         self.initGitForTestDir()
         self.makeDirty()
 
-        ans = list(self.run_test_command(f"status -d {self.test_dir / 'local'} "))
+        ans = list(self.run_test_command(f"status -d -l {self.test_dir / 'local'} "))
         self.assertEqual(
-                3,
+                1,
                 len(ans)
                 )
 
@@ -240,7 +246,7 @@ class TestAcceptance(unittest.TestCase):
         self.initGitForTestDir()
         self.makeDirty()
 
-        ans = list(self.run_test_command(f"status --name test_repo_1"))
+        ans = list(self.run_test_command(f"status test_repo_1"))
         self.assertEqual(
                 1,
                 len(ans)
@@ -251,10 +257,22 @@ class TestAcceptance(unittest.TestCase):
         self.initGitForTestDir()
         self.makeDirty()
 
-        ans = list(self.run_test_command(f"status --name test_repo_2"))
+        ans = dict(self.run_test_command(f"status -r test_repo_2"))
         self.assertEqual(
-                3,
+                1,
                 len(ans)
+                )
+        self.assertEqual(
+                1,
+                len(list(ans.values())[0])
+                )
+        self.assertEqual(
+                1,
+                len(list(list(ans.values())[0].values())[0])
+                )
+        self.assertEqual(
+                None,
+                list(list(list(ans.values())[0].values())[0].values())[0]
                 )
 
     def test_status_name_multiple(self):
@@ -262,9 +280,43 @@ class TestAcceptance(unittest.TestCase):
         self.initGitForTestDir()
         self.makeDirty()
 
-        ans = list(self.run_test_command(f"status --name test_repo_1 test_repo_2"))
+        ans = list(self.run_test_command(f"status test_repo_1 test_repo_2"))
+        self.assertEqual(
+                2,
+                len(ans)
+                )
+
+    def test_status_name_all(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+        self.makeDirty()
+
+        ans = list(self.run_test_command(f"status"))
         self.assertEqual(
                 4,
                 len(ans)
                 )
+
+    def test_list(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+
+        ans = list(self.run_test_command(f"list"))
+
+        self.assertEqual(
+                4,
+                len(ans)
+                )
+
+    def test_list_installed(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+
+        ans = list(self.run_test_command(f"list -i"))
+
+        self.assertEqual(
+                4,
+                len(ans)
+                )
+
 

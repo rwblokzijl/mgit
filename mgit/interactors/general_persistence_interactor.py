@@ -12,11 +12,21 @@ class GeneralPersistenceInteractor:
     def build_items(self):
         self.entities = self.builder.build(self.persistence.read())
 
+    def items(self):
+        return self.entities.items()
+
     def get_items(self):
         return self.entities
 
     def __len__(self):
         return len(self.entities)
+
+    def iter(self):
+        for i in self.entities.values():
+            yield i
+
+    def __iter__(self):
+        return iter(self.entities.values())
 
     def __getitem__(self, key):
         if key not in self.entities:

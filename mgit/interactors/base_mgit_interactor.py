@@ -35,6 +35,9 @@ class BaseMgitInteractor:
         if key in self.repos:
             raise self.RepoExistsError(f"A project with name '{key}' already exists")
 
+    def path_should_be_git_repo(self, path):
+        pass
+
     def path_should_be_available(self, path):
         if not self.local_system.path_available(path):
             raise self.PathUnavailableError(f"Directory '{path}' exists and is not empty")
