@@ -45,6 +45,7 @@ def main_cli(*args, **kwargs):
         main(*args, **kwargs)
         return 0
     except Exception as e:
-        pperror(e)
+        if str(e):
+            pperror(e)
         return 1
 
