@@ -35,7 +35,6 @@ class TestAcceptance(unittest.TestCase):
 
         "mass repo"
         list      | -l -r [remotes] | list repos, (missing remote)
-        dirty     | repos           | is any repo dirty
         fetch     | repos, remotes  | mass fetch
         pull      | repos, remotes  | mass pull
         push      | repos, remotes  | mass push (after shutdown)
@@ -297,16 +296,17 @@ class TestAcceptance(unittest.TestCase):
                 len(ans)
                 )
 
-    def test_list(self):
-        self.setUpFullTestDir()
-        self.initGitForTestDir()
+    # def test_list(self):
+    #     self.setUpFullTestDir()
+    #     self.initGitForTestDir()
 
-        ans = list(self.run_test_command(f"list"))
+    #     ans = list(self.run_test_command(f"list"))
+    #     print(ans)
 
-        self.assertEqual(
-                4,
-                len(ans)
-                )
+    #     self.assertEqual(
+    #             4,
+    #             len(ans)
+    #             )
 
     def test_list_installed(self):
         self.setUpFullTestDir()
@@ -319,4 +319,25 @@ class TestAcceptance(unittest.TestCase):
                 len(ans)
                 )
 
+    "dirty    | [NAME]... [-l/--local [PATH]] [-d] | succeeds if any specified repo is dirty"
+    def test_dirty_true(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+        self.makeDirty()
 
+        ans = list(self.run_test_command(f"status -d -l {self.test_dir / 'local'} "))
+        self.assertEqual(
+                1,
+                len(ans)
+                )
+
+    def test_dirty_false(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+
+        with self.assertRaises(Exception):
+            self.run_test_command( f"dirty -l {self.test_dir / 'local'} ")
+
+        self.makeDirty()
+
+        self.run_test_command( f"dirty -l {self.test_dir / 'local'} ")

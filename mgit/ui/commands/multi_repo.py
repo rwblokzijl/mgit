@@ -38,3 +38,14 @@ class CommandMultiRepoStatus(AbstractLeafCommand):
         return self.interactor.repos_status(**args)
 
 
+class CommandMultiRepoDirty(AbstractLeafCommand):
+    command = "dirty"
+    help="Succeeds if any repo is dirty"
+
+    def build(self, parser):
+        parser.add_argument(        "name",        help="Name of the project", nargs="*", type=str)
+        parser.add_argument("-l",   "--local",     help="Path to recursively explore", metavar="DIR", nargs="?", const=".", type=str)
+
+    def run_command(self, args):
+        return self.interactor.repos_dirty(**args)
+

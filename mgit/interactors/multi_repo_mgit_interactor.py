@@ -26,7 +26,7 @@ class MultiRepoInteractor(BaseMgitInteractor):
         #   - config:repo:path
         pass
 
-    def repos_list_repos(self, path, installed, missing, archived, untracked, conflict):
+    def repos_list_repos(self, path, installed, missing, archived, untracked, conflict, ignored):
         ans = []
         for repo in self.repos:
             path_id = self.local_system.get_repo_id_from_path(repo.path)
@@ -99,4 +99,9 @@ class MultiRepoInteractor(BaseMgitInteractor):
             ans = self.local_system.repos_status(repos=self.repos, dirty=dirty, missing=missing, recursive=recursive)
             return ans
 
+    def repos_dirty(self, name, local):
+        if 0 == len(list(self.repos_status(name, local, dirty=True, missing=False, recursive=False))):
+            raise Exception()
+        else:
+            return
 

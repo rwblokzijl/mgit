@@ -20,6 +20,7 @@ class MgitCommand(AbstractNodeCommand):
 
                 CommandMultiRepoList(self.interactor),
                 CommandMultiRepoStatus(self.interactor),
+                CommandMultiRepoDirty(self.interactor),
                 ]
 
     def run(self, args):
