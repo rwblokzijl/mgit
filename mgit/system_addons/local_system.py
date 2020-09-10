@@ -100,7 +100,7 @@ class LocalSystem:
                 pass
         return repos
 
-    def get_all_local_repos_in_path(self, path="~", ignore_paths=['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo']):
+    def get_all_local_repos_in_path(self, path="~", ignore_paths=[]):
         repos=list()
         for line in self.get_local_git_paths(path, ignore_paths):
             try:
@@ -141,8 +141,8 @@ class LocalSystem:
                 ans[repo_status] = repo_children
         return collections.OrderedDict(sorted(ans.items()))
 
-    def recursive_status(self, path, dirty=False, untracked_files=False):
-        repos = self.get_all_local_repos_in_path(path)
+    def recursive_status(self, path, dirty=False, untracked_files=False, ignore_paths=[]):
+        repos = self.get_all_local_repos_in_path(path, ignore_paths=ignore_paths)
 
         for repo in repos:
             if repo.is_dirty():

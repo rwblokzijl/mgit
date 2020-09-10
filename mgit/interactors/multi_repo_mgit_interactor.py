@@ -83,6 +83,7 @@ class MultiRepoInteractor(BaseMgitInteractor):
         # Ignored (paths)
 
     def repos_status(self, name, local, dirty, missing, recursive):
+        ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache'] # TODO: get from config
         if name:
             repos = []
             for n in name:
@@ -92,7 +93,7 @@ class MultiRepoInteractor(BaseMgitInteractor):
             ans = self.local_system.repos_status(repos=repos, dirty=dirty, missing=missing, recursive=recursive)
             return ans
         elif local:
-            ans =  self.local_system.recursive_status(local, dirty)
+            ans =  self.local_system.recursive_status(local, dirty, ignore_paths=ignore_paths)
             return ans
         else:
             ans = self.local_system.repos_status(repos=self.repos, dirty=dirty, missing=missing, recursive=recursive)
