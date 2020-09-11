@@ -31,6 +31,7 @@ class CommandMultiRepoStatus(AbstractLeafCommand):
         parser.add_argument(        "name",        help="Name of the project", nargs="*", type=str)
         parser.add_argument("-l",   "--local",     help="Path to recursively explore", metavar="DIR", nargs="?", const=".", type=str)
         parser.add_argument("-d",   "--dirty",     help="Only show dirty repos", action='store_true')
+        parser.add_argument("-u",   "--untracked", help="List directories with untracked files as dirty", default=False, action="store_true")
         parser.add_argument("-m",   "--missing",   help="Include missing repos", default=False, action="store_true")
         parser.add_argument("-r",   "--recursive", help="Include subrepos", default=False, action="store_true")
 
@@ -45,6 +46,7 @@ class CommandMultiRepoDirty(AbstractLeafCommand):
     def build(self, parser):
         parser.add_argument(        "name",        help="Name of the project", nargs="*", type=str)
         parser.add_argument("-l",   "--local",     help="Path to recursively explore", metavar="DIR", nargs="?", const=".", type=str)
+        parser.add_argument("-u",   "--untracked", help="List directories with untracked files as dirty", default=False, action="store_true")
 
     def run_command(self, args):
         return self.interactor.repos_dirty(**args)

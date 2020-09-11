@@ -90,17 +90,19 @@ class MultiRepoInteractor(BaseMgitInteractor):
                 self.repo_should_exist(n)
 
                 repos.append(self.repos[n])
-            ans = self.local_system.repos_status(repos=repos, dirty=dirty, missing=missing, recursive=recursive)
+            ans = self.local_system.repos_status(repos=repos, dirty=dirty, missing=missing, recursive=recursive,
+                    untracked_files=untracked)
             return ans
         elif local:
-            ans =  self.local_system.recursive_status(local, dirty, ignore_paths=ignore_paths)
+            ans =  self.local_system.recursive_status(local, dirty, ignore_paths=ignore_paths, untracked_files=untracked)
             return ans
         else:
-            ans = self.local_system.repos_status(repos=self.repos, dirty=dirty, missing=missing, recursive=recursive)
+            ans = self.local_system.repos_status(repos=self.repos, dirty=dirty, missing=missing, recursive=recursive,
+                    untracked_files=untracked)
             return ans
 
-    def repos_dirty(self, name, local):
-        if 0 == len(list(self.repos_status(name, local, dirty=True, missing=False, recursive=False))):
+    def repos_dirty(self, name, local, untracked):
+        if 0 == len(list(self.repos_status(name, local, dirty=True, missing=False, untracked=untracked, recursive=False))):
             raise Exception()
         else:
             return

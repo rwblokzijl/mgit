@@ -131,7 +131,7 @@ class LocalSystem:
                 if local_repo.is_dirty():
                     repo_status = "dirty     " + repo.name
                 elif untracked_files and local_repo.untracked_files:
-                    repo_status = "untracked " + repo.name
+                    repo_status = "dirty(u)  " + repo.name
                 elif not dirty or repo_children:
                     repo_status = "clean     " +  repo.name
             except Exception as e:
