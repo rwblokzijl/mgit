@@ -191,11 +191,31 @@ class TestAcceptance(unittest.TestCase):
                 ["test_repo_4_alt"]
                 )
 
-    "list      | [[remote]...] | list repos, (missing remote)"
-    # TODO use defaults(or local??!!) if empty
-    # probs local needs a different command that takes path into account
-    # unix philosophy bla bla, maybe make 'list' local and
-    # 'query' or something else remote
+    def test_repo_init_remote(self):
+        self.create_test_dir("test_remote_1")
+
+        test_repo = self.test_dir / "local/test_repo_4"
+        self.run_test_command(f"init -y --name test_repo_4_alt --path {test_repo} --remotes test_remote_1:test_repo_4_alt_remote")
+
+        self.assertTrue(
+                Repo(test_repo)
+                )
+
+        self.assertTrue(
+                Repo(self.test_dir / "test_remote_1" / 'test_repo_4_alt_remote')
+                ) # testing the remote, locally
+
+        #Test that its added to the file
+        self.run_test_command("category add test_repo_4_alt category3")
+
+        ans = self.run_test_command("category show category3")
+        self.assertEqual(
+                ans["category3"],
+                ["test_repo_4_alt"]
+                )
+
+    "remote list      | [[remote]...] | list repos, (missing remote)"
+    # TODO use defaults if empty
     def test_remote_list(self):
         self.setUpFullTestDir()
 

@@ -82,7 +82,7 @@ class MultiRepoInteractor(BaseMgitInteractor):
         # Untracked (paths)
         # Ignored (paths)
 
-    def repos_status(self, name, local, dirty, missing, recursive):
+    def repos_status(self, name, local, dirty, missing, untracked, recursive):
         ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache'] # TODO: get from config
         if name:
             repos = []
