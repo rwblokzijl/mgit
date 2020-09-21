@@ -15,6 +15,9 @@ class SingleRepoInteractor(BaseMgitInteractor):
     def resolve_remote_urls(self, remote_repos):
         return {k:self.remotes[k].get_url_with_repo(v) for k, v in remote_repos.items()}
 
+    def get_default_remotes(self):
+        return [remote for remote in self.remotes if remote.is_default]
+
     "show      | name                    | show a repo by name                                     |"
     def repo_show(self, project):
         self.repo_should_exist(project)
