@@ -22,6 +22,7 @@ class CommandSingleRepoInit(AbstractLeafCommand):
         parser.add_argument("--name", help="Name of the project", type=str)
         parser.add_argument("--path", help="Path to local repo", metavar="DIR", nargs="?", default=".", type=str)
         parser.add_argument("--remotes", help="Name of remote repo", metavar="REMOTE[:REPO]", nargs="+", type=lambda x: self.remote_repo(x))
+        parser.add_argument("--origin", help="Name of remote to be default push", metavar="REMOTE", type=lambda x: self.remote_repo(x))
 
     def run_command(self, args):
         args["path"] = os.path.abspath(os.path.expanduser(args["path"]))
@@ -29,7 +30,10 @@ class CommandSingleRepoInit(AbstractLeafCommand):
             args["name"] = os.path.basename(args["path"])
         args["remotes"] = dict(args["remotes"] or [])
 
+        args["remotes"][args["origin"][0]] = args["origin"][1]
         args["remotes"] = { k:v or args["name"] for k,v in args["remotes"].items() }
+
+        args["origin"] = args["origin"][0]
 
         if args.pop('y') or self.interactor.test_mode or query_yes_no("Do you want to init with the following values:" + json.dumps(args, indent = 1)):
             return self.interactor.repo_init(**args)

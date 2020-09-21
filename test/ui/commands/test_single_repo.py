@@ -15,7 +15,8 @@ class TestSingleRepoCommands(unittest.TestCase):
         pass
 
     def test_init(self):
-        args = "init --path /tmp/test_dir --remotes a:b c".split()
+        args = "init --path /tmp/test_dir --remotes a:b c --origin a".split()
         self.ui.run(args)
-        self.interactor.repo_init.assert_called_with(name="test_dir", path="/tmp/test_dir", remotes={"a":"b", "c":"test_dir"})
+        self.interactor.repo_init.assert_called_with(name="test_dir", path="/tmp/test_dir", remotes={"a":"b",
+            "c":"test_dir"}, origin="a")
 

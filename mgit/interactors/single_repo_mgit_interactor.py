@@ -21,7 +21,7 @@ class SingleRepoInteractor(BaseMgitInteractor):
         return self.repos["dotfiles"].as_dict()
 
     "init      | path, [[remote name]..] | init a repo local and remote                            |"
-    def repo_init(self, name, path=None, remotes=[]):
+    def repo_init(self, name, path=None, remotes=[], origin=None):
 
         remote_repos = dict(remotes or [])
 
@@ -29,9 +29,11 @@ class SingleRepoInteractor(BaseMgitInteractor):
         self.path_should_be_available(    path )
         self.remotes_should_exist(        remote_repos.keys() )
         self.remote_repos_shouldnt_exist( remote_repos )
+        self.remotes_should_exist(        [origin] )
 
         self.local_system.init(path=path,
-                remotes=self.resolve_remote_urls(remote_repos)
+                remotes=self.resolve_remote_urls(remote_repos),
+                origin=origin
                 )
 
         #add to config
