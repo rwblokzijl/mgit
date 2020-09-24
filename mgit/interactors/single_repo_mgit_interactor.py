@@ -32,7 +32,6 @@ class SingleRepoInteractor(BaseMgitInteractor):
         self.path_should_be_available(    path )
         self.remotes_should_exist(        remote_repos.keys() )
         self.remote_repos_shouldnt_exist( remote_repos )
-        self.remotes_should_exist(        [origin] )
 
         self.local_system.init(path=path,
                 remotes=self.resolve_remote_urls(remote_repos),
