@@ -3,6 +3,7 @@ from main import main
 from pathlib import Path
 
 from git import Repo
+from git.exc import NoSuchPathError
 
 import unittest
 import shutil
@@ -24,7 +25,6 @@ class TestAcceptance(unittest.TestCase):
         rename    |        | name, name              | rename the repo in the config
         archive   |        | name                    | add archive flag to
         unarchive |        | name                    | remove archive flag to
-        install   |        | name                    | install a repo from remote by name (add listed remotes)
         clone     |        | name, remote            | clone a repo to an existing remote
         show      |        | name                    | show a repo by name
 
@@ -61,13 +61,24 @@ class TestAcceptance(unittest.TestCase):
 
         self.test_dir               = Path("/tmp/mgit/acceptance/")
 
+    def assertRepoNotExists(self, path):
+        with self.assertRaises(NoSuchPathError):
+            Repo(path)
+
+    def assertRepoExists(self, path):
+        self.assertTrue(
+                Repo(path)
+                )
+
     def create_test_dir(self, child=""):
         (self.test_dir/child).mkdir(parents=True, exist_ok=True)
 
     def setUpFullTestDir(self):
+        # normal
         self.create_test_dir("local/test_repo_1")
         self.create_test_dir("test_remote_1/test_repo_1")
 
+        # nested
         self.create_test_dir("local/test_repo_2")
         self.create_test_dir("test_remote_1/test_repo_2")
 
@@ -77,15 +88,22 @@ class TestAcceptance(unittest.TestCase):
         self.create_test_dir("local/test_repo_2/test_repo_3/test_repo_5")
         self.create_test_dir("test_remote_1/test_repo_5")
 
+        # Not installed
+        self.create_test_dir("test_remote_2/test_repo_6")
+
     def initGitForTestDir(self):
+
+        #normal
         Repo.init(self.test_dir / "local/test_repo_1")
         Repo.init(self.test_dir / "test_remote_1/test_repo_1")
 
+        #with commit
         (self.test_dir / 'local/test_repo_1/file.txt').touch()
         repo = Repo(self.test_dir / 'local/test_repo_1/')
         repo.git.add('--all')
         repo.index.commit("test")
 
+        # recursive
         Repo.init(self.test_dir / "local/test_repo_2")
         Repo.init(self.test_dir / "test_remote_1/test_repo_2")
 
@@ -94,6 +112,9 @@ class TestAcceptance(unittest.TestCase):
 
         Repo.init(self.test_dir / "local/test_repo_2/test_repo_3/test_repo_5")
         Repo.init(self.test_dir / "test_remote_1/test_repo_5")
+
+        # not installed
+        Repo.init(self.test_dir / "test_remote_2/test_repo_6")
 
     def makeDirty(self):
         with open(self.test_dir / 'local/test_repo_1/file.txt', 'w') as f:
@@ -361,3 +382,16 @@ class TestAcceptance(unittest.TestCase):
         self.makeDirty()
 
         self.run_test_command( f"dirty -l {self.test_dir / 'local'} ")
+
+    "install name [--remote REMOTE] | install a repo from remote by name (add listed remotes)"
+    def test_install(self):
+        self.setUpFullTestDir()
+        self.initGitForTestDir()
+
+        test_repo = self.test_dir / "local/test_repo_6"
+
+        self.assertRepoNotExists(test_repo)
+
+        self.run_test_command( f"install -y test_repo_6 ")
+
+        self.assertRepoExists(test_repo)

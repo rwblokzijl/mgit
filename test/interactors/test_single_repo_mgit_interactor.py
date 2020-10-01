@@ -3,6 +3,8 @@ from test.test_interactor import TestInteractor
 from unittest.mock import Mock, MagicMock
 import unittest
 
+from pathlib import Path
+
 class TestSingleRepoInteractions(TestInteractor):
     def test_repo_show(self):
         interactor = self.get_file_test_interactor()
@@ -54,8 +56,10 @@ class TestSingleRepoInteractions(TestInteractor):
                 )
         system_mock.init.assert_called_with(path=path, remotes={
             "test" : "testurl1",
-            "test2" : "testurl2",
-            })
+            "test2" : "testurl2"
+            },
+            origin=None
+            )
 
         m1.init.assert_called_with(name="t1name")
         m2.init.assert_called_with(name="t2name")
@@ -68,7 +72,7 @@ class TestSingleRepoInteractions(TestInteractor):
     def test_init_nameExists_throwsRepoExists(self):
         interactor = self.get_memory_test_interactor()
         with self.assertRaises(interactor.RepoExistsError):
-            interactor.repo_init( "example2" )
+            interactor.repo_init( "example2" , "/tmp/mgit_tests/example2")
 
     def test_init_pathNotAvailable_throwsPathUnavailableError(self):
         system_mock = Mock()
@@ -78,13 +82,14 @@ class TestSingleRepoInteractions(TestInteractor):
                 remotes_builder=self.get_remote_mock_builder()
                 )
         with self.assertRaises(interactor.PathUnavailableError):
-            interactor.repo_init( name="example3")
+            interactor.repo_init( name="example3", path="/tmp/mgit_tests/example3")
 
     def test_remotesDontExist_throwsError(self):
         interactor = self.get_memory_test_interactor()
         with self.assertRaises(interactor.MissingRemoteError):
             interactor.repo_init(
                     name="example3",
+                    path="/tmp/mgit_tests/example3",
                     remotes={
                         "home": "homename",
                         "bagn": "bagnname"
@@ -101,6 +106,7 @@ class TestSingleRepoInteractions(TestInteractor):
         with self.assertRaises(interactor.RemoteRepoExistsError):
             interactor.repo_init(
                     name="example3",
+                    path="/tmp/mgit_tests/example3",
                     remotes={
                         "test": "example",
                         "test2": "example"

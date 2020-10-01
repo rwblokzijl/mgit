@@ -21,6 +21,12 @@ class CommandMultiRepoList(AbstractLeafCommand):
         parser.add_argument("-g",   "--ignored",   help="Include ignored repos",   default=False, action="store_true")
 
     def run_command(self, args):
+        flags = dict(args)
+        del(flags["path"])
+        if not any(flags.values()):
+            args["installed"] = True
+            args["missing"] = True
+            args["conflict"] = True
         return self.interactor.repos_list_repos(**args)
 
 class CommandMultiRepoStatus(AbstractLeafCommand):

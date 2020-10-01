@@ -17,6 +17,7 @@ class MgitCommand(AbstractNodeCommand):
                 CommandRemote(self.interactor),
 
                 CommandSingleRepoInit(self.interactor),
+                CommandSingleRepoInstall(self.interactor),
 
                 CommandMultiRepoList(self.interactor),
                 CommandMultiRepoStatus(self.interactor),

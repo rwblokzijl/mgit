@@ -7,6 +7,11 @@ import collections
 
 class LocalSystem:
 
+    """
+    Local System interactor
+    """
+
+    " Helpers "
     def run_command(self, command):
         with subprocess.Popen(command,
                 shell=True,
@@ -15,6 +20,7 @@ class LocalSystem:
             while (line := p.stdout.readline()):
                 yield line # TODO make non blocking, idk how right now
 
+    " Read only functions"
     def get_repo_id_from_path(self, path):
         try:
             Repo(path)
@@ -54,34 +60,11 @@ class LocalSystem:
         except InvalidGitRepositoryError:
             return False
 
-    def ensure_directory(self, path):
-        os.makedirs(path, exist_ok=True)
-
-    def add_remotes(self, repo, remotes):
-        for remote, url in remotes.items():
-            repo.create_remote(remote, url)
-
-    def add_origin(self, repo, origin, remotes):
-        if origin in remotes:
-            repo.create_remote("origin", remotes[origin])
-        else:
-            raise self.MissingRemoteError()
-
     def validate_origin(self, origin, remotes):
         if origin and origin not in remotes:
             raise self.MissingRemoteError()
 
-    def init(self, path, remotes={}, origin=None):
-        self.validate_origin(origin, remotes)
-        self.ensure_directory(path)
-
-        repo = Repo.init(path)
-
-        self.add_remotes(repo, remotes)
-        if origin:
-            self.add_origin(repo, origin, remotes)
-
-    def exclude(self, line, excludes):
+    def should_include(self, line, excludes):
         for exclude in excludes:
             if line.startswith(exclude):
                 return False
@@ -91,7 +74,7 @@ class LocalSystem:
         excludes = [os.path.abspath(os.path.expanduser(path)) for path in ignore_paths]
         command  = "find "+path+" -xdev -name '.git'"
         result   = [os.path.abspath(os.path.expanduser(line.strip().decode("utf-8"))) for line in self.run_command(command)]
-        result   = [line for line in result if self.exclude(line, excludes)]
+        result   = [line for line in result if self.should_include(line, excludes)]
         repos    = list()
         for line in result:
             try:
@@ -108,8 +91,6 @@ class LocalSystem:
             except Exception:
                 pass
         return repos
-
-    # def list_repos_in_path(self)
 
     def repos_status(self, repos, dirty, missing, recursive, untracked_files=False, top_level=True):
         ans = {}
@@ -152,6 +133,37 @@ class LocalSystem:
             else:
                 if not dirty:
                     yield "clean     " +  repo.working_dir
+
+    " Write functions"
+    # Git helpers
+    def ensure_directory(self, path):
+        os.makedirs(path, exist_ok=True)
+
+    def add_remotes(self, repo, remotes):
+        for remote, url in remotes.items():
+            repo.create_remote(remote, url)
+
+    def add_origin(self, repo, origin, remotes):
+        if origin in remotes:
+            repo.create_remote("origin", remotes[origin])
+        else:
+            raise self.MissingRemoteError()
+
+    # Git commands
+    def init(self, path, remotes={}, origin=None):
+        self.validate_origin(origin, remotes)
+        self.ensure_directory(path)
+
+        repo = Repo.init(path)
+
+        self.add_remotes(repo, remotes)
+        if origin:
+            self.add_origin(repo, origin, remotes)
+
+    def clone(self, path, remotes, origin):
+        repo = Repo.clone_from(remotes[origin], os.path.expanduser(path), multi_options=[f'--origin {origin}'])
+        remotes.pop(origin)
+        self.add_remotes(repo, remotes)
 
     class MissingRemoteError(Exception):
         pass

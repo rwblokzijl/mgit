@@ -47,5 +47,6 @@ def main_cli(*args, **kwargs):
     except Exception as e:
         if str(e):
             pperror(e)
+            raise e
         return 1
 

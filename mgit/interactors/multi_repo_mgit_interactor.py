@@ -8,9 +8,6 @@ class MultiRepoInteractor(BaseMgitInteractor):
     """
     TODO:
     "mass repo"
-    list      | -l -r [remotes] | list repos, (missing remote)
-    dirty     | repos           | is any repo dirty
-    status    | repos           | show status of all repos (clean up ordering)
     fetch     | repos, remotes  | mass fetch
     pull      | repos, remotes  | mass pull
     push      | repos, remotes  | mass push (after shutdown)
@@ -26,6 +23,7 @@ class MultiRepoInteractor(BaseMgitInteractor):
         #   - config:repo:path
         pass
 
+    "list      | -l -r [remotes] | list repos, (missing remote)"
     def repos_list_repos(self, path, installed, missing, archived, untracked, conflict, ignored):
         ans = []
         for repo in self.repos:
@@ -34,32 +32,38 @@ class MultiRepoInteractor(BaseMgitInteractor):
             is_git = self.local_system.is_git_repo(repo.path)
             is_empty = self.local_system.path_empty_or_missing(repo.path)
 
-            if repo.repo_id == path_id and path_id is not None:
-                if installed:
-                    status = "installed " + repo.path
-            elif repo.repo_id is None and path_id is not None:
-                #TODO Warn: ID is not set, but can be, run update
-                if installed:
-                    status = "installed " + repo.path
-            elif repo.repo_id is not None and path_id is not None:
-            #    there has to be a repo with same id in repo.path
-            #    warn if no ID set AND path has commits?
-                if conflict:
-                    status = "conflict  " + repo.path
+            # path exists
+            if path_id is not None:
+                if repo.repo_id == path_id:
+                    if installed:
+                        status = "installed " + repo.name
+                elif repo.repo_id is None:
+                    #TODO Warn: ID is not set, but can be, run update
+                    if installed:
+                        status = "installed " + repo.name
+                elif repo.repo_id is not None:
+                #    there has to be a repo with same id in repo.path
+                #    warn if no ID set AND path has commits?
+                    if conflict:
+                        status = "conflict  " + repo.name
             elif path_id is None and is_git and repo.repo_id is None:
                 if installed:
-                    status = "empty     " + repo.path
-            elif path_id is None and is_git and repo.repo_id is None:
-                if installed:
-                    status = "empty     " + repo.path
+                    status = "empty     " + repo.name
                 # remotes should match
-            # elif archived:
-            #     # not installed but archived is set
-            #     pass
-            # elif missing:
-            #     pass
+
+            # path does not exist
+            elif repo.archived:
+                # not installed but archived is set
+                if archived:
+                    status = "archived  " + repo.name
+            elif missing:
+                assert is_empty
+                status = "missing   " + repo.name
+
+            # finally append the result
             if status:
                 ans.append(status)
+
         if untracked:
             for line in self.local_system.get_local_git_paths(path, ignore_paths=[]):
                 print(line)
@@ -79,9 +83,11 @@ class MultiRepoInteractor(BaseMgitInteractor):
         # Archived (repos)
         # Missing (repos)
         # Conflict (repos)
-        # Untracked (paths)
+
+        # Untracked (paths) move these to different command maybe?
         # Ignored (paths)
 
+    "status    | repos           | show status of all repos (clean up ordering)"
     def repos_status(self, name, local, dirty, missing, untracked, recursive):
         ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache'] # TODO: get from config
         if name:
@@ -101,6 +107,7 @@ class MultiRepoInteractor(BaseMgitInteractor):
                     untracked_files=untracked)
             return ans
 
+    "dirty     | repos           | is any repo dirty"
     def repos_dirty(self, name, local, untracked):
         if 0 == len(list(self.repos_status(name, local, dirty=True, missing=False, untracked=untracked, recursive=False))):
             raise Exception()
