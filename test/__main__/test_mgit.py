@@ -187,8 +187,10 @@ class TestAcceptance(unittest.TestCase):
                 )
 
     "init [--path path] [--name name] [--remotes [remote[:repo_name]].. ] # init a repo local and remote"
-    # TODO test no remotes (use default)
-    # TODO specify origin??
+    # TODO test no remotes (use default) TEST
+    # TODO specify origin?? TEST
+    # TODO resolve parents TEST
+    # TODO fail before asking confirmation
     def test_repo_init(self):
         self.create_test_dir("test_remote_1")
 

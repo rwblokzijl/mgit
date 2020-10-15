@@ -28,11 +28,20 @@ class CommandSingleRepoInit(AbstractLeafCommand):
     def run_command(self, args):
         was_abs = Path(args["path"]).is_absolute()
         path = Path(args["path"]).absolute()
+        abspath = path
         if args["name"] is None:
             args["name"] = path.name
 
         if not was_abs:
             args["path"] = str(path).replace(str(Path.home()), "~")
+
+        parent = self.interactor.resolve_best_parent(path)
+
+        if parent:
+            args["parent"] = parent.name
+            print(path)
+            print(self.interactor.abspath(parent.path))
+            args["path"] = str(path.relative_to(self.interactor.abspath(parent.path)))
 
         args["remotes"] = dict(args["remotes"] or (
                 [] if args["no_default"]
@@ -56,6 +65,7 @@ class CommandSingleRepoInit(AbstractLeafCommand):
         args["remotes"] = { k:v or args["name"] for k,v in args["remotes"].items() }
 
         if args.pop('y') or self.interactor.test_mode or query_yes_no("Do you want to init with the following values:" + json.dumps(args, indent = 1)):
+            args["abspath"] = str(abspath)
             return self.interactor.repo_init(**args)
         else:
             return "Doing nothing"

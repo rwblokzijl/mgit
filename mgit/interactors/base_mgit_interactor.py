@@ -1,5 +1,7 @@
 import json
 
+from pathlib import Path
+
 class BaseMgitInteractor:
     def __init__(self, repos, remotes, local_system_interactor, test_mode=False):
         self.test_mode = test_mode
@@ -27,6 +29,17 @@ class BaseMgitInteractor:
     # Helpers
     ###
 
+    def abspath(self, path):
+        return str(Path(path).expanduser().absolute())
+
+    def resolve_best_parent(self, path):
+        candidates = [ candidate_parent for candidate_parent in self.repos
+                if self.parent_is_in_path(candidate_parent, self.abspath(path))]
+        if not candidates:
+            return None
+        best_candidate = max(candidates, key=lambda x: len(self.abspath(x.path)))
+        return best_candidate
+
     def repo_should_exist(self, key):
         if key not in self.repos:
             raise self.RepoNotFoundError(f"No tracked project found: '{key}'")
@@ -52,9 +65,21 @@ class BaseMgitInteractor:
             if repo_name in self.remotes[remote_name]:
                 raise self.RemoteRepoExistsError(f"'{repo_name}' already exists in '{remote_name}'")
 
+    def parent_is_in_path(self, parent, path):
+        return self.abspath(path).startswith(str(self.abspath(parent.path)))
+
+    def parent_should_be_in_path(self, parent, path):
+        if parent is None:
+            return
+        if not self.parent_is_in_path(parent, path):
+            raise this.InvalidParentError()
+
     ###
     # Exceptions
     ###
+
+    class InvalidParentError(Exception):
+        pass
 
     class RemoteRepoExistsError(Exception):
         pass

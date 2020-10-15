@@ -25,15 +25,20 @@ class SingleRepoInteractor(BaseMgitInteractor):
         return self.repos[project].as_dict()
 
     "init      | path, [[remote name]..] | init a repo local and remote                            |"
-    def repo_init(self, name, path, remotes=[], origin=None):
+    def repo_init(self, name, path, abspath=None, remotes=[], origin=None, parent=None):
+        abspath = abspath or path
         remote_repos = dict(remotes or [])
 
         self.repo_shouldnt_exist(         name )
-        self.path_should_be_available(    path )
+        self.path_should_be_available(    abspath )
         self.remotes_should_exist(        remote_repos.keys() )
         self.remote_repos_shouldnt_exist( remote_repos )
 
-        self.local_system.init(path=path,
+        if parent is not None:
+            self.repo_should_exist(         parent )
+            self.parent_should_be_in_path(  self.repos[parent], path )
+
+        self.local_system.init( path=abspath,
                 remotes=self.resolve_remote_urls(remote_repos),
                 origin=origin
                 )
@@ -42,7 +47,8 @@ class SingleRepoInteractor(BaseMgitInteractor):
         self.repos.add_new_repo(
                 name=name,
                 path=path,
-                remotes=remote_repos
+                remotes=remote_repos,
+                parent=parent or ""
             )
 
         for remote_name, repo_name in remote_repos.items():
