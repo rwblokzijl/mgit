@@ -30,9 +30,10 @@ class SingleRepoInteractor(BaseMgitInteractor):
         remote_repos = dict(remotes or [])
 
         self.repo_shouldnt_exist(         name )
-        self.path_should_be_available(    abspath )
         self.remotes_should_exist(        remote_repos.keys() )
         self.remote_repos_shouldnt_exist( remote_repos )
+        if not self.local_system.is_git_repo(abspath):
+            self.path_should_be_available(    abspath )
 
         if parent is not None:
             self.repo_should_exist(         parent )

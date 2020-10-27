@@ -124,7 +124,7 @@ class LocalSystem:
                 elif untracked_files and local_repo.untracked_files:
                     repo_status = "dirty(u)  " + repo.name
                 elif include_remotes and (commits_ahead or commits_behind):
-                    repo_status = f"{commits_ahead}+ {commits_behind}-  " + repo.working_dir
+                    repo_status = f"{str(commits_ahead).rjust(3)}+ {str(commits_behind).rjust(3)}- " + repo.working_dir
                 elif not dirty or repo_children:
                     repo_status = "clean     " +  repo.name
             except Exception as e:
@@ -153,7 +153,7 @@ class LocalSystem:
             elif untracked_files and repo.untracked_files:
                 yield "dirty(u)  " + repo.working_dir
             elif include_remotes and (commits_ahead or commits_behind):
-                yield f"{commits_ahead}+ {commits_behind}-  " + repo.working_dir
+                yield f"{str(commits_ahead).rjust(3)}+ {str(commits_behind).rjust(3)}- " + repo.working_dir
             else:
                 if not dirty:
                     yield "clean     " +  repo.working_dir
