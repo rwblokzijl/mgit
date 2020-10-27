@@ -261,6 +261,7 @@ class TestAcceptance(unittest.TestCase):
                 )
 
     "status    | [NAME] [-l/--local [PATH]] [-d] | show status of all repos (clean up ordering)"
+    # TODO show unpushed and unpulled for all remotes for NON MASTER BRANCH!!! master is hardcoded in the code now
     def test_status_path(self):
         self.setUpFullTestDir()
         self.initGitForTestDir()

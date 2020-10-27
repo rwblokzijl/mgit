@@ -88,7 +88,7 @@ class MultiRepoInteractor(BaseMgitInteractor):
         # Ignored (paths)
 
     "status    | repos           | show status of all repos (clean up ordering)"
-    def repos_status(self, name, local, dirty, missing, untracked, recursive):
+    def repos_status(self, name, local, dirty, missing, untracked, recursive, remotes):
         ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache'] # TODO: get from config
         if name:
             repos = []
@@ -97,19 +97,21 @@ class MultiRepoInteractor(BaseMgitInteractor):
 
                 repos.append(self.repos[n])
             ans = self.local_system.repos_status(repos=repos, dirty=dirty, missing=missing, recursive=recursive,
-                    untracked_files=untracked)
+                    untracked_files=untracked, include_remotes=remotes)
             return ans
         elif local:
-            ans =  self.local_system.recursive_status(local, dirty, ignore_paths=ignore_paths, untracked_files=untracked)
+            ans =  self.local_system.recursive_status(local, dirty, ignore_paths=ignore_paths,
+                    untracked_files=untracked, include_remotes=remotes)
             return ans
         else:
             ans = self.local_system.repos_status(repos=self.repos, dirty=dirty, missing=missing, recursive=recursive,
-                    untracked_files=untracked)
+                    untracked_files=untracked, include_remotes=remotes)
             return ans
 
     "dirty     | repos           | is any repo dirty"
-    def repos_dirty(self, name, local, untracked):
-        if 0 == len(list(self.repos_status(name, local, dirty=True, missing=False, untracked=untracked, recursive=False))):
+    def repos_dirty(self, name, local, untracked, remotes):
+        if 0 == len(list(self.repos_status(name, local, dirty=True, missing=False, untracked=untracked, recursive=False,
+            remotes=remotes))):
             raise Exception()
         else:
             return

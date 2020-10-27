@@ -92,7 +92,8 @@ class LocalSystem:
                 pass
         return repos
 
-    def repos_status(self, repos, dirty, missing, recursive, untracked_files=False, top_level=True):
+    def repos_status(self, repos, dirty, missing, recursive, untracked_files=False, top_level=True,
+            include_remotes=False):
         ans = {}
         for repo in repos:
             repo_children = None
@@ -109,10 +110,21 @@ class LocalSystem:
             try:
                 local_repo = Repo(repo.path)
 
+                try:
+                    commits_behind = len(list(local_repo.iter_commits('master..origin/master')))
+                except:
+                    commits_behind = 0
+                try:
+                    commits_ahead  = len(list(local_repo.iter_commits('origin/master..master')))
+                except:
+                    commits_ahead  = 0
+
                 if local_repo.is_dirty():
                     repo_status = "dirty     " + repo.name
                 elif untracked_files and local_repo.untracked_files:
                     repo_status = "dirty(u)  " + repo.name
+                elif include_remotes and (commits_ahead or commits_behind):
+                    repo_status = f"{commits_ahead}+ {commits_behind}-  " + repo.working_dir
                 elif not dirty or repo_children:
                     repo_status = "clean     " +  repo.name
             except Exception as e:
@@ -122,14 +134,26 @@ class LocalSystem:
                 ans[repo_status] = repo_children
         return collections.OrderedDict(sorted(ans.items()))
 
-    def recursive_status(self, path, dirty=False, untracked_files=False, ignore_paths=[]):
+    def recursive_status(self, path, dirty=False, untracked_files=False, ignore_paths=[], include_remotes=False):
         repos = self.get_all_local_repos_in_path(path, ignore_paths=ignore_paths)
 
         for repo in repos:
+
+            try:
+                commits_behind = len(list(repo.iter_commits('master..origin/master')))
+            except:
+                commits_behind = 0
+            try:
+                commits_ahead  = len(list(repo.iter_commits('origin/master..master')))
+            except:
+                commits_ahead  = 0
+
             if repo.is_dirty():
                 yield "dirty     " + repo.working_dir
             elif untracked_files and repo.untracked_files:
                 yield "dirty(u)  " + repo.working_dir
+            elif include_remotes and (commits_ahead or commits_behind):
+                yield f"{commits_ahead}+ {commits_behind}-  " + repo.working_dir
             else:
                 if not dirty:
                     yield "clean     " +  repo.working_dir
