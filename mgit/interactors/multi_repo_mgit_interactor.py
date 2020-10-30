@@ -89,7 +89,7 @@ class MultiRepoInteractor(BaseMgitInteractor):
 
     "status    | repos           | show status of all repos (clean up ordering)"
     def repos_status(self, name, local, dirty, missing, untracked, recursive, remotes):
-        ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache'] # TODO: get from config
+        ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache', '~/.config/vim'] # TODO: get from config
         if name:
             repos = []
             for n in name:
