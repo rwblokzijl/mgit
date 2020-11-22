@@ -1,5 +1,8 @@
-
 class GeneralPersistenceInteractor:
+    """
+    def add(self, name, **kwargs):
+    def edit(self, name, **kwargs):
+    """
     def __init__(self, persistence, builder):
         self.persistence = persistence
         self.builder = builder
@@ -43,6 +46,9 @@ class GeneralPersistenceInteractor:
 
     def entities(self):
         return self.entities.items()
+
+    def keys(self):
+        return self.entities.keys()
 
     def clear_maps(self):
         for map in list(self.maps.keys()):
@@ -93,6 +99,25 @@ class GeneralPersistenceInteractor:
             self.build()
         else:
             raise self.ItemDoesntExistError(f"Item '{name}' doesn't exist")
+
+    def remove(self, name):
+        if name not in self.persistence:
+            raise self.ItemDoesntExistError(f"Item '{name}' doesn't exist")
+
+        self.persistence.remove(name)
+        self.build()
+
+    def rename(self, name, new_name):
+        if name not in self.persistence:
+            raise self.ItemDoesntExistError(f"Item '{name}' doesn't exist")
+        if new_name in self.persistence:
+            raise self.ItemExistsError(f"Item '{name}' exists already")
+
+        base_data = self.persistence[name]
+        base_data["name"] = new_name
+        self.persistence.remove(name)
+        self.persistence[new_name] = base_data
+        self.build()
 
     def as_dict(self):
         return {k:v.as_dict() for k, v in self.entities.items()}

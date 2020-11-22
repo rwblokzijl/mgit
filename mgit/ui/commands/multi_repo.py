@@ -29,6 +29,18 @@ class CommandMultiRepoList(AbstractLeafCommand):
             args["conflict"] = True
         return self.interactor.repos_list_repos(**args)
 
+class CommandMultiRepoFetch(AbstractLeafCommand):
+    command = "fetch"
+    help="Fetch multiple repos"
+
+    def build(self, parser):
+        parser.add_argument("path", help="Recursively fetch in path only", metavar="DIR", nargs="?", const=".", default=None, type=str)
+        parser.add_argument("-r", "--remotes", metavar=["REMOTE"], nargs="*", help="List of repos to fetch from", default=None, type=str)
+
+    def run_command(self, args):
+        # print(args)
+        return self.interactor.fetch_all_repos(**args)
+
 class CommandMultiRepoStatus(AbstractLeafCommand):
     command = "status"
     help="Show the git status for all "

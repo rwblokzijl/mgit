@@ -3,8 +3,8 @@ from mgit.persistence.persistence import Persistence
 from abc import abstractmethod
 
 import os
-import copy
 import configparser
+from copy import deepcopy
 
 class ConfigFilePersistence(Persistence):
 
@@ -35,6 +35,9 @@ class ConfigFilePersistence(Persistence):
         if key in self.remotes_dict:
             del(self.remotes_dict[key])
 
+    def items(self):
+        return self.remotes_dict.items()
+
     def __contains__(self, key):
         return key in self.remotes_dict
 
@@ -46,8 +49,15 @@ class ConfigFilePersistence(Persistence):
     def dict_to_config(self, config):
         pass
 
+    def clear_nulls(self, data):
+        for name, base_data in deepcopy(dict(data)).items():
+            for key, value in base_data.items():
+                if value == "" or value is None or value == []:
+                    del(data[name][key])
+        return data
+
     def write_all(self):
-        config = self.dict_to_config(self.remotes_dict)
+        config = self.clear_nulls( self.dict_to_config( self.remotes_dict))
         with open(self.configPath, 'w') as configfile:
             config.write(configfile)
 

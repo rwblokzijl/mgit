@@ -19,6 +19,9 @@ class Repo:
 
         self.children = []
 
+    def get_auto_key(self, key):
+        return self.base_data.get(key, None)
+
     def as_dict(self):
         d = {
                 "name": self.name,

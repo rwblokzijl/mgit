@@ -3,7 +3,7 @@ from mgit.persistence.config_persistence import ConfigFilePersistence
 from abc import abstractmethod
 
 import configparser
-import copy
+from copy import deepcopy
 import json
 import os
 
@@ -26,7 +26,7 @@ class ReposConfigFilePersistence(ConfigFilePersistence):
 
     def dict_to_config(self, repo_dict):
         for k, v in repo_dict.items():
-            vdict = copy.copy(v)
+            vdict = deepcopy(v)
             if "categories" in v:
                 vdict["categories"] = " ".join(vdict["categories"])
             repo_dict[k] = vdict

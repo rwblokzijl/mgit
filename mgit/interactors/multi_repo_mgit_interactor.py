@@ -3,12 +3,13 @@ from mgit.interactors.base_mgit_interactor import BaseMgitInteractor
 import copy
 import itertools
 
+ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache', '~/.config/vim'] # TODO: get from config
+
 class MultiRepoInteractor(BaseMgitInteractor):
 
     """
     TODO:
     "mass repo"
-    fetch     | repos, remotes  | mass fetch
     pull      | repos, remotes  | mass pull
     push      | repos, remotes  | mass push (after shutdown)
     """
@@ -23,7 +24,7 @@ class MultiRepoInteractor(BaseMgitInteractor):
         #   - config:repo:path
         pass
 
-    "list      | -l -r [remotes] | list repos, (missing remote)"
+    "list      | -l -r [remotes] | list repos, (missing remote, figure untracked)"
     def repos_list_repos(self, path, installed, missing, archived, untracked, conflict, ignored):
         ans = []
         for repo in self.repos:
@@ -66,7 +67,8 @@ class MultiRepoInteractor(BaseMgitInteractor):
 
         if untracked:
             for line in self.local_system.get_local_git_paths(path, ignore_paths=[]):
-                print(line)
+                pass
+                # ans.append("untracked " + line)
                 # question: what makes a repo "untracked"
                 #   there is no repo with this path AND ID
                 #   if the path exists but the ID is wrong: Warn
@@ -87,9 +89,9 @@ class MultiRepoInteractor(BaseMgitInteractor):
         # Untracked (paths) move these to different command maybe?
         # Ignored (paths)
 
-    "status    | repos           | show status of all repos (clean up ordering)"
+    "status    | repos           | show status of all repos (clean up ordering, show behind/ahead branches, show remote branches that are not tracked locally)"
     def repos_status(self, name, local, dirty, missing, untracked, recursive, remotes):
-        ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache', '~/.config/vim'] # TODO: get from config
+        # ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache', '~/.config/vim'] # TODO: get from config
         if name:
             repos = []
             for n in name:
@@ -116,3 +118,13 @@ class MultiRepoInteractor(BaseMgitInteractor):
         else:
             return
 
+    "fetch     | repos, remotes  | mass fetch"
+    def fetch_all_repos(self, path=None, remotes=None):
+        if remotes == []: #only tracked remotes
+            remotes = list(self.remotes.keys())
+        if path:
+            for line in self.local_system.get_local_git_paths(path, ignore_paths):
+                yield self.local_system.fetch(line, remotes)
+        else:
+            for repo in self.repos:
+                yield self.local_system.fetch(repo.path, remotes)

@@ -10,6 +10,7 @@ from mgit.interactors.category_mgit_interactor    import CategoryInteractor
 from mgit.interactors.remote_mgit_interactor      import RemoteInteractor
 from mgit.interactors.single_repo_mgit_interactor import SingleRepoInteractor
 from mgit.interactors.multi_repo_mgit_interactor  import MultiRepoInteractor
+from mgit.interactors.auto_mgit_interactor        import AutoRepoInteractor
 
 from mgit.system_addons.local_system import LocalSystem
 
@@ -33,7 +34,9 @@ class MgitInteractor(
         CategoryInteractor,
         RemoteInteractor,
         SingleRepoInteractor,
-        MultiRepoInteractor):
+        MultiRepoInteractor,
+        AutoRepoInteractor,
+        ):
     "The business logic is contained in several smaller interactors, just to keep the files at a managable size"
     pass
 

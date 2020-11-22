@@ -85,3 +85,14 @@ class CommandSingleRepoInstall(AbstractLeafCommand):
             return self.interactor.repo_install(**args)
         else:
             return "Doing nothing"
+
+class CommandSingleRepoRename(AbstractLeafCommand):
+    command = "rename"
+    help="Rename a tracked repo"
+
+    def build(self, parser):
+        parser.add_argument("name", help="Old name of the project", type=str)
+        parser.add_argument("new_name", help="New name of the project", type=str)
+
+    def run_command(self, args):
+        return self.interactor.repo_rename(**args)

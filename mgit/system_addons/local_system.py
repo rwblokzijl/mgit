@@ -189,5 +189,22 @@ class LocalSystem:
         remotes.pop(origin)
         self.add_remotes(repo, remotes)
 
+    def fetch(self, path, remotes=None):
+        def fetchh(remote):
+            remote.fetch()
+            yield f"fetching {path} from {remote}"
+        try:
+            repo = Repo(path)
+            if remotes:
+                for remote in repo.remotes:
+                    if str(remote) in remotes:
+                        yield fetchh(remote)
+            else:
+                for remote in repo.remotes:
+                    yield fetchh(remote)
+        except:
+            pass
+
     class MissingRemoteError(Exception):
         pass
+

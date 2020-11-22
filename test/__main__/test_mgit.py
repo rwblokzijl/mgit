@@ -39,6 +39,15 @@ class TestAcceptance(unittest.TestCase):
         pull      | repos, remotes  | mass pull
         push      | repos, remotes  | mass push (after shutdown)
 
+        "automatic git functions" - stored: auto-[remote]-[branch] = [commit] [push] [pull] [fetch]
+        auto      | add    | repo, branch, [commit] [push] [pull] [fetch], [[REMOTE]..] | add auto function to repo |
+        auto      | remove | repo, branch, [commit] [push] [pull] [fetch], [[REMOTE]..] | remove auto function from branch |
+
+        auto      | commit | commit branches with auto commit configured (warn when wrong branch is checked out)
+        auto      | push   | push branches with auto push configured
+        auto      | fetch  | fetch branches with auto fetch configured
+        auto      | pull   | pull branches with auto pull configured
+
         "remotes"
         remotes   | list   |                | list remotes
         remotes   | add    | name, url      | add a remote

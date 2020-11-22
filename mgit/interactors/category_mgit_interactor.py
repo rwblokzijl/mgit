@@ -14,9 +14,11 @@ class CategoryInteractor(BaseMgitInteractor):
 
     def categories_add(self, project, category):
         self.repo_should_exist(project)
+
         repo_cats = list(self.repos[project].categories)
         repo_cats.append(category)
         repo_cats = list(set(repo_cats))
+
         with self.repos:
             self.repos.edit(project, categories=repo_cats)
 

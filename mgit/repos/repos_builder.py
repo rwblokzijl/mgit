@@ -15,6 +15,7 @@ class ReposBuilder:
         "categories" : "config",
         "home-repo" : "example-name-in-home",
         "ewi-gitlab-repo" : "different-example-name",
+        "auto-home-master": "commit push fetch pull"
         }
     """
 

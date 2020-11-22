@@ -84,5 +84,7 @@ class SingleRepoInteractor(BaseMgitInteractor):
 
         self.local_system.clone(path=repo_info["path"], remotes=repo_info["remotes"], origin=repo_info["origin"])
 
-
+    def repo_rename(self, name, new_name):
+        with self.repos:
+            self.repos.rename(name, new_name)
 

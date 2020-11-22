@@ -2,10 +2,11 @@ from mgit.ui.cli import AbstractNodeCommand
 from mgit.ui.cli import AbstractLeafCommand
 
 from mgit.ui.commands.category    import CommandCategory
+from mgit.ui.commands.remote import CommandRemote
+from mgit.ui.commands.auto import CommandAuto
+
 from mgit.ui.commands.single_repo import *
 from mgit.ui.commands.multi_repo  import *
-
-from mgit.ui.commands.remote import CommandRemote
 
 import argparse
 
@@ -15,13 +16,16 @@ class MgitCommand(AbstractNodeCommand):
         return [
                 CommandCategory(self.interactor),
                 CommandRemote(self.interactor),
+                CommandAuto(self.interactor),
 
                 CommandSingleRepoInit(self.interactor),
                 CommandSingleRepoInstall(self.interactor),
+                CommandSingleRepoRename(self.interactor),
 
                 CommandMultiRepoList(self.interactor),
                 CommandMultiRepoStatus(self.interactor),
                 CommandMultiRepoDirty(self.interactor),
+                CommandMultiRepoFetch(self.interactor),
                 ]
 
     def run(self, args):
