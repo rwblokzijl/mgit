@@ -119,7 +119,7 @@ class SSHHandler(RemoteHandler):
         remote_path = os.path.join(self.path, project_name)
         remote_url = self.username+"@"+self.url+":"+remote_path
         if self.exists_remote(remote_path):
-            # print("Remote folder already exists, not creating remote repo")
+            print("WARNING: Remote folder already exists, not creating remote repo")
             return remote_url
         # print("Creating remote: " + remote_url)
         if not self.run_ssh('mkdir ' + remote_path, username=self.username, remote=self.url):

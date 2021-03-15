@@ -173,6 +173,16 @@ class LocalSystem:
         else:
             raise self.MissingRemoteError()
 
+    def get_repo_from_path_or_error(self, path):
+        try:
+            return Repo(path, search_parent_directories=True)
+        except:
+            raise self.MissingRepoError(path)
+
+    def add_remotes_to_path(self, path, remotes={}):
+        repo = self.get_repo_from_path_or_error(path)
+        self.add_remotes(repo, remotes)
+
     # Git commands
     def init(self, path, remotes={}, origin=None):
         self.validate_origin(origin, remotes)
@@ -206,5 +216,8 @@ class LocalSystem:
             pass
 
     class MissingRemoteError(Exception):
+        pass
+
+    class MissingRepoError(Exception):
         pass
 

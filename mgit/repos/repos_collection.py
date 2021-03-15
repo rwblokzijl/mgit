@@ -7,12 +7,20 @@ class ReposCollection(GeneralPersistenceInteractor):
         self.maps    = {
                 "repo_id" : {},
                 "categories" : {},
+                "path" : {},
                 }
 
         super().__init__(persistence, builder)
 
     def build_items(self):
         self.entities = self.builder.build(self.persistence.read(), self.remotes)
+
+    def add_remotes_to_repo(self, name, remotes={}):
+        kwargs = {}
+        kwargs["name"]       = name
+        kwargs.update({k + "-repo" : v for k, v in remotes.items()})
+        self.edit(**kwargs)
+        self.save()
 
     def add_new_repo(self, name, path, categories=[], remotes={}, archived=False, parent=None, repo_id=None, origin=None):
         kwargs = {}

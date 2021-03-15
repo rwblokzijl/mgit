@@ -90,6 +90,15 @@ class GeneralPersistenceInteractor:
         else:
             raise self.ItemExistsError(f"Item '{name}' exists already")
 
+    def update(self, name, property, value):
+        if name in self.persistence:
+            base_data = self.persistence[name]
+            base_data[property].update(value)
+            self.persistence[name] = base_data
+            self.build()
+        else:
+            raise self.ItemDoesntExistError(f"Item '{name}' doesn't exist")
+
     def edit(self, name, **kwargs):
         if name in self.persistence:
             kwargs["name"] = name

@@ -19,7 +19,7 @@ class CommandSingleRepoInit(AbstractLeafCommand):
 
     def build(self, parser):
         parser.add_argument("-y", help="Skip asking for confirmation", action='store_true')
-        parser.add_argument("-d", "--no-default", help="Do not add any default remtes", action='store_true')
+        parser.add_argument("-d", "--no-default", help="Do not add any default remotes", action='store_true')
         parser.add_argument("--name", help="Name of the project", type=str)
         parser.add_argument("--path", help="Path to local repo", metavar="DIR", nargs="?", default=".", type=str)
         parser.add_argument("--remotes", help="Name of remote repo", metavar="REMOTE[:REPO]", nargs="+", type=lambda x: self.remote_repo(x))

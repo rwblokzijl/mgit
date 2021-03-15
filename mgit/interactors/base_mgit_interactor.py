@@ -29,8 +29,15 @@ class BaseMgitInteractor:
     # Helpers
     ###
 
+
     def abspath(self, path):
         return str(Path(path).expanduser().absolute())
+
+    def userpath(self, path):
+        return "~/" + str(Path(self.abspath(path)).relative_to(Path("~").expanduser()))
+
+    def resolve_remote_urls(self, remote_repos):
+        return {k:self.remotes[k].get_url_with_repo(v) for k, v in remote_repos.items()}
 
     def resolve_best_parent(self, path):
         candidates = [ candidate_parent for candidate_parent in self.repos
@@ -54,6 +61,21 @@ class BaseMgitInteractor:
     def path_should_be_available(self, path):
         if not self.local_system.path_available(path):
             raise self.PathUnavailableError(f"Directory '{path}' exists and is not empty")
+
+    def resolve_repo_name(self, repo_name):
+        self.remotes_should_exist(repo_name)
+        return self.repos[repo_name]
+
+    def resolve_repo_path(self, path):
+        repo_path     = self.local_system.get_repo_from_path_or_error(path).working_dir
+        relative_path = self.userpath(repo_path)
+        repos = self.repos.get_by_property("path", relative_path)
+        if len(repos) == 1:
+            return repos[0]
+
+    def resolve_remotes(self, remote_names=[]):
+        self.remotes_should_exist(remote_names)
+        return {name:self.remotes[name] for name in remote_names}
 
     def remotes_should_exist(self, remotes):
         for remote in remotes:

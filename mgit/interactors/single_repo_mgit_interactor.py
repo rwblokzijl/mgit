@@ -13,9 +13,6 @@ class SingleRepoInteractor(BaseMgitInteractor):
     "unarchive | name                    | remove archive flag to                                  |"
     """
 
-    def resolve_remote_urls(self, remote_repos):
-        return {k:self.remotes[k].get_url_with_repo(v) for k, v in remote_repos.items()}
-
     def get_default_remotes(self):
         return [remote for remote in self.remotes if remote.is_default]
 

@@ -14,6 +14,7 @@ class CommandRemote(AbstractNodeCommand):
     def get_sub_commands(self):
         return [
                 CommandRemoteList(self.interactor),
+                CommandRemoteAdd(self.interactor),
                 ]
 
 class CommandRemoteList(AbstractLeafCommand):
@@ -25,4 +26,14 @@ class CommandRemoteList(AbstractLeafCommand):
 
     def run_command(self, args):
         return self.interactor.remotes_list_repos(**args)
+
+class CommandRemoteAdd(AbstractLeafCommand):
+    command = "add"
+    help="Add remotes to repo"
+
+    def build(self, parser):
+        parser.add_argument("remotes", help="Name of remotes", metavar="REMOTE", nargs="*", type=str)
+
+    def run_command(self, args):
+        return self.interactor.remotes_add(**args)
 
