@@ -10,7 +10,13 @@ import shutil
 
 class TestAcceptance(unittest.TestCase):
 
-    """This class tests every command for real on the system"""
+    """
+    This class tests every command for real on the system
+    """
+
+    repo
+    remote
+    auto
 
     """ Commands to add acceptance tests for:
         "general"
@@ -49,15 +55,20 @@ class TestAcceptance(unittest.TestCase):
         auto      | pull   | pull branches with auto pull configured
 
         "remotes"
-        remotes   | list   |                | list remotes
+        remotes   | show   | name           | show the remote and its repos
         remotes   | add    | name, url      | add a remote
         remotes   | remove | name           | remove a remote
-        remotes   | init   | name, remote   | init repo in remote
-        remotes   | delete | name, remote   | remove repo from remote, maybe not implement for safety!!!
+
+        remotes   | list   |                | list remotes
         remotes   | clone  | repos, remote  | clone to remotes to another https://stackoverflow.com/questions/7818927/git-push-branch-from-one-remote-to-another
-        remotes   | show   | name           | show the remote and its repos
+
+        "move to different command maybe"
         remotes   | check  | repos, remotes | find non up to date repos across all remotes
         remotes   | sync   | repos, remotes | fix non up to date repos across all remotes
+
+        "maybe"
+        remotes   | delete | name, remote   | remove repo from remote, maybe not implement for safety!!!
+        remotes   | init   | name, remote   | init repo in remote
 
     """
 
