@@ -41,10 +41,10 @@ class CommandAuto(AbstractNodeCommand):
     help="Commands concerning the automatic commit, push, fetch, and pull"
     def get_sub_commands(self):
         return [
-                CommandAutoAdd(self.interactor),
-                CommandAutoSet(self.interactor),
-                CommandAutoRemove(self.interactor),
-                CommandAutoShow(self.interactor),
+                CommandAutoAdd,
+                CommandAutoSet,
+                CommandAutoRemove,
+                CommandAutoShow,
                 ]
 
 class CommandAutoAdd(AbstractNodeCommand):
@@ -53,8 +53,8 @@ class CommandAutoAdd(AbstractNodeCommand):
 
     def get_sub_commands(self):
         return [
-                CommandAutoAddPush(self.interactor),
-                CommandAutoAddFetch(self.interactor),
+                CommandAutoAddPush,
+                CommandAutoAddFetch,
                 ]
 
 class CommandAutoSet(AbstractNodeCommand):
@@ -63,10 +63,10 @@ class CommandAutoSet(AbstractNodeCommand):
 
     def get_sub_commands(self):
         return [
-                CommandAutoSetCommit(self.interactor),
-                CommandAutoSetPush(self.interactor),
-                CommandAutoSetFetch(self.interactor),
-                CommandAutoSetPull(self.interactor),
+                CommandAutoSetCommit,
+                CommandAutoSetPush,
+                CommandAutoSetFetch,
+                CommandAutoSetPull,
                 ]
 
 class CommandAutoRemove(AbstractNodeCommand):
@@ -75,10 +75,10 @@ class CommandAutoRemove(AbstractNodeCommand):
 
     def get_sub_commands(self):
         return [
-                CommandAutoRemoveCommit(self.interactor),
-                CommandAutoRemovePush(self.interactor),
-                CommandAutoRemoveFetch(self.interactor),
-                CommandAutoRemovePull(self.interactor),
+                CommandAutoRemoveCommit,
+                CommandAutoRemovePush,
+                CommandAutoRemoveFetch,
+                CommandAutoRemovePull,
                 ]
 
 "show"

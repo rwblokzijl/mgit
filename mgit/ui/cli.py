@@ -1,14 +1,22 @@
 from mgit.ui.ui import UI
 
+from mgit.state.config_state_interactor import ConfigStateInteractor
+from mgit.state.system_state_interactor import SystemStateInteractor
+
 import argparse
+
+from typing import *
 
 from abc import ABC, abstractmethod
 
 class AbstractCommand(ABC):
-    command = None
-    help = None
-    def __init__(self, interactor):
-        self.interactor = interactor
+    command: Optional[str] = None
+    help:    Optional[str] = None
+    def __init__(self, *args, **kwargs):
+        self.interactor = kwargs.get("interactor")
+        self.config_state_interactor: ConfigStateInteractor = kwargs.get("config_state_interactor")
+        self.system_state_interactor: SystemStateInteractor = kwargs.get("system_state_interactor")
+
         assert self.command is not None
         self.unique_key = str(id(self))
 
@@ -30,7 +38,7 @@ class AbstractCommand(ABC):
 class AbstractNodeCommand(AbstractCommand):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.sub_commands = {c.command:c for c in self.get_sub_commands()}
+        self.sub_commands = {COMMAND_CLASS.command:COMMAND_CLASS(*args, **kwargs) for COMMAND_CLASS in self.get_sub_commands()}
 
     @abstractmethod
     def get_sub_commands(self):

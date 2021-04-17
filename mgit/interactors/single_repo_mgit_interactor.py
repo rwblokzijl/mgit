@@ -1,5 +1,8 @@
 from mgit.interactors.base_mgit_interactor import BaseMgitInteractor
 
+from mgit.state.config_state_interactor import ConfigStateInteractor
+from mgit.state.system_state_interactor import SystemStateInteractor
+
 from pathlib import Path
 
 class SingleRepoInteractor(BaseMgitInteractor):
@@ -85,3 +88,8 @@ class SingleRepoInteractor(BaseMgitInteractor):
         with self.repos:
             self.repos.rename(name, new_name)
 
+    def repo_show_by_name(self, name):
+        pass
+
+    def repo_show_by_path(self, name):
+        pass

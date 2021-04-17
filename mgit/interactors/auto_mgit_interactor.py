@@ -4,7 +4,6 @@ class AutoRepoInteractor(BaseMgitInteractor):
     # def categories_list(self):
     #     return list(self.repos.by("categories").keys())
 
-
     "Helpers that interact"
     def add_to_key(self, name, key, remotes):
         self.repo_should_exist(name)

@@ -96,3 +96,37 @@ class CommandSingleRepoRename(AbstractLeafCommand):
 
     def run_command(self, args):
         return self.interactor.repo_rename(**args)
+
+class CommandSingleRepoShow(AbstractLeafCommand):
+    command = "show"
+    help="Show a tracked repo state"
+
+    def build(self, parser):
+        parser.add_argument("name", help="Name of the project", type=str)
+
+    def run_command(self, args):
+        name = args["name"]
+        config_state = self.config_state_interactor.get_state(name=name)
+        if not config_state:
+            return None
+        if not config_state.path:
+            return f"{name} doesn't specify a path"
+        system_state = self.system_state_interactor.get_state(path=config_state.path)
+        return system_state + config_state
+
+class CommandSingleRepoCheck(AbstractLeafCommand):
+    command = "check"
+    help="Compares a repo config state to the repo state on the system"
+
+    def build(self, parser):
+        parser.add_argument("name", help="Name of the project", type=str)
+
+    def run_command(self, args):
+        name = args["name"]
+        config_state = self.config_state_interactor.get_state(name=name)
+        if not config_state:
+            return None
+        if not config_state.path:
+            return f"{name} doesn't specify a path"
+        system_state = self.system_state_interactor.get_state(path=config_state.path)
+        return system_state.compare(config_state)

@@ -104,23 +104,41 @@ The business logic is this contained in the "state description" object and "stat
 
 ### State description
 
-- repo(name)
-    - desired_path
-    - remotes
-        * remote_name:remote_repo_name
-        * remote_name:remote_repo_name
-    - parent
+- Repo
+    - name
+    - system_path
+    - remotes: List<RemoteRepo>
+    - parent: Repo?
+    - BranchLinks: List<BranchLink>
+    - repo_id
+- RemoteRepo
+    * name
+- NamedRemoteRepo<RemoteRepo>
+    * Remote
+- Remote
+    * name: str
+    * url-prefix: str # path where repos are to be found
+    * type: TYPE [ssh, github, gitlab...]
+- UnnamedRemoteRepo<RemoteRepo>
+    * url
+- AutoCommand ??? This part is hard to define yet
+    * local_ref: str (branchname, None is all)
+    * remote_branches: List<RemoteRepoBranch>
+    * Fetch: Bool
+    * Push:  Bool
+    * Pull: Bool
+    * Commit: Bool
+- RemoteBranch
+    * remote_repo: RemoteRepo
+    * ref: str
+- LocalBranch
+    * ref: str
 
 tracked-branches:
   - branch:
     name: "val"
 The remote state description =
 
-### We store remote information seperately and reference it by name
-  - remote:
-    name: str
-    url-prefix: str # path where repos are to be found
-    type: TYPE [ssh, github, gitlab...]
 
 
 ### Source interface
@@ -258,6 +276,18 @@ My local repos do not have information about changes on the remotes.
 Maintain information on extra remotes "in the repo".
 
 # TODO order of change
+
+1. Define BranchRelation s (formerly auto commands)
+    - Most granular level:
+        * Refspec for push and fetch: <remote>-fetch = refspec
+        * merge spec for tracked brances: branch-<ref> = remote:ref remote:ref
+        * merge
+        * Local-branch -> Remote Branch
+            + remote1:rbranch:lbranch
+            fetch = +refs/heads/*:refs/remotes/origin/*
+
+    - Less granular, allows :
+        * remote1:rbranch:lbranch
 
 1. Migrate from complex "interactior" model to source and sink model
     a. Create base classes:

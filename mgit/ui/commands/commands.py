@@ -14,18 +14,20 @@ class MgitCommand(AbstractNodeCommand):
     command = "mgit"
     def get_sub_commands(self):
         return [
-                CommandCategory(self.interactor),
-                CommandRemote(self.interactor),
-                CommandAuto(self.interactor),
+                CommandCategory,
+                CommandRemote,
+                CommandAuto,
 
-                CommandSingleRepoInit(self.interactor),
-                CommandSingleRepoInstall(self.interactor),
-                CommandSingleRepoRename(self.interactor),
+                CommandSingleRepoInit,
+                CommandSingleRepoInstall,
+                CommandSingleRepoRename,
+                CommandSingleRepoShow,
+                CommandSingleRepoCheck,
 
-                CommandMultiRepoList(self.interactor),
-                CommandMultiRepoStatus(self.interactor),
-                CommandMultiRepoDirty(self.interactor),
-                CommandMultiRepoFetch(self.interactor),
+                CommandMultiRepoList,
+                CommandMultiRepoStatus,
+                CommandMultiRepoDirty,
+                CommandMultiRepoFetch,
                 ]
 
     def run(self, args):

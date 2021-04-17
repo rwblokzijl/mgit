@@ -32,7 +32,9 @@ class TestAcceptance(unittest.TestCase):
         archive   |        | name                    | add archive flag to
         unarchive |        | name                    | remove archive flag to
         clone     |        | name, remote            | clone a repo to an existing remote
+
         show      |        | name                    | show a repo by name
+        fix       |        | name                    | show a repo by name
 
         "repo remote"
         remote    | add    | repo, remote, name      | add a remote to the repo, and vv

@@ -56,7 +56,6 @@ class CommandMultiRepoStatus(AbstractLeafCommand):
         parser.add_argument("-d",   "--dirty",     help="Only show dirty repos", action='store_true')
         parser.add_argument("-p",   "--remotes",   help="Include unpushed/pulled in dirty", default=False, action="store_true")
 
-
     def run_command(self, args):
         return self.interactor.repos_status(**args)
 

@@ -13,8 +13,8 @@ class CommandRemote(AbstractNodeCommand):
     help="Commands concerning the remotes"
     def get_sub_commands(self):
         return [
-                CommandRemoteList(self.interactor),
-                CommandRemoteAdd(self.interactor),
+                CommandRemoteList,
+                CommandRemoteAdd,
                 ]
 
 class CommandRemoteList(AbstractLeafCommand):

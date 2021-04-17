@@ -6,10 +6,10 @@ class CommandCategory(AbstractNodeCommand):
     help="Manage categories"
     def get_sub_commands(self):
         return [
-                CommandCategoryList(self.interactor),
-                CommandCategoryShow(self.interactor),
-                CommandCategoryAdd(self.interactor),
-                CommandCategoryRemove(self.interactor)
+                CommandCategoryList,
+                CommandCategoryShow,
+                CommandCategoryAdd,
+                CommandCategoryRemove,
                 ]
 
 class CommandCategoryList(AbstractLeafCommand):
