@@ -1,11 +1,12 @@
 from mgit.ui.ui import UI
 
-from mgit.state.config_state_interactor import ConfigStateInteractor
-from mgit.state.system_state_interactor import SystemStateInteractor
+from mgit.state.config_state_interactor  import ConfigStateInteractor
+from mgit.state.system_state_interactor  import SystemStateInteractor
+from mgit.state.general_state_interactor import GeneralStateInteractor
 
 import argparse
 
-from typing import *
+from typing import Optional
 
 from abc import ABC, abstractmethod
 
@@ -16,8 +17,10 @@ class AbstractCommand(ABC):
         self.interactor = kwargs.get("interactor")
         self.config_state_interactor: ConfigStateInteractor = kwargs.get("config_state_interactor")
         self.system_state_interactor: SystemStateInteractor = kwargs.get("system_state_interactor")
+        self.general_state_interactor: GeneralStateInteractor = kwargs.get("general_state_interactor")
 
         assert self.command is not None
+        self.sub_commands = None
         self.unique_key = str(id(self))
 
     @abstractmethod
@@ -55,6 +58,19 @@ class AbstractNodeCommand(AbstractCommand):
         pass
 
 class AbstractLeafCommand(AbstractCommand):
+
+    def repo(self, parser):
+        me = parser.add_mutually_exclusive_group()
+        me.add_argument("-n", "--name", help="Process as name", type=str) # definitely name
+        me.add_argument("-p", "--path", help="Process as path", type=str) # definitely path
+        me.add_argument("repo", help="Name or path of the project", nargs="?", type=str) # try to infer
+        return me
+
+    def repo_or_all(self, parser):
+        me = self.repo(parser)
+        me.add_argument("-a", "--all", help="All repos in config", action="store_true") # all repos in config
+        return me
+
     @abstractmethod
     def build(self, parser):
         pass

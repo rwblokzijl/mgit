@@ -6,6 +6,7 @@ from mgit.ui.cli_utils import query_yes_no
 import argparse
 from pathlib import Path
 import json
+import os
 
 class CommandSingleRepoInit(AbstractLeafCommand):
     command = "init"
@@ -102,31 +103,67 @@ class CommandSingleRepoShow(AbstractLeafCommand):
     help="Show a tracked repo state"
 
     def build(self, parser):
-        parser.add_argument("name", help="Name of the project", type=str)
+        self.repo_or_all(parser)
 
     def run_command(self, args):
-        name = args["name"]
-        config_state = self.config_state_interactor.get_state(name=name)
-        if not config_state:
-            return None
-        if not config_state.path:
-            return f"{name} doesn't specify a path"
-        system_state = self.system_state_interactor.get_state(path=config_state.path)
-        return system_state + config_state
+        repo = args["repo"]
+        if args["name"]:
+            config_state, system_state = self.general_state_interactor.get_both_from_name(repo)
+        elif args["path"]:
+            config_state, system_state = self.general_state_interactor.get_both_from_path(repo)
+        elif args["all"]:
+            return dict(zip(["installed", "conficting", "missing"], self.general_state_interactor.combine_all()))
+        else: #infer
+            repo = repo or "."
+            config_state = self.config_state_interactor.get_state(name=repo)
+            if not config_state:
+                config_state, system_state = self.general_state_interactor.get_both_from_path(repo)
+            else:
+                config_state, system_state = self.general_state_interactor.get_both_from_name(repo)
+        combined = config_state + system_state
+        if combined:
+            return combined
+        return config_state, system_state
+
 
 class CommandSingleRepoCheck(AbstractLeafCommand):
     command = "check"
     help="Compares a repo config state to the repo state on the system"
 
     def build(self, parser):
-        parser.add_argument("name", help="Name of the project", type=str)
+        self.repo_or_all(parser)
 
     def run_command(self, args):
-        name = args["name"]
-        config_state = self.config_state_interactor.get_state(name=name)
+        repo = args["repo"]
+        if args["name"]:
+            return self.general_state_interactor.compare_on_name(repo)
+        if args["path"]:
+            return self.general_state_interactor.compare_on_path(repo)
+        if args["all"]:
+            return self.general_state_interactor.compare_all()
+        repo = repo or "."
+        config_state = self.config_state_interactor.get_state(name=repo)
         if not config_state:
-            return None
-        if not config_state.path:
-            return f"{name} doesn't specify a path"
-        system_state = self.system_state_interactor.get_state(path=config_state.path)
-        return system_state.compare(config_state)
+            return self.general_state_interactor.compare_on_path(repo)
+        else:
+            return self.general_state_interactor.compare_on_name(repo)
+
+class CommandSingleRepoUpdate(AbstractLeafCommand):
+    command = "update"
+    help="Updates the config based on the system or vice versa"
+
+    def build(self, parser):
+        self.repo(parser)
+
+    def run_command(self, args):
+        repo = args["repo"]
+        if args["name"]:
+            return self.general_state_interactor.compare_on_name(repo)
+        if args["path"]:
+            return self.general_state_interactor.compare_on_path(repo)
+        repo = repo or "."
+        config_state = self.config_state_interactor.get_state(name=repo)
+        if not config_state:
+            return self.general_state_interactor.compare_on_path(repo)
+        else:
+            return self.general_state_interactor.compare_on_name(repo)

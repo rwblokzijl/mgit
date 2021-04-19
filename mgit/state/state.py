@@ -15,11 +15,14 @@ class RemoteType(Enum):
 class Remote:
     name:        str
     url:         str
-    path:         str
+    path:        str
     remote_type: RemoteType
 
-@dataclass
-class RemoteRepo:
+    def __contains__(self, element):
+        return self.url in element.get_url()
+
+@dataclass # type: ignore # mypy cannot handle abstract classes properly for some annoying reason
+class RemoteRepo(ABC):
     @abstractmethod
     def represent(self, indent=0):
         raise NotImplementedError("Subclass should implement")
@@ -32,16 +35,16 @@ class RemoteRepo:
     def get_url(self):
         raise NotImplementedError("Subclass should implement")
 
-    def __eq__(self, other):
-        return self.get_url() == other.get_url() and self.get_name() == other.get_name()
+    def compare(self, other):
+        return isinstance(other, RemoteRepo) and self.get_url() == other.get_url() and self.get_name() == other.get_name()
 
-    def __hash__(self):
-        return hash((self.get_url(), self.get_name()))
+    def remote_key(self):
+        return f"{self.get_name()}:{self.get_url()}"
 
     def __repr__(self):
         return f"{self.get_url()} {self.get_name()}"
 
-@dataclass(frozen=True, eq=False, repr=False)
+@dataclass(frozen=True, repr=False)
 class NamedRemoteRepo(RemoteRepo):
     remote: Remote
     project_name: str
@@ -55,7 +58,10 @@ class NamedRemoteRepo(RemoteRepo):
     def get_url(self):
         return self.remote.url + ":" + os.path.join(self.remote.path, self.project_name)
 
-@dataclass(frozen=True, eq=False, repr=False)
+    def __repr__(self):
+        return f"Named: {self.get_url()} {self.get_name()}"
+
+@dataclass(frozen=True, repr=False)
 class UnnamedRemoteRepo(RemoteRepo):
     remote_name:   str
     url: str
@@ -69,10 +75,13 @@ class UnnamedRemoteRepo(RemoteRepo):
     def get_url(self):
         return self.url
 
+    def __repr__(self):
+        return f"Named: {self.get_url()} {self.get_name()}"
+
 @dataclass(frozen=True)
 class RemoteBranch:
     remote_repo: RemoteRepo
-    ref:         str
+    ref:         str # can be *
 
 @dataclass(frozen=True)
 class LocalBranch:
@@ -84,22 +93,25 @@ class AutoCommand:
     local_branch:    Optional[LocalBranch] = None
     fetch:           bool                  = False
     push:            bool                  = False
-    pull:            bool                  = False
     commit:          bool                  = False
 
 @dataclass(frozen=True)
 class Conflict:
     key: str
-    left: "RepoState"
+    left:  "RepoState"
     right: "RepoState"
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return f"{self.key} in {self.left.source} ({self.left.__getattribute__(self.key)}) doesn't match {self.key} in {self.right.source} ({self.right.__getattribute__(self.key)})"
+        left  = self.left.__getattribute__(self.key)
+        right = self.right.__getattribute__(self.key)
+        if type(left) == type(right) == set:
+            left, right = left - right, right - left
+        return f"{self.left.name or self.right.name}: {self.key} in {self.left.source} ({left}) doesn't match {self.key} in {self.right.source} ({right})"
 
-@dataclass(frozen=True)
+@dataclass()
 class RepoState:   # No defaults to catch changes around the code
     source:        str                   = field(repr=False, compare=False)
     name:          Optional[str]
@@ -107,16 +119,19 @@ class RepoState:   # No defaults to catch changes around the code
     path:          Optional[Path]
     parent:        Optional['RepoState']
     remotes:       Set[RemoteRepo]
-    origin:        Optional[RemoteRepo]
+    # origin:        Optional[RemoteRepo]
     auto_commands: Optional[Set[AutoCommand]]
     archived:      Optional[bool]
     categories:    Optional[Set[str]]
 
-    def represent(self, indent=0) -> str:
-        result = [""]
-        def add_line(line):
+    # def __eq__(self, other):
+    #     return self.compare(other, hard=True) == []
+
+    def represent(self, indent:int =0, step:int =2) -> str:
+        result = [""] # put string in list to make it mutable for the function below
+        def add_line(line, indent=indent+step):
             result[0] += " " * (indent) + line + "\n"
-        # add_line(f"name = {self.name or ''}")
+        add_line((self.name or '') + ":" + self.source or "", indent)
         add_line(f"repo_id = {self.repo_id or ''}")
         add_line(f"path = {self.path or ''}")
 
@@ -125,15 +140,15 @@ class RepoState:   # No defaults to catch changes around the code
 
         add_line(f"remotes = ")
         for remote in self.remotes:
-            result[0] += remote.represent(indent+2)
+            result[0] += remote.represent(indent+step*2)
 
-        if self.origin:
-            result[0] += " " * (indent) + "origin = " + self.origin.represent()
+        # if self.origin:
+        #     result[0] += " " * (indent+step) + "origin = " + self.origin.represent()
 
         if self.auto_commands is not None:
             add_line(f"auto_commands = ")
             for auto in self.auto_commands:
-                result[0] += " " * (indent+2) + str(auto)#.represent(indent+2)
+                result[0] += " " * (indent+step) + str(auto)#.represent(indent+step)
 
         add_line(f"archived = {self.archived or False}")
         if self.categories is not None:
@@ -153,23 +168,43 @@ class RepoState:   # No defaults to catch changes around the code
 
         return zip(keys, ours, theirs)
 
-    def compare(self, other: "RepoState") -> List[Conflict]:
+    def compare(self, other: "RepoState", hard=False) -> List[Conflict]:
         "Returns a list of conficts"
+        if other is None:
+            return None
 
         ans: List[Conflict] = []
         for key, our, their in self.zip(other):
-            if (    our   is not None and
-                    their is not None and
-                    our != their):
+            if not self.compare_key(key, our, their, hard):
                 ans.append( Conflict( key=key, left=self, right=other))
         return ans
+
+    def compare_key(self, key, our, their, hard=False):
+        if (    our   is not None and
+                their is not None and
+                our != their):
+            if key == "remotes" and not hard:
+                our_remotes = sorted([r.remote_key() for r in our])
+                their_remotes = sorted([r.remote_key() for r in their])
+                # if key == "parent":
+                #     ans += our.compare(their)
+                # else:
+                if our_remotes == their_remotes:
+                    return True
+                return False
+        return True
+
+    def __lt__(self, other):
+        """Sorting happens on path"""
+        if str(other.path.expanduser()).startswith(str(self.path.expanduser())):
+            return True
+        else:
+            return str(self.path) < str(other.path)
 
     def __add__(self, other: "RepoState") -> Optional["RepoState"]:
         repo_state: dict = {"source": ""}
         for key, our, their in self.zip(other):
-            if (    our   is not None and
-                    their is not None and
-                    our != their):
+            if not self.compare_key(key, our, their, hard=False):
                 return None
 
             if our is None:
@@ -177,22 +212,22 @@ class RepoState:   # No defaults to catch changes around the code
             else:
                 repo_state[key] = our
 
-        # add all named remotes
-        remotes: Set[RemoteRepo]  = {remote for remote in self.remotes if isinstance(remote, NamedRemoteRepo)}
-        remotes |= {remote for remote in other.remotes if isinstance(remote, NamedRemoteRepo)}
+        # add all remotes to a
+        remotes = {remote.remote_key():remote for remote in self.remotes}
+        remotes.update({remote.remote_key():remote for remote in other.remotes})
 
-        # afterwards add unnamed remotes (will not add to set if an "equal" named exits
-        remotes |= self.remotes
-        remotes |= other.remotes
+        # add all named remotes and overwrite those with same name:url
+        remotes.update({remote.remote_key():remote for remote in self.remotes if isinstance(remote, NamedRemoteRepo)})
+        remotes.update({remote.remote_key():remote for remote in other.remotes if isinstance(remote, NamedRemoteRepo)})
 
-        repo_state["remotes"] = remotes
+        repo_state["remotes"] = set(remotes.values())
 
-        origin = self.origin or other.origin #might be None
-        for remote in remotes:
-            if remote == origin:
-                origin = remote
-                break
-        repo_state["origin"] = origin
+        # origin = self.origin or other.origin #might be None
+        # for remote in remotes:
+        #     if remote == origin:
+        #         origin = remote
+        #         break
+        # repo_state["origin"] = origin
 
         repo_state['categories'] = (self.categories or set()).union(other.categories or set())
 

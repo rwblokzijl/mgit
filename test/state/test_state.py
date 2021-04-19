@@ -1,6 +1,7 @@
 from mgit.state.state import RepoState, RemoteRepo, NamedRemoteRepo, UnnamedRemoteRepo, Remote, AutoCommand, RemoteBranch, LocalBranch, RemoteType
 
 from pathlib import Path
+from git import Repo
 
 import unittest
 
@@ -36,7 +37,7 @@ class TestState(unittest.TestCase):
                 source="none",
                 name="name",
                 path="path",
-                origin=n_repo,
+                # origin=n_repo,
                 archived=False,
                 categories=[],
                 remotes=[ n_repo, u_repo ],
@@ -54,20 +55,20 @@ class TestState(unittest.TestCase):
                 parent=None)
 
     def test_compare_remote_repos(self):
-        self.assertEqual(
-                {UnnamedRemoteRepo(
+        self.assertTrue(
+                UnnamedRemoteRepo(
                     remote_name="remote_name",
                     url="the_url.com:/kek"
-                    )},
-                {NamedRemoteRepo(
-                    project_name="kek",
-                    remote=Remote(
-                        name="remote_name",
-                        url="the_url.com",
-                        path="/",
-                        remote_type=RemoteType.SSH
-                        ))}
-                    )
+                    ).compare(
+                        NamedRemoteRepo(
+                            project_name="kek",
+                            remote=Remote(
+                                name="remote_name",
+                                url="the_url.com",
+                                path="/",
+                                remote_type=RemoteType.SSH
+                                ))
+                    ))
 
     def test_add_repo_state_add(self):
         n_repo = NamedRemoteRepo(
@@ -88,7 +89,7 @@ class TestState(unittest.TestCase):
             repo_id="id2",
             name="parent",
             path=Path("parentPath"),
-            origin=None,
+            # origin=None,
             archived=False,
             categories={"1"},
             remotes=set(),
@@ -96,9 +97,9 @@ class TestState(unittest.TestCase):
             parent=None
             )
 
-        self.assertEqual(
-                u_repo,
-                n_repo
+        self.assertTrue(
+                u_repo.compare(
+                n_repo)
                 )
 
         con_repo = RepoState(
@@ -106,7 +107,7 @@ class TestState(unittest.TestCase):
                 repo_id="ID",
                 name="name",
                 path=Path("path1"),
-                origin=n_repo,
+                # origin=n_repo,
                 archived=False,
                 categories={"2", "3"},
                 remotes={n_repo},
@@ -119,7 +120,7 @@ class TestState(unittest.TestCase):
                 repo_id="ID",
                 name=None,
                 path=Path("path1"),
-                origin=u_repo,
+                # origin=u_repo,
                 archived=None,
                 categories=None,
                 remotes={u_repo},
@@ -139,13 +140,14 @@ class TestState(unittest.TestCase):
         self.assertEqual(comb1, comb2)
 
         self.assertIsInstance(comb1, RepoState)
+        self.assertIsInstance(comb2, RepoState)
 
         self.assertEqual( comb1.parent, parent)
         self.assertEqual( comb1.repo_id, "ID")
         self.assertEqual( comb1.name, "name")
         self.assertEqual( comb1.path, Path("path1"))
-        self.assertIsInstance( comb1.origin, NamedRemoteRepo)
-        self.assertIsInstance( comb2.origin, NamedRemoteRepo)
+        # self.assertIsInstance( comb1.origin, NamedRemoteRepo)
+        # self.assertIsInstance( comb2.origin, NamedRemoteRepo)
         self.assertEqual( comb1.archived, False)
         self.assertEqual( comb2.archived, False)
         self.assertEqual( len(comb1.remotes), 1)
@@ -155,3 +157,8 @@ class TestState(unittest.TestCase):
         self.assertEqual( comb1.categories, {"2", "3"})
         self.assertEqual( comb2.categories, {"2", "3"})
 
+    # def test_ref(self):
+    #     reader = Repo("~/devel/mgit").config_reader()
+    #     remote = reader.sections()[2]
+    #     for k, v in reader.items_all(remote):
+    #         print(k, v)

@@ -1,6 +1,11 @@
 from mgit.state.state import RepoState, NamedRemoteRepo, Remote, RemoteType
 from mgit.state.config_state_interactor import ConfigStateInteractor
 
+from parameterized import parameterized
+
+from pathlib import Path
+
+import shutil
 import unittest
 
 class TestConfigState(unittest.TestCase):
@@ -58,13 +63,23 @@ class TestConfigState(unittest.TestCase):
         """
 
     def setUp(self):
+        self.repos_config           = "./test/__files__/test_repos_acceptance.ini"
+        self.remotes_config         = "./test/__files__/test_remote_acceptance.ini"
+
+        self.default_repos_config   = "./test/__files__/test_repos_acceptance_default.ini"
+        self.default_remotes_config = "./test/__files__/test_remote_acceptance_default.ini"
+
         self.c = ConfigStateInteractor(
-                "test/__files__/test_remote_acceptance.ini",
-                "test/__files__/test_repos_acceptance.ini"
+                self.remotes_config,
+                self.repos_config
                 )
 
     def tearDown(self):
-        pass
+        self.reset_configs()
+
+    def reset_configs(self):
+        shutil.copy(self.default_remotes_config, self.remotes_config)
+        shutil.copy(self.default_repos_config, self.repos_config)
 
     def test_get_by_id(self):
         ans = self.c.get_state(repo_id="abc123")
@@ -81,7 +96,7 @@ class TestConfigState(unittest.TestCase):
                 )
 
         self.assertEqual(
-                "/tmp/mgit/acceptance/local/test_repo_1",
+                Path("/tmp/mgit/acceptance/local/test_repo_1"),
                 ans.path
                 )
 
@@ -113,7 +128,7 @@ class TestConfigState(unittest.TestCase):
                 )
 
         self.assertEqual(
-                "/tmp/mgit/acceptance/local/test_repo_1",
+                Path("/tmp/mgit/acceptance/local/test_repo_1"),
                 ans.path
                 )
 
@@ -143,6 +158,7 @@ class TestConfigState(unittest.TestCase):
                 ans.remotes)
 
     def test_get_state_origin(self):
+        """
         ans = self.c.get_state(name="test_repo_1")
         self.assertIsInstance(ans, RepoState)
 
@@ -157,13 +173,18 @@ class TestConfigState(unittest.TestCase):
                 NamedRemoteRepo(r1, project_name="test_repo_1"),
                 ans.origin
                 )
+        """
+
+    def test_get_state_archived_false(self):
+        ans = self.c.get_state(name="test_repo_1")
+        self.assertIsInstance(ans, RepoState)
 
         self.assertEqual(
                 False,
                 ans.archived
                 )
 
-    def test_get_state_archived(self):
+    def test_get_state_archived_true(self):
         ans = self.c.get_state(name="test_repo_6")
         self.assertIsInstance(ans, RepoState)
 
@@ -193,4 +214,82 @@ class TestConfigState(unittest.TestCase):
     def test_get_state_ignored(self):
         ans = self.c.get_state(name="Example")
         self.assertIsNone(ans)
+
+    def test_get_state_by_path(self):
+        ans = self.c.get_state( path="/tmp/mgit/acceptance/local/test_repo_2/test_repo_3")
+        self.assertIsInstance(ans, RepoState)
+
+    "Test writing"
+
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_set_state_invariance(self, name):
+        "Tests writing and re-reading of a config"
+        #get a repo
+        ans = self.c.get_state(name=name)
+        self.assertIsInstance(ans, RepoState)
+
+        #mutate
+        ans.archived = True
+        ans.path /= Path("more")
+        ans.repo_id = "asdf"
+        ans.categories.add("shoop")
+
+        # write to config and read again
+        self.c.set_state(ans, True)
+        self.c._read_configs()
+        new = self.c.get_state(name=name)
+
+        # written should be same as merged
+        self.assertEqual(
+                new,
+                ans
+                )
+
+    @parameterized.expand([ "test_repo_3", "test_repo_5" ])
+    def test_set_state_invariance_parent(self, name="test_repo_3"):
+        "Tests writing and re-reading of a config"
+        #get a repo
+        ans = self.c.get_state(name=name)
+        self.assertIsInstance(ans, RepoState)
+
+        self.assertIsNotNone(ans.parent)
+
+        #mutate
+        ans.archived = True
+        # ans.path /= "~/keking/smek"
+        ans.repo_id = "asdf"
+        ans.categories = set(["shoop"])
+        ans.parent = None
+
+        # write to config and read again
+        self.c.set_state(ans)
+        self.c._read_configs()
+        new = self.c.get_state(name=name)
+
+        self.assertNotEqual(
+                new,
+                ans
+                )
+
+        new.categories = set(["shoop"])
+
+        self.assertEqual(
+                new,
+                ans
+                )
+
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_remove_and_recreate(self, name: str):
+        before = self.c.get_state(name=name)
+        self.c.remove_state(before)
+
+        ans = self.c.get_state(name=name)
+        self.assertIsNone(ans)
+
+        self.c.set_state(before)
+
+        new = self.c.get_state(name=name)
+        self.assertEqual(
+                new,
+                before)
 

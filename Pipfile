@@ -7,6 +7,7 @@ verify_ssl = true
 pylint = "*"
 jedi = "*"
 mypy = "*"
+parameterized = "*"
 
 [packages]
 gitpython = "*"

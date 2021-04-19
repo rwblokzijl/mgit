@@ -12,13 +12,12 @@ class TestAcceptance(unittest.TestCase):
 
     """
     This class tests every command for real on the system
-    """
 
-    repo
-    remote
-    auto
+        repo
+        remote
+        auto
 
-    """ Commands to add acceptance tests for:
+        Commands to add acceptance tests for:
         "general"
         update    | update properties about the repos that can be infered
         sanity    | full sanity check of all repos/remotes/configs

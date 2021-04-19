@@ -4,6 +4,7 @@ from mgit.ui.commands.commands import MgitCommand
 
 from mgit.state.config_state_interactor import ConfigStateInteractor
 from mgit.state.system_state_interactor import SystemStateInteractor
+from mgit.state.general_state_interactor import GeneralStateInteractor
 from mgit.state.state import RepoState
 
 import sys
@@ -17,14 +18,13 @@ def is_iterable(arg):
 def pretty_string(data, indent=0, step=2):
     ans = ""
     if isinstance(data, RepoState):
-        ans += (data.name or "") + '\n'
-        ans += data.represent(indent+step) + '\n'
+        ans += data.represent(indent, step=2) + '\n'
     elif isinstance(data, dict):
         for key, value in data.items():
-            if '\n' in pretty_string(value).strip():
+            if '\n' not in pretty_string(value).strip():
                 ans += ' ' * (indent) + str(key) + " = " + str(value or "") + '\n'
             else:
-                ans += ' ' * (indent) + str(key) + '\n'
+                ans += ' ' * (indent) + str(key) + ":" + '\n'
                 ans += pretty_string(value, indent=indent+step, step=step) + '\n'
     elif is_iterable(data):
         for value in data:
@@ -33,7 +33,7 @@ def pretty_string(data, indent=0, step=2):
         pass
     else:
         ans += ' ' * (indent) + str(data) + "\n"
-    return ans.strip()
+    return ans.strip('\n')
 
 def pperror(error):
     print(error, file=sys.stderr)
@@ -49,11 +49,16 @@ def main(repos_config, remotes_config, args=None, silent=False):
             repos_file   = repos_config,
             )
     system_state_interactor = SystemStateInteractor()
+    general_state_interactor = GeneralStateInteractor(
+            config_state_interactor=config_state_interactor,
+            system_state_interactor=system_state_interactor
+            )
     # The CLI ui handles argparse and calls the interactor
     ui = CLI(MgitCommand(
         interactor=interactor,
         config_state_interactor=config_state_interactor,
-        system_state_interactor=system_state_interactor
+        system_state_interactor=system_state_interactor,
+        general_state_interactor=general_state_interactor
         ))
     out = ui.run(args)
     if out and not silent:

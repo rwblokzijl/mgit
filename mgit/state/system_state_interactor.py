@@ -4,7 +4,7 @@ from git import Repo
 from git.exc import GitError
 from pathlib import Path
 
-from typing import Optional
+from typing import Optional, Set
 
 import subprocess
 
@@ -47,8 +47,8 @@ class SystemStateInteractor:
             return None
         return self._get_state_from_repo(parent)
 
-    def _get_state_from_repo(self, repo):
-        remotes = set([UnnamedRemoteRepo(rem.name, rem.url) for rem in repo.remotes])
+    def _get_state_from_repo(self, repo) -> RepoState:
+        remotes: Set[RemoteRepo] = set([UnnamedRemoteRepo(rem.name, rem.url) for rem in repo.remotes])
         return RepoState(
                 source="repo",
                 repo_id=self._get_repo_id_from_path(repo.working_dir),
@@ -58,7 +58,7 @@ class SystemStateInteractor:
 
                 #unknown
                 name=None,
-                origin=None,
+                # origin=None,
                 auto_commands=None,
                 archived=None,
                 categories=None

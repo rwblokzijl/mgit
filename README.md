@@ -278,13 +278,13 @@ Maintain information on extra remotes "in the repo".
 # TODO order of change
 
 1. Define BranchRelation s (formerly auto commands)
-    - Most granular level:
-        * Refspec for push and fetch: <remote>-fetch = refspec
-        * merge spec for tracked brances: branch-<ref> = remote:ref remote:ref
-        * merge
-        * Local-branch -> Remote Branch
-            + remote1:rbranch:lbranch
-            fetch = +refs/heads/*:refs/remotes/origin/*
+
+    - mgit push:
+        * push all branches to all remotes
+        * refspecs map the push branches # not managed (maybe later)
+        * refspecs map the fetch branches # not managed (maybe later)
+        * tracking maps the merge (pull) # not managed (maybe later)
+        * we mass fetch remote* branch*
 
     - Less granular, allows :
         * remote1:rbranch:lbranch
