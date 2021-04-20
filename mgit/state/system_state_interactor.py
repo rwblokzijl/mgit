@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional, Set
 
 import subprocess
+import dataclasses
 
 class SystemStateInteractor:
     """Reads system state and returns a RepoState object"""
@@ -19,7 +20,22 @@ class SystemStateInteractor:
             return None
 
     def set_state(self, repo_state: RepoState):
-        raise NotImplementedError("Not yet implemented")
+        if not repo_state.path:
+            raise ValueError(f"Repo_state must have a path")
+        repo_keys = list(dataclasses.asdict(repo_state).keys())
+        repo_keys.remove("source")
+        repo_keys.remove("name")
+
+        # make changes here
+
+        assert not repo_keys, repo_keys
+
+    def _get_repo_from_path(self, path: Path):
+        try:
+            repo = Repo(path)
+        except GitError:
+            return None
+        return repo
 
     def _run_command(self, command):
         with subprocess.Popen(command,
@@ -29,15 +45,11 @@ class SystemStateInteractor:
             while (line := p.stdout.readline()):
                 yield line # TODO make non blocking, idk how right now
 
-    def _get_repo_id_from_path(self, path: Path):
-        try:
-            Repo(path)
-        except GitError:
+    def _get_repo_id(self, repo):
+        commits = list(repo.iter_commits('HEAD'))
+        if len(commits) < 1:
             return None
-        git_id = "".join([str(x.strip().decode("utf-8")) for x in self._run_command(f"cd {path} && git rev-list --parents HEAD | tail -1")])
-        if ' ' in git_id: #Git repo exists, but has no commits yet
-            return None
-        return(git_id)
+        return commits[-1].hexsha
 
     def _get_parent(self, repo):
         parent_path = Path(repo.working_dir).parents[0]
@@ -51,7 +63,7 @@ class SystemStateInteractor:
         remotes: Set[RemoteRepo] = set([UnnamedRemoteRepo(rem.name, rem.url) for rem in repo.remotes])
         return RepoState(
                 source="repo",
-                repo_id=self._get_repo_id_from_path(repo.working_dir),
+                repo_id=self._get_repo_id(repo),
                 path=Path(repo.working_dir),
                 remotes=remotes,
                 parent=self._get_parent(repo),

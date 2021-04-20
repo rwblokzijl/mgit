@@ -162,3 +162,28 @@ class TestState(unittest.TestCase):
     #     remote = reader.sections()[2]
     #     for k, v in reader.items_all(remote):
     #         print(k, v)
+
+    def test_subpath(self):
+        remote=Remote(
+                    name="remote_name",
+                    url='url',
+                    path='path',
+                    remote_type=RemoteType.SSH)
+
+        n_repo = NamedRemoteRepo(
+                project_name="name",
+                remote=remote
+                )
+
+        u_repo = UnnamedRemoteRepo(
+                remote_name="remote_name",
+                url="url:path/name")
+
+        self.assertIn(n_repo, remote)
+        self.assertIn(u_repo, remote)
+
+        u_repo = UnnamedRemoteRepo(
+                remote_name="remote_name",
+                url="url:pathh/name")
+
+        self.assertNotIn(u_repo, remote)

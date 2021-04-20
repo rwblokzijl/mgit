@@ -1,6 +1,13 @@
 from mgit.state.state import RepoState, RemoteRepo, NamedRemoteRepo, UnnamedRemoteRepo, Remote, AutoCommand, RemoteBranch, LocalBranch, RemoteType
 
-from typing import Optional, Union
+from typing import (
+        Dict,
+        Iterator,
+        Optional,
+        Union,
+        overload,
+        )
+
 from pathlib import Path
 
 import configparser
@@ -24,7 +31,16 @@ class ConfigStateInteractor:
     ignore = 1
     """
 
-    def get_state(self, repo_id: Optional[str]=None, name: Optional[str]=None, path: Union[Path, str, None]=None) -> Optional[RepoState]:
+    def get_state(self,
+            repo_state: RepoState=None,
+            repo_id: Optional[str]=None,
+            name: Optional[str]=None,
+            path: Union[Path, str, None]=None,
+            ) -> Optional[RepoState]:
+        if repo_state:
+            repo_id = repo_state.repo_id
+            name = repo_state.name
+            path = repo_state.path
         if repo_id:
             ans = self._get_state_by_id(repo_id)
             if ans:
@@ -40,27 +56,22 @@ class ConfigStateInteractor:
         return None
 
     def remove_state(self, repo_state: RepoState):
-        old_state = self._get_state_from_state(repo_state)
+        old_state = self.get_state(repo_state)
         if old_state is None:
             return
         del(self._repos_config[old_state.name])
-        self._write_configs()
+        self._write_configs(True, False)
 
-    def set_state(self, repo_state: RepoState, force=False) -> Optional[RepoState]:
+    def set_state(self, repo_state: RepoState) -> Optional[RepoState]:
         """
         Updates an existing config with the values in the config
-        force: also deletes keys that are missing from the RepoState
         """
+        if not repo_state.name:
+            raise ValueError(f"Repo_state must have a name")
         repo_keys = list(dataclasses.asdict(repo_state).keys())
-        old_state = self._get_state_from_state(repo_state)
-        if old_state is None:
-            if not force:
-                # Create new
-                if not repo_state.name:
-                    raise ValueError(f"New repo_state should have a name")
-                self._repos_config.add_section(repo_state.name)
-            else:
-                return None
+        if repo_state.name in self._repos_config:
+            del self._repos_config[repo_state.name]
+        self._repos_config.add_section(repo_state.name)
         repo_keys.remove("source")
         repo_keys.remove("name")
         section = self._repos_config[repo_state.name]
@@ -68,8 +79,6 @@ class ConfigStateInteractor:
         # self._write_repo_id(section, repo_id, force)
         if repo_state.repo_id is not None:
             section["repo_id"] = repo_state.repo_id
-        elif force and "repo_id" in section:
-            del(section["repo_id"])
         repo_keys.remove("repo_id")
 
         if repo_state.path is not None:
@@ -80,20 +89,20 @@ class ConfigStateInteractor:
                     section["path"] = str(repo_state.path.relative_to(repo_state.parent.path)).strip("/")
             else:
                 section["path"] = str(repo_state.path)
-        elif force and "path" in section:
-            del(section["path"])
         repo_keys.remove("path")
 
-        if force:
-            for key in section.keys():
-                if key.endswith("-repo") or key.endswith("-remote"):
-                    del(section[key])
         for remote_repo in repo_state.remotes:
+            written_remotes: Dict[str, Remote]={}
             if isinstance(remote_repo, NamedRemoteRepo):
                 # remote_repo: NamedRemoteRepo = remote_repo
                 key = remote_repo.remote.name + '-repo'
                 value = remote_repo.project_name
-            elif isinstance(remote_repo, UnnamedRemoteRepo): #TODO attempt resolve to named?
+                if remote_repo.remote.name in written_remotes:
+                    if written_remotes[remote_repo.remote.name] != remote_repo.remote:
+                        raise ValueError(f"Repo to save specifies 2 non-equal remotes with the same name: {written_remotes[remote_repo.remote.name]} and {remote_repo.remote}")
+                written_remotes[remote_repo.remote.name] = remote_repo.remote
+                self.set_remote(remote_repo.remote, write=False) # dont write until rest of function succeeds
+            elif isinstance(remote_repo, UnnamedRemoteRepo):
                 # remote_repo: UnnamedRemoteRepo = remote_repo
                 key = remote_repo.remote_name + '-remote'
                 value = remote_repo.get_url()
@@ -102,39 +111,64 @@ class ConfigStateInteractor:
             section[key] = value
         repo_keys.remove("remotes")
 
-        # origin=self._get_origin(remotes, name, section),
-
         # auto_commands = None, #TODO
         repo_keys.remove("auto_commands")
 
         if repo_state.categories is not None:
-            if force or old_state is None:
-                section["categories"] = " ".join(sorted(list(repo_state.categories)))
-            else:
-                section["categories"] = " ".join(sorted(list(repo_state.categories | (old_state.categories or set()))))
-        elif force and "categories" in section:
-            del(section["categories"])
+            section["categories"] = " ".join(sorted(list(repo_state.categories)))
         repo_keys.remove("categories")
 
         if repo_state.parent is not None:
             section["parent"] = repo_state.parent.name
-        elif "parent" in section: # also if not force
-                del(section["parent"])
         repo_keys.remove("parent")
 
         if repo_state.archived == True:
             section["archived"] = "1"
-        elif repo_state.archived == False or (force and repo_state.archived is None):
-            if "archived" in section:
-                del(section["archived"])
         repo_keys.remove("archived")
 
         assert not repo_keys, repo_keys
         self._write_configs()
         return repo_state
 
-    def _get_state_from_state(self, repo_state: RepoState) -> Optional[RepoState]:
-        return self.get_state(repo_id=repo_state.repo_id, name=repo_state.name, path=repo_state.path)
+    def resolve_unnamed_remote(self, unnamed_remote: UnnamedRemoteRepo, ignore_name=True) -> RemoteRepo:
+        for remote in self._all_remotes_from_config():
+            if not ignore_name and remote.name != unnamed_remote.remote_name:
+                continue
+            sub_path: Optional[str] = remote.get_subpath(unnamed_remote)
+            if sub_path:
+                return NamedRemoteRepo(remote=remote, project_name=sub_path)
+        return unnamed_remote
+
+    def get_remote(self, name: str) -> Optional[Remote]:
+        if name in self._remotes_config:
+            return self._config_section_to_remote(name, self._remotes_config[name])
+        return None
+
+    def set_remote(self, remote: Remote, write=True):
+        if remote.name in self._remotes_config:
+            del(self._remotes_config[remote.name])
+        self._remotes_config.add_section(remote.name)
+        section = self._remotes_config[remote.name]
+
+        section["name"] = remote.name
+        section["url"] = remote.url
+        section["path"] = remote.path
+        section["type"] = self._inverse_remote_type_map[remote.remote_type]
+
+        if write:
+            self._write_configs(False, True)
+
+    def remove_remote(self, remote: Remote):
+        if remote.name not in self._remotes_config:
+            print(remote.name)
+            return None
+        del(self._remotes_config[remote.name])
+        self._write_configs(False, True)
+
+    def _all_remotes_from_config(self) -> Iterator[Remote]:
+        for name in self._remotes_config.keys():
+            if name.lower() != "defaults":
+                yield self.get_remote(name)
 
     def __init__(self,
             remotes_file="~/.config/mgit/remotes.ini",
@@ -149,6 +183,7 @@ class ConfigStateInteractor:
                 "github" : RemoteType.GITHUB,
                 "gitlab" : RemoteType.GITLAB,
                 }
+        self._inverse_remote_type_map = {v: k for k, v in self._remote_type_map.items()}
 
     def _read_configs(self):
         repos = configparser.ConfigParser()
@@ -161,13 +196,15 @@ class ConfigStateInteractor:
 
         return remotes, repos
 
-    def _write_configs(self):
-        with open(self._repos_file, 'w') as configfile:
-            self._repos_config.write(configfile)
-        with open(self._remotes_file, 'w') as configfile:
-            self._remotes_config.write(configfile)
+    def _write_configs(self, repos=True, remotes=True):
+        if repos:
+            with open(self._repos_file, 'w') as configfile:
+                self._repos_config.write(configfile)
+        if remotes:
+            with open(self._remotes_file, 'w') as configfile:
+                self._remotes_config.write(configfile)
 
-    def _get_parent(self, name, section):
+    def _get_parent(self, name: str, section: configparser.SectionProxy):
         parent_name = section.get("parent")
 
         if not parent_name:
@@ -178,11 +215,7 @@ class ConfigStateInteractor:
         parent_section = self._repos_config[parent_name]
         return self._config_section_to_repo(parent_name, parent_section)
 
-    def _config_section_to_remote(self, name):
-        if name not in self._remotes_config:
-            return None
-        section = self._remotes_config[name]
-
+    def _config_section_to_remote(self, name: str, section: configparser.SectionProxy) -> Remote:
         return Remote(
                 name=name,
                 url=section.get("url"),
@@ -190,32 +223,23 @@ class ConfigStateInteractor:
                 remote_type=self._remote_type_map.get(section.get("type"))
                 )
 
-    def _get_remote(self, repo_name, remote_name):
-        remote_repo = self._config_section_to_remote(remote_name)
-        if not remote_repo:
+    def _get_remote_repo(self, repo_name: str, remote_name: str):
+        remote = self.get_remote(remote_name)
+        if not remote:
             return None
-        return NamedRemoteRepo(remote_repo, repo_name)
+        return NamedRemoteRepo(remote, repo_name)
 
-    def _get_remotes(self, name, section):
+    def _get_remotes(self, name: str, section: configparser.SectionProxy):
         remotes = set()
         for key in section:
             if key.endswith("-repo"):
                 name        = section.get(key)
                 remote_name = key[:-5]
-                remote_repo = self._get_remote(name, remote_name)
+                remote_repo = self._get_remote_repo(name, remote_name)
                 if not remote_repo:
                     raise ReferenceError(f"Listed remote {name} for {name} doesn't exist")
                 remotes.add(remote_repo)
         return remotes
-
-    # def _get_origin(self, remotes, name, section):
-    #     if "origin" not in section:
-    #         return None
-    #     origin = section["origin"]
-    #     for remote_repo in remotes:
-    #         if type(remote_repo) == NamedRemoteRepo and remote_repo.remote.name == origin:
-    #             return remote_repo
-    #     raise ReferenceError(f"Listed origin {origin} for {name} doesn't exist")
 
     def _get_categories(self, section):
         return set(section.get("categories", "").split())
@@ -280,6 +304,7 @@ class ConfigStateInteractor:
                 yield self._config_section_to_repo(name, section)
 
     def get_all_repo_names(self):
-        for name, section in self._repos_config.items():
-            if name != "DEFAULT":
+        for name in self._repos_config.keys():
+            if name.lower() != "default":
                 yield name
+

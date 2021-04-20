@@ -18,8 +18,27 @@ class Remote:
     path:        str
     remote_type: RemoteType
 
-    def __contains__(self, element):
-        return self.url in element.get_url()
+    def get_url(self):
+        return f"{self.url}:{self.path}"
+
+    def get_subpath(self, remote_repo: 'UnnamedRemoteRepo') -> Optional[str]:
+        if not remote_repo.url.startswith(self.get_url()):
+            return None
+        path = remote_repo.url[len(self.url + ":"):]
+        if not self.path:
+            return path
+        try:
+            return str(Path(path).relative_to(Path(self.path)))
+        except ValueError:
+            return None
+
+    def __contains__(self, element: 'RemoteRepo'):
+        if isinstance(element, NamedRemoteRepo):
+            return element.remote == self
+        elif isinstance(element, UnnamedRemoteRepo):
+            return self.get_subpath(element) is not None
+        else:
+            return False
 
 @dataclass # type: ignore # mypy cannot handle abstract classes properly for some annoying reason
 class RemoteRepo(ABC):
@@ -76,7 +95,7 @@ class UnnamedRemoteRepo(RemoteRepo):
         return self.url
 
     def __repr__(self):
-        return f"Named: {self.get_url()} {self.get_name()}"
+        return f"Unnamed: {self.get_url()} {self.get_name()}"
 
 @dataclass(frozen=True)
 class RemoteBranch:

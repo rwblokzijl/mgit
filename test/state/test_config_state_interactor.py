@@ -1,4 +1,4 @@
-from mgit.state.state import RepoState, NamedRemoteRepo, Remote, RemoteType
+from mgit.state.state import RepoState, NamedRemoteRepo, Remote, RemoteType, UnnamedRemoteRepo
 from mgit.state.config_state_interactor import ConfigStateInteractor
 
 from parameterized import parameterized
@@ -235,7 +235,7 @@ class TestConfigState(unittest.TestCase):
         ans.categories.add("shoop")
 
         # write to config and read again
-        self.c.set_state(ans, True)
+        self.c.set_state(ans)
         self.c._read_configs()
         new = self.c.get_state(name=name)
 
@@ -266,20 +266,13 @@ class TestConfigState(unittest.TestCase):
         self.c._read_configs()
         new = self.c.get_state(name=name)
 
-        self.assertNotEqual(
-                new,
-                ans
-                )
-
-        new.categories = set(["shoop"])
-
         self.assertEqual(
                 new,
                 ans
                 )
 
     @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
-    def test_remove_and_recreate(self, name: str):
+    def test_remove_and_recreate_repo(self, name: str):
         before = self.c.get_state(name=name)
         self.c.remove_state(before)
 
@@ -293,3 +286,34 @@ class TestConfigState(unittest.TestCase):
                 new,
                 before)
 
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_resolve_unnamed_remote(self, name:str):
+        remote_repo = list(self.c.get_state(name=name).remotes)[0]
+
+        self.assertIsInstance(remote_repo, NamedRemoteRepo)
+
+        unnamed_remote = UnnamedRemoteRepo(
+                url=remote_repo.get_url(),
+                remote_name = remote_repo.get_name()
+                )
+
+        named = self.c.resolve_unnamed_remote(unnamed_remote)
+
+        self.assertIsInstance(named, NamedRemoteRepo)
+
+        self.assertEqual(named, remote_repo)
+
+    @parameterized.expand([ "test_remote_1", "test_remote_2", ])
+    def test_remove_and_recreate_remote(self, name: str):
+        before = self.c.get_remote(name=name)
+        self.c.remove_remote(before)
+
+        ans = self.c.get_remote(name=name)
+        self.assertIsNone(ans)
+
+        self.c.set_remote(before)
+
+        new = self.c.get_remote(name=name)
+        self.assertEqual(
+                new,
+                before)

@@ -39,8 +39,7 @@ class Test(unittest.TestCase):
         self.rmdir("/tmp/mgit/unittest")
 
     def setUp(self):
-        self.repo_dir = "~/devel/mgit"
-        self.setUp_dirs()
+        self.repo_dir = Repo(os.path.abspath(__file__), search_parent_directories=True).working_dir #use this very git repo to test
 
     def tearDown(self):
         self.tearDownDirs()
