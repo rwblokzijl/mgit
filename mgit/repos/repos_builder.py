@@ -32,10 +32,15 @@ class ReposBuilder:
     def validate_and_build_repos(self, repo_data):
         ans = {}
         for key, repo_dict in repo_data.items():
-            ans[key] = self.validate_and_build_repo(key, repo_dict)
+            repo = self.validate_and_build_repo(key, repo_dict)
+            if repo is not None:
+                ans[key] = repo
         return ans
 
     def validate_and_build_repo(self, key, repo_dict):
+        ignore     = bool(int(repo_dict.get("ignore", 0)))
+        if ignore:
+            return None
         name       = self.validate_name(       key, repo_dict)
         path       = self.validate_path(       key, repo_dict)
         parent     = self.validate_parent(     key, repo_dict)

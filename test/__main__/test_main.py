@@ -1,7 +1,7 @@
 from main import main
 from test.test_util import captured_output
 
-from shutil import copy
+from shutil import copy, rmtree
 import os
 
 import unittest
@@ -122,10 +122,8 @@ class TestMain(unittest.TestCase):
                     args           = command.split()
                     )
 
-
     def tearDown(self):
-        shutil.rmtree("/tmp/mgit_tests/")
-
+        rmtree("/tmp/mgit_tests/")
 
     def test_update(self):
         pass
@@ -174,10 +172,7 @@ class TestMain(unittest.TestCase):
     """
 
     def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
+        os.makedirs("/tmp/mgit_tests/", exist_ok=True)
 
     "category | list   |                | lists all categories"
     "category | show   | category       | show the category and children"

@@ -1,5 +1,5 @@
 from mgit.remotes.remotes_builder import RemotesBuilder
-from test.test_util import TestPersistence
+from test.test_util import MockPersistence
 
 import unittest
 from unittest import mock
@@ -7,7 +7,7 @@ from unittest import mock
 class TestRemotesBuilder(unittest.TestCase):
 
     def setUp(self):
-        self.persistence = TestPersistence({
+        self.persistence = MockPersistence({
             "test" : {
                 "name" : "test",
                 "url" : "test@example.com",

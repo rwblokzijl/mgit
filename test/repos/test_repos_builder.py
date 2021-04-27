@@ -1,6 +1,6 @@
 from mgit.repos.repos_builder import ReposBuilder
 
-from test.test_util import TestPersistence
+from test.test_util import MockPersistence
 
 import unittest
 from unittest.mock import Mock
@@ -33,7 +33,7 @@ class TestReposBuilder(unittest.TestCase):
                     "archived" : False,
                     }
                 }
-        self.persistence = TestPersistence(self.example_dict)
+        self.persistence = MockPersistence(self.example_dict)
         homeMock = Mock()
         homeMock.get_url.return_value = "bloodyfool@git.bloodyfool.family:"
         githubMock = Mock()

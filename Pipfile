@@ -5,9 +5,10 @@ verify_ssl = true
 
 [dev-packages]
 pylint = "*"
-jedi = "*"
-mypy = "*"
 parameterized = "*"
+pytest = "*"
+mypy = "*"
+jedi = "*"
 
 [packages]
 gitpython = "*"

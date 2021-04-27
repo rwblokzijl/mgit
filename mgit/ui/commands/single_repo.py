@@ -27,6 +27,7 @@ class CommandSingleRepoInit(AbstractLeafCommand):
         parser.add_argument("--origin", help="Name of remote to be default push", metavar="REMOTE", type=lambda x: self.remote_repo(x))
 
     def run_command(self, args):
+        """ Prepares the details to init a repo """
         was_abs = Path(args["path"]).is_absolute()
         path = Path(args["path"]).absolute()
         abspath = path
@@ -40,8 +41,6 @@ class CommandSingleRepoInit(AbstractLeafCommand):
 
         if parent:
             args["parent"] = parent.name
-            print(path)
-            print(self.interactor.abspath(parent.path))
             args["path"] = str(path.relative_to(self.interactor.abspath(parent.path)))
 
         args["remotes"] = dict(args["remotes"] or (
@@ -81,9 +80,10 @@ class CommandSingleRepoInstall(AbstractLeafCommand):
         parser.add_argument("--remote", help="Name of remote to install repo from", metavar="REMOTE", type=str)
 
     def run_command(self, args):
-        repo_info = self.interactor.get_repo_install_info(args["name"], args["remote"])
-        if args.pop('y') or self.interactor.test_mode or query_yes_no("Do you want to install a repo with following values:" + json.dumps(repo_info, indent = 1)):
-            return self.interactor.repo_install(**args)
+        config_state = self.general_state_interactor.get_config_from_name_or_raise(args["name"])
+        config_state.source = ""
+        if args.pop('y') or self.interactor.test_mode or query_yes_no(f"Do you want to install the following repo: \n{config_state.represent()}"):
+            return self.system_state_interactor.set_state(config_state)
         else:
             return "Doing nothing"
 
@@ -96,74 +96,100 @@ class CommandSingleRepoRename(AbstractLeafCommand):
         parser.add_argument("new_name", help="New name of the project", type=str)
 
     def run_command(self, args):
-        return self.interactor.repo_rename(**args)
+        name     = args["name"]
+        new_name = args["new_name"]
+
+        new_state = self.config_state_interactor.get_state(name=new_name)
+        if new_state:
+            raise NameError(f"Repo {new_name} already exists")
+
+        config_state = self.config_state_interactor.get_state(name=name)
+        if not config_state:
+            raise NameError(f"No repo named {name}")
+
+        self.config_state_interactor.remove_state(config_state)
+        config_state.name = new_name
+        self.config_state_interactor.set_state(config_state)
+        return config_state
 
 class CommandSingleRepoShow(AbstractLeafCommand):
     command = "show"
     help="Show a tracked repo state"
 
     def build(self, parser):
-        self.repo_or_all(parser)
+        self.repo_by_path_name_or_infer_or_all(parser)
+        parser.add_argument('-v', '--verbose', help="Verbose", action='count', default=0)
+
+    def show_all(self, verbosity):
+        installed, conflicting, missing = self.general_state_interactor.combine_all()
+        installed   = {r.represent(verbosity=verbosity) for r in installed}
+        conflicting = {r.represent(verbosity=verbosity) for r in conflicting}
+        missing     = {r.represent(verbosity=verbosity) for r in missing}
+        return {k:v for k, v in zip(["installed", "conficting", "missing"], (installed, conflicting, missing)) if v}
 
     def run_command(self, args):
         repo = args["repo"]
+        if args["all"]:
+            return self.show_all(args['verbose'])
+
         if args["name"]:
             config_state, system_state = self.general_state_interactor.get_both_from_name(repo)
         elif args["path"]:
             config_state, system_state = self.general_state_interactor.get_both_from_path(repo)
-        elif args["all"]:
-            return dict(zip(["installed", "conficting", "missing"], self.general_state_interactor.combine_all()))
         else: #infer
-            repo = repo or "."
-            config_state = self.config_state_interactor.get_state(name=repo)
-            if not config_state:
-                config_state, system_state = self.general_state_interactor.get_both_from_path(repo)
-            else:
-                config_state, system_state = self.general_state_interactor.get_both_from_name(repo)
+            config_state, system_state = self.general_state_interactor.get_both_from_name_or_path(repo)
+
         combined = config_state + system_state
         if combined:
             return combined
         return config_state, system_state
-
 
 class CommandSingleRepoCheck(AbstractLeafCommand):
     command = "check"
     help="Compares a repo config state to the repo state on the system"
 
     def build(self, parser):
-        self.repo_or_all(parser)
+        self.repo_by_path_name_or_infer_or_all(parser)
+
+    def compare_all(self):
+        ans = []
+        for config_state in self.config_state_interactor.get_all_repo_state():
+            system_state = self.system_state_interactor.get_state(path=config_state.path)
+            if system_state:
+                ans += system_state.compare(config_state)
+        return ans
 
     def run_command(self, args):
+        if args["all"]:
+            return self.compare_all()
         repo = args["repo"]
         if args["name"]:
-            return self.general_state_interactor.compare_on_name(repo)
+            config_state, system_state = self.general_state_interactor.get_both_from_name(repo)
         if args["path"]:
-            return self.general_state_interactor.compare_on_path(repo)
-        if args["all"]:
-            return self.general_state_interactor.compare_all()
+            config_state, system_state = self.general_state_interactor.get_both_from_path(repo)
         repo = repo or "."
-        config_state = self.config_state_interactor.get_state(name=repo)
-        if not config_state:
-            return self.general_state_interactor.compare_on_path(repo)
-        else:
-            return self.general_state_interactor.compare_on_name(repo)
+        config_state, system_state = self.general_state_interactor.get_both_from_name_or_path(repo)
+
+        return config_state.compare(system_state)
 
 class CommandSingleRepoUpdate(AbstractLeafCommand):
     command = "update"
     help="Updates the config based on the system or vice versa"
 
     def build(self, parser):
-        self.repo(parser)
+        self.repo_by_path_name_or_infer(parser)
 
     def run_command(self, args):
         repo = args["repo"]
         if args["name"]:
-            return self.general_state_interactor.compare_on_name(repo)
+            config_state, system_state = self.general_state_interactor.get_both_from_name(repo)
         if args["path"]:
-            return self.general_state_interactor.compare_on_path(repo)
+            config_state, system_state = self.general_state_interactor.get_both_from_path(repo)
         repo = repo or "."
-        config_state = self.config_state_interactor.get_state(name=repo)
-        if not config_state:
-            return self.general_state_interactor.compare_on_path(repo)
-        else:
-            return self.general_state_interactor.compare_on_name(repo)
+        config_state, system_state = self.general_state_interactor.get_both_from_name_or_path(repo)
+
+        state = config_state + system_state
+
+        self.config_state_interactor.set_state(state)
+        self.system_state_interactor.set_state(state)
+        return state

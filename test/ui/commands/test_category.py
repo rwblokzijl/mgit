@@ -10,7 +10,7 @@ class TestCategory(unittest.TestCase):
 
     def setUp(self):
         self.interactor=Mock()
-        self.ui = CLI(command=MgitCommand(self.interactor))
+        self.ui = CLI(command=MgitCommand(interactor=self.interactor))
 
     def tearDown(self):
         pass

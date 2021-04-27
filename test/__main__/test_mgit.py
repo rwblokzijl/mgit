@@ -2,12 +2,13 @@ from main import main
 
 from pathlib import Path
 
-from git import Repo
-from git.exc import NoSuchPathError
+from git import Repo # type: ignore
+from git.exc import NoSuchPathError # type: ignore
 
 import unittest
 import shutil
 
+# @unittest.skip("slow")
 class TestAcceptance(unittest.TestCase):
 
     """
@@ -380,7 +381,7 @@ class TestAcceptance(unittest.TestCase):
         ans = list(self.run_test_command(f"list -i"))
 
         self.assertEqual(
-                4,
+                3,
                 len(ans)
                 )
 

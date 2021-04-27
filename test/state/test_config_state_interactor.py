@@ -317,3 +317,4 @@ class TestConfigState(unittest.TestCase):
         self.assertEqual(
                 new,
                 before)
+

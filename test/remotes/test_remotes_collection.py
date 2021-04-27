@@ -2,7 +2,7 @@ from mgit.remotes.remotes_collection import RemotesCollection
 from mgit.remotes.remotes_builder    import RemotesBuilder
 from mgit.remotes.remote             import Remote
 
-from test.test_util                  import TestPersistence
+from test.test_util                  import MockPersistence
 
 import unittest
 
@@ -11,7 +11,7 @@ class TestRemotesInteractor(unittest.TestCase):
     """Test case docstring."""
 
     def setUp(self):
-        self.persistence = TestPersistence({
+        self.persistence = MockPersistence({
             "test" : {
                 "name" : "test",
                 "url" : "test@example.com",

@@ -10,6 +10,7 @@ import copy
 import os
 
 class Remote:
+
     def __init__(self, name, url, path, remote_type, default, port, base_data):
 
         self.base_data  = base_data

@@ -16,7 +16,7 @@ class CommandCategoryCategoryP(AbstractNodeCommand):
     command = "category"
     def get_sub_commands(self):
         return [
-                CommandCategoryCategory(self.interactor)
+                CommandCategoryCategory
                 ]
 
 class TestCommands(unittest.TestCase):

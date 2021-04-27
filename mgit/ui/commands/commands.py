@@ -3,7 +3,6 @@ from mgit.ui.cli import AbstractLeafCommand
 
 from mgit.ui.commands.category    import CommandCategory
 from mgit.ui.commands.remote import CommandRemote
-from mgit.ui.commands.auto import CommandAuto
 
 from mgit.ui.commands.single_repo import *
 from mgit.ui.commands.multi_repo  import *
@@ -16,7 +15,6 @@ class MgitCommand(AbstractNodeCommand):
         return [
                 CommandCategory,
                 CommandRemote,
-                CommandAuto,
 
                 CommandSingleRepoInit,
                 CommandSingleRepoInstall,
@@ -24,9 +22,7 @@ class MgitCommand(AbstractNodeCommand):
                 CommandSingleRepoShow,
                 CommandSingleRepoCheck,
 
-                CommandMultiRepoList,
                 CommandMultiRepoStatus,
-                CommandMultiRepoDirty,
                 CommandMultiRepoFetch,
                 ]
 

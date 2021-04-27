@@ -1,38 +1,43 @@
-from mgit.ui.cli import CLI
-from mgit.interactor import Builder
+from mgit.ui.cli               import CLI
+from mgit.interactor           import Builder
 from mgit.ui.commands.commands import MgitCommand
 
-from mgit.state.config_state_interactor import ConfigStateInteractor
-from mgit.state.system_state_interactor import SystemStateInteractor
+from mgit.state.state                    import RepoState
+
+from mgit.state.config_state_interactor  import ConfigStateInteractor
+from mgit.state.system_state_interactor  import SystemStateInteractor
 from mgit.state.general_state_interactor import GeneralStateInteractor
-from mgit.state.state import RepoState
+from mgit.state.local_system_interactor  import LocalSystemInteractor, Status
+from mgit.state.remote_interactor        import RemoteInteractor
+
+from collections.abc import Iterable
 
 import sys
-import collections
 import six
 import dataclasses
 
 def is_iterable(arg):
-    return ( isinstance(arg, collections.Iterable) and not isinstance(arg, six.string_types))
+    return ( isinstance(arg, Iterable) and not isinstance(arg, six.string_types))
 
-def pretty_string(data, indent=0, step=2):
+def indent_str(string: str, indent: int=2) -> str:
+    return (" " * indent) + string.replace('\n', '\n' + ' ' * indent)
+
+def pretty_string(data):
     ans = ""
-    if isinstance(data, RepoState):
-        ans += data.represent(indent, step=2) + '\n'
-    elif isinstance(data, dict):
+    if isinstance(data, dict):
         for key, value in data.items():
-            if '\n' not in pretty_string(value).strip():
-                ans += ' ' * (indent) + str(key) + " = " + str(value or "") + '\n'
+            if '\n' not in pretty_string(value).strip('\n'):
+                ans += str(key) + " = " + str(value or "") + '\n'
             else:
-                ans += ' ' * (indent) + str(key) + ":" + '\n'
-                ans += pretty_string(value, indent=indent+step, step=step) + '\n'
+                ans += str(key) + ":" + '\n'
+                ans += indent_str(pretty_string(value)) + '\n'
     elif is_iterable(data):
         for value in data:
-            ans += pretty_string(value, indent=indent, step=step) + '\n'
+            ans += pretty_string(value) + '\n'
     elif data is None:
         pass
     else:
-        ans += ' ' * (indent) + str(data) + "\n"
+        ans += str(data) + "\n"
     return ans.strip('\n')
 
 def pperror(error):
@@ -48,17 +53,23 @@ def main(repos_config, remotes_config, args=None, silent=False):
             remotes_file = remotes_config,
             repos_file   = repos_config,
             )
+    local_system_interactor = LocalSystemInteractor()
+    remote_interactor = RemoteInteractor()
     system_state_interactor = SystemStateInteractor()
     general_state_interactor = GeneralStateInteractor(
-            config_state_interactor=config_state_interactor,
-            system_state_interactor=system_state_interactor
+            config_state_interactor = config_state_interactor,
+            system_state_interactor = system_state_interactor,
+            local_system_interactor = local_system_interactor,
+            remote_interactor       = remote_interactor,
             )
     # The CLI ui handles argparse and calls the interactor
     ui = CLI(MgitCommand(
         interactor=interactor,
         config_state_interactor=config_state_interactor,
         system_state_interactor=system_state_interactor,
-        general_state_interactor=general_state_interactor
+        general_state_interactor=general_state_interactor,
+        local_system_interactor = local_system_interactor,
+        remote_interactor       = remote_interactor,
         ))
     out = ui.run(args)
     if out and not silent:

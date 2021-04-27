@@ -7,7 +7,7 @@ from mgit.remotes.remotes_collection import RemotesCollection
 from mgit.repos.repos_builder        import ReposBuilder
 from mgit.repos.repos_collection     import ReposCollection
 
-from test.test_util import TestPersistence
+from test.test_util import MockPersistence
 
 import unittest
 from unittest.mock import Mock, MagicMock
@@ -51,7 +51,7 @@ class TestInteractor(unittest.TestCase):
                 "is_default" : True
                 }
             }
-        remotes_persistence = TestPersistence(remotes_con or self.remotes_data, remote_persistence_file)
+        remotes_persistence = MockPersistence(remotes_con or self.remotes_data, remote_persistence_file)
         remotes = RemotesCollection(persistence=remotes_persistence, builder=remotes_builder)
 
         self.repos_data = {
@@ -77,7 +77,7 @@ class TestInteractor(unittest.TestCase):
                 "archived" : False,
                 }
             }
-        repos_persistence = TestPersistence(repo_con or self.repos_data, repo_persistence_file)
+        repos_persistence = MockPersistence(repo_con or self.repos_data, repo_persistence_file)
         repos  = ReposCollection(persistence=repos_persistence, builder=repos_builder, remotes=remotes)
 
         return MgitInteractor(repos, remotes, local_system_interactor or Mock())

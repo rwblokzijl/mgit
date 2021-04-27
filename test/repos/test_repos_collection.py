@@ -2,7 +2,7 @@ from mgit.repos.repos_collection import ReposCollection
 from mgit.repos.repos_builder    import ReposBuilder
 from mgit.repos.repos            import Repo
 
-from test.test_util                  import TestPersistence
+from test.test_util                  import MockPersistence
 
 import unittest
 from unittest.mock import MagicMock
@@ -11,7 +11,7 @@ class TestReposInteractor(unittest.TestCase):
     """Test case docstring."""
 
     def setUp(self):
-        self.persistence = TestPersistence({
+        self.persistence = MockPersistence({
                 "example" : {
                     "name" : "example",
                     "path" : "example",

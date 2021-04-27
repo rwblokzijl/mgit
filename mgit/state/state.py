@@ -74,8 +74,11 @@ class NamedRemoteRepo(RemoteRepo):
     def get_name(self):
         return self.remote.name
 
+    def get_path(self):
+        return os.path.join(self.remote.path, self.project_name)
+
     def get_url(self):
-        return self.remote.url + ":" + os.path.join(self.remote.path, self.project_name)
+        return self.remote.url + ":" + self.get_path()
 
     def __repr__(self):
         return f"Named: {self.get_url()} {self.get_name()}"
@@ -130,7 +133,7 @@ class Conflict:
             left, right = left - right, right - left
         return f"{self.left.name or self.right.name}: {self.key} in {self.left.source} ({left}) doesn't match {self.key} in {self.right.source} ({right})"
 
-@dataclass()
+@dataclass
 class RepoState:   # No defaults to catch changes around the code
     source:        str                   = field(repr=False, compare=False)
     name:          Optional[str]
@@ -146,33 +149,42 @@ class RepoState:   # No defaults to catch changes around the code
     # def __eq__(self, other):
     #     return self.compare(other, hard=True) == []
 
-    def represent(self, indent:int =0, step:int =2) -> str:
+    def represent(self, step:int =2, verbosity=1) -> str:
+        if verbosity == 0:
+            return self.name or ""
         result = [""] # put string in list to make it mutable for the function below
-        def add_line(line, indent=indent+step):
+        def add_line(line, indent=step):
             result[0] += " " * (indent) + line + "\n"
-        add_line((self.name or '') + ":" + self.source or "", indent)
+        if verbosity == 2:
+            add_line((self.name or '') + ":" + self.source or "")
+        else:
+            add_line((self.name or '') + ":")
         add_line(f"repo_id = {self.repo_id or ''}")
         add_line(f"path = {self.path or ''}")
 
         if self.parent:
             add_line(f"parent = {self.parent.name}")
+        elif verbosity ==2:
+            add_line(f"parent = ")
 
         add_line(f"remotes = ")
         for remote in self.remotes:
-            result[0] += remote.represent(indent+step*2)
+            result[0] += remote.represent(step*2)
 
         # if self.origin:
-        #     result[0] += " " * (indent+step) + "origin = " + self.origin.represent()
+        #     result[0] += " " * (step) + "origin = " + self.origin.represent()
 
         if self.auto_commands is not None:
             add_line(f"auto_commands = ")
             for auto in self.auto_commands:
-                result[0] += " " * (indent+step) + str(auto)#.represent(indent+step)
+                result[0] += " " * (step) + str(auto)#.represent(step)
 
         add_line(f"archived = {self.archived or False}")
         if self.categories is not None:
             add_line(f"categories = {', '.join(self.categories)}")
-        return result[0]
+        elif verbosity ==2:
+            add_line(f"categories = ")
+        return result[0].strip()
 
     def zip(self, other) -> Iterator[Tuple]:
         ignored = ["source"]

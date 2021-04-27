@@ -15,7 +15,7 @@ class File_var:
     def get(self):
         return copy.copy(self.file)
 
-class TestPersistence(Persistence):
+class MockPersistence(Persistence):
     def __init__(self, persistence, file_var=None):
         self.persistence = persistence
         self.file = file_var or File_var()

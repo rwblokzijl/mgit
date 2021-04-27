@@ -128,3 +128,4 @@ class MultiRepoInteractor(BaseMgitInteractor):
         else:
             for repo in self.repos:
                 yield self.local_system.fetch(repo.path, remotes)
+

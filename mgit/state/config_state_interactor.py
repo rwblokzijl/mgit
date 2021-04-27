@@ -131,7 +131,7 @@ class ConfigStateInteractor:
         return repo_state
 
     def resolve_unnamed_remote(self, unnamed_remote: UnnamedRemoteRepo, ignore_name=True) -> RemoteRepo:
-        for remote in self._all_remotes_from_config():
+        for remote in self.get_all_remotes_from_config():
             if not ignore_name and remote.name != unnamed_remote.remote_name:
                 continue
             sub_path: Optional[str] = remote.get_subpath(unnamed_remote)
@@ -165,10 +165,17 @@ class ConfigStateInteractor:
         del(self._remotes_config[remote.name])
         self._write_configs(False, True)
 
-    def _all_remotes_from_config(self) -> Iterator[Remote]:
-        for name in self._remotes_config.keys():
-            if name.lower() != "defaults":
-                yield self.get_remote(name)
+    def _is_special_section(self, name):
+        if name.lower() == "defaults":
+            return True
+        if name == "DEFAULT":
+            return True
+        return False
+
+    def get_all_remotes_from_config(self) -> Iterator[Remote]:
+        for name, section in self._remotes_config.items():
+            if not self._is_special_section(name):
+                yield self._config_section_to_remote(name, section)
 
     def __init__(self,
             remotes_file="~/.config/mgit/remotes.ini",
@@ -305,6 +312,6 @@ class ConfigStateInteractor:
 
     def get_all_repo_names(self):
         for name in self._repos_config.keys():
-            if name.lower() != "default":
+            if not self._is_special_section(name):
                 yield name
 
