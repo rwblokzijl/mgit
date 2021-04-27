@@ -72,7 +72,7 @@ def main(repos_config, remotes_config, args=None, silent=False):
         remote_interactor       = remote_interactor,
         ))
     out = ui.run(args)
-    if out and not silent:
+    if out is not None and not silent:
         print(pretty_string(out))
     return out
 
