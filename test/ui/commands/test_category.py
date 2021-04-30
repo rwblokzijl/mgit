@@ -1,8 +1,7 @@
-from mgit.ui.commands.category import CommandCategoryList
 from test.test_util import test_interactors
 import unittest
 
-class TestCommand(unittest.TestCase):
+class TestCategory(unittest.TestCase):
 
     """Test case docstring."""
 

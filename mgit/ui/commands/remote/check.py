@@ -1,8 +1,6 @@
 from mgit.ui.cli import AbstractLeafCommand
 from mgit.ui.commands.remote._remote import CommandRemote
 
-from mgit.state.remote_interactor import RemoteInteractor
-
 @CommandRemote.register
 class CommandRemoteCheck(AbstractLeafCommand):
     command = "check"

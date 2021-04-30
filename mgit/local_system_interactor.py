@@ -1,4 +1,4 @@
-from mgit.state.state import RepoState, RemoteBranch, LocalBranch, UnnamedRemoteRepo
+from mgit.state import RepoState, RemoteBranch, LocalBranch, UnnamedRemoteRepo
 
 from subprocess       import Popen, PIPE, STDOUT
 from git              import Repo, GitError, Head

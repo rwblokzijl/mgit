@@ -1,4 +1,4 @@
-from mgit.state.state import Remote, RepoState, NamedRemoteRepo, RemoteType
+from mgit.state import Remote, RepoState, NamedRemoteRepo, RemoteType
 
 from typing import Dict, Type
 

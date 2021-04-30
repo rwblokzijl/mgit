@@ -1,4 +1,4 @@
-from mgit.state.state import Conflict, RepoState
+from mgit.state import Conflict, RepoState
 
 from typing import List, Optional, Tuple, Dict
 

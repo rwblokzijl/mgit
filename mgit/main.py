@@ -1,13 +1,13 @@
 from mgit.ui.cli               import CLI
 from mgit.ui.commands._mgit import MgitCommand
 
-from mgit.state.state                    import RepoState
+from mgit.state                    import RepoState
 
-from mgit.state.config_state_interactor  import ConfigStateInteractor
-from mgit.state.system_state_interactor  import SystemStateInteractor
-from mgit.state.general_state_interactor import GeneralStateInteractor
-from mgit.state.local_system_interactor  import LocalSystemInteractor, Status
-from mgit.state.remote_interactor        import RemoteInteractor
+from mgit.config_state_interactor  import ConfigStateInteractor
+from mgit.system_state_interactor  import SystemStateInteractor
+from mgit.general_state_interactor import GeneralStateInteractor
+from mgit.local_system_interactor  import LocalSystemInteractor, Status
+from mgit.remote_interactor        import RemoteInteractor
 
 from collections.abc import Iterable
 from pathlib import Path
