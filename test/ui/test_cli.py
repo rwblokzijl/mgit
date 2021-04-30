@@ -9,7 +9,7 @@ class CommandCategoryCategory(AbstractLeafCommand):
     command = "category"
     def build(self, parser):
         pass
-    def run_command(self, args):
+    def run(self, **args):
         return "test"
 
 class CommandCategoryCategoryP(AbstractNodeCommand):
@@ -30,16 +30,18 @@ class TestCommands(unittest.TestCase):
         pass
 
     def test_nested_same_name(self):
-        command = MgitCommand(Mock())
-        command.sub_commands["category"].sub_commands["category"] = CommandCategoryCategory(Mock())
+        command = MgitCommand(Mock(), Mock(), Mock(), Mock(), Mock())
+        command.sub_commands["category"].sub_commands["category"] = CommandCategoryCategory(Mock(), Mock(), Mock(),
+                Mock(), Mock())
         self.assertEqual(
                 CLI(command).run("category category".split()),
                 "test"
                 )
 
     def test_nested_nested_nested(self):
-        command = MgitCommand(Mock())
-        command.sub_commands["category"].sub_commands["category"] = CommandCategoryCategoryP(Mock())
+        command = MgitCommand(Mock(), Mock(), Mock(), Mock(), Mock())
+        command.sub_commands["category"].sub_commands["category"] = CommandCategoryCategoryP(Mock(), Mock(), Mock(),
+                Mock(), Mock())
         self.assertEqual(
                 CLI(command).run("category category category".split()),
                 "test"

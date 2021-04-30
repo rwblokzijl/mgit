@@ -3,7 +3,11 @@ from contextlib import contextmanager
 from io import StringIO
 import copy
 
-from mgit.persistence.persistence import Persistence
+import test
+
+from pathlib import Path
+
+from mgit.state.config_state_interactor import ConfigStateInteractor
 
 class File_var:
     def __init__(self):
@@ -14,38 +18,6 @@ class File_var:
 
     def get(self):
         return copy.copy(self.file)
-
-class MockPersistence(Persistence):
-    def __init__(self, persistence, file_var=None):
-        self.persistence = persistence
-        self.file = file_var or File_var()
-        self.file.set(self.persistence)
-
-    def __setitem__(self, key, item):
-        self.persistence[key] = item
-
-    def __getitem__(self, item):
-        return self.persistence[item]
-
-    def remove(self, key):
-        del(self.persistence[key])
-
-    def __contains__(self, key):
-        return key in self.persistence
-
-    def read_all(self):
-        self.persistence = self.file.get()
-        return self.persistence
-
-    def read(self):
-        return self.persistence
-
-    def write_all(self):
-        self.file.set(self.persistence)
-
-    def set_all(self, data):
-        self.persistence = data
-        self.write_all()
 
 @contextmanager
 def captured_output():
@@ -65,3 +37,11 @@ def captured_output():
     finally:
         sys.stdout, sys.stderr = old_out, old_err
 
+class TestConfigStateInteractor(ConfigStateInteractor):
+    def __init__(self):
+        super(TestConfigStateInteractor, self).__init__(
+                Path(test.__file__).parent / "__files__/test_repos_acceptance.ini",
+                Path(test.__file__).parent / "__files__/test_remote_acceptance.ini")
+
+def test_interactors():
+    return TestConfigStateInteractor()

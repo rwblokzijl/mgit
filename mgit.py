@@ -1,6 +1,6 @@
 #!/usr/bin/env pipenv-shebang
 
-from main import main_cli, main
+from mgit.main import main_cli
 
 if __name__ == '__main__':
     repos_config  ="~/.config/mgit/repos.ini"

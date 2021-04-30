@@ -17,7 +17,7 @@ class RemoteBranchStatus:
         return bool(self.commits_ahead) or bool(self.commits_behind)
 
     def repr(self):
-        return f"{str(self.commits_ahead).rjust(3)}+ {str(self.commits_behind).rjust(3)}- {self.remote_branch.remote_repo.get_name()}"
+        return f"    {str(self.commits_ahead).rjust(2)}+ {str(self.commits_behind).rjust(2)}- {self.remote_branch.remote_repo.get_name()}"
 
     def __repr__(self):
         if self.__bool__():
@@ -33,7 +33,7 @@ class BranchStatus:
         return any(self.remote_branch_status)
 
     def __repr__(self):
-        return self.local_branch.ref + '\n  ' + '\n  '.join([repr(x) for x in self.remote_branch_status if x])
+        return '\n  ' + self.local_branch.ref + '\n' + '\n'.join([repr(x) for x in self.remote_branch_status if x])
 
 @dataclass
 class Status:
@@ -49,8 +49,12 @@ class Status:
         return self.represent(verbose=False)
 
     def represent(self, verbose=True):
-        return (f"{self.repo_state.name or self.repo_state.path}: {'dirty' if self.dirty or self.untracked_files else 'clean'}{'(u)' if self.untracked_files else ''}\n  " + \
-                '\n  '.join([repr(x) for x in self.branch_status if x])).strip('\n')
+        ans = ""
+        ans += ('dirty' if self.dirty or self.untracked_files else 'clean')
+        ans += ('(u)' if self.untracked_files else '   ') + " "
+        ans += (self.repo_state.name or str(self.repo_state.path)) + " "
+        ans += '\n  '.join([repr(x) for x in self.branch_status if x])
+        return ans.strip('\n')
 
 class LocalSystemInteractor:
 

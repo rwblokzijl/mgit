@@ -18,7 +18,7 @@ class Remote:
     path:        str
     remote_type: RemoteType
 
-    def get_url(self):
+    def get_url(self) -> str:
         return f"{self.url}:{self.path}"
 
     def get_subpath(self, remote_repo: 'UnnamedRemoteRepo') -> Optional[str]:
@@ -51,16 +51,16 @@ class RemoteRepo(ABC):
         raise NotImplementedError("Subclass should implement")
 
     @abstractmethod
-    def get_url(self):
+    def get_url(self) -> str:
         raise NotImplementedError("Subclass should implement")
 
     def compare(self, other):
         return isinstance(other, RemoteRepo) and self.get_url() == other.get_url() and self.get_name() == other.get_name()
 
-    def remote_key(self):
+    def remote_key(self) -> str:
         return f"{self.get_name()}:{self.get_url()}"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.get_url()} {self.get_name()}"
 
 @dataclass(frozen=True, repr=False)
@@ -77,10 +77,10 @@ class NamedRemoteRepo(RemoteRepo):
     def get_path(self):
         return os.path.join(self.remote.path, self.project_name)
 
-    def get_url(self):
+    def get_url(self) -> str:
         return self.remote.url + ":" + self.get_path()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Named: {self.get_url()} {self.get_name()}"
 
 @dataclass(frozen=True, repr=False)
@@ -94,10 +94,10 @@ class UnnamedRemoteRepo(RemoteRepo):
     def get_name(self):
         return self.remote_name
 
-    def get_url(self):
+    def get_url(self) -> str:
         return self.url
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Unnamed: {self.get_url()} {self.get_name()}"
 
 @dataclass(frozen=True)
