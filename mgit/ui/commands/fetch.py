@@ -2,7 +2,7 @@ from mgit.ui.cli import AbstractLeafCommand
 from mgit.ui.commands._mgit import MgitCommand
 
 @MgitCommand.register
-class CommandMultiRepoFetch(AbstractLeafCommand):
+class CommandFetch(AbstractLeafCommand):
     command = "fetch"
     help="Fetch multiple repos"
 

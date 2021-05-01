@@ -17,20 +17,19 @@ class CommandSingleRepoShow(AbstractLeafCommand):
         missing     = {r.represent(verbosity=verbosity) for r in missing}
         return {k:v for k, v in zip(["installed", "conficting", "missing"], (installed, conflicting, missing)) if v}
 
-    def run(self, **args):
-        repo = args["repo"]
-        if args["all"]:
-            return self.show_all(args['verbose'])
+    def run(self, name, path, repo, verbose, all):
+        if all:
+            return self.show_all(verbose)
 
-        if args["name"]:
+        if name:
             config_state, system_state = self.general_state_interactor.get_both_from_name(repo)
-        elif args["path"]:
+        elif path:
             config_state, system_state = self.general_state_interactor.get_both_from_path(repo)
         else: #infer
             config_state, system_state = self.general_state_interactor.get_both_from_name_or_path(repo)
 
         combined = config_state + system_state
         if combined:
-            return combined
-        return config_state, system_state
+            return combined.represent(verbosity=verbose+1)
+        return config_state.represent(verbosity=verbose+1), system_state.represent(verbosity=verbose+1)
 

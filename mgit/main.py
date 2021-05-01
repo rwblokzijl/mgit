@@ -38,23 +38,25 @@ def is_iterable(arg):
 def indent_str(string: str, indent: int=2) -> str:
     return (" " * indent) + string.strip('\n').replace('\n', '\n' + ' ' * indent)
 
+def collapse(gen):
+    return "\n".join(gen)
+
 def pretty_string(data):
-    ans = ""
     if isinstance(data, dict):
         for key, value in data.items():
-            if '\n' not in pretty_string(value):
-                ans += str(key) + " = " + str(value or "") + '\n'
+            if '\n' not in collapse(pretty_string(value)):
+                yield str(key) + " = " + str(value or "")
             else:
-                ans += str(key) + ":" + '\n'
-                ans += indent_str(pretty_string(value)) + '\n'
+                yield str(key) + ":"
+                for element in pretty_string(value):
+                    yield indent_str(element)
     elif is_iterable(data):
         for value in data:
-            ans += pretty_string(value) + '\n'
+            yield from pretty_string(value)
     elif data is None:
         pass
     else:
-        ans += str(data)
-    return ans.strip('\n')
+        yield str(data)
 
 def pperror(error):
     print(error, file=sys.stderr)
@@ -86,7 +88,8 @@ def main_cli(*args, **kwargs):
     try:
         out = main(*args, **kwargs)
         if out is not None:
-            print(pretty_string(out))
+            for step in pretty_string(out): # is a generator
+                print(step)
         return 0
     except Exception as e:
         if str(e):

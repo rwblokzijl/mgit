@@ -1,8 +1,10 @@
 from mgit.state import Remote, RepoState, NamedRemoteRepo, RemoteType
 
-from typing import Dict, Type
+from typing import Dict, Type, List, Optional
 
-from fabric import Connection
+from fabric  import Connection
+from git     import Repo
+from pathlib import Path
 
 import os
 
@@ -13,19 +15,41 @@ class RemoteInteractor:
                 RemoteType.SSH: SSHInteractor,
                 # RemoteType.GITHUB: None,
                 # RemoteType.GITLAB: None
+                RemoteType.LOCAL: LocalRemoteInteractor
                 }
 
     def init_repo(self, remote_repo: NamedRemoteRepo):
         return self._get_interactor(remote_repo.remote).init_repo(remote_repo)
 
-    def list_remote(self, remote: Remote):
+    def list_remote(self, remote: Remote) -> List[str]:
         return self._get_interactor(remote).list_remote(remote)
 
-    def get_remote_repo_id_mappings(self, remote: Remote):
+    def get_remote_repo_id_mappings(self, remote: Remote) -> Dict[str, Optional[str]]:
         return self._get_interactor(remote).get_remote_repo_id_mappings(remote)
 
     def _get_interactor(self, remote: Remote) -> 'RemoteInteractor':
         return self.class_map[remote.remote_type]()
+
+class LocalRemoteInteractor(RemoteInteractor):
+
+    def init_repo(self, remote_repo: NamedRemoteRepo) -> str:
+        Repo.init(remote_repo.get_path(), mkdir=True)
+        return remote_repo.get_path()
+
+    def list_remote(self, remote: Remote) -> List[str]:
+        return os.listdir(remote.path)
+
+    def get_remote_repo_id_mappings(self, remote: Remote) -> Dict[str, Optional[str]]:
+        return {name:self._get_repo_id(Repo(Path(remote.path) / name )) for name in self.list_remote(remote)}
+
+    def _get_repo_id(self, repo):
+        try:
+            commits = list(repo.iter_commits('HEAD'))
+        except:
+            return None
+        if len(commits) < 1:
+            return None
+        return commits[-1].hexsha
 
 class SSHInteractor(RemoteInteractor):
 
@@ -42,12 +66,12 @@ class SSHInteractor(RemoteInteractor):
             raise ConnectionError("Created folder but could not init repo, manual action required")
         return remote_url
 
-    def list_remote(self, remote: Remote):
+    def list_remote(self, remote: Remote) -> List[str]:
         "Lists all repos in the remote"
         command = f"ls {remote.path}"
         return self._run_ssh(command, url=remote.url, hide=True).stdout.strip().splitlines()
 
-    def get_remote_repo_id_mappings(self, remote: Remote):
+    def get_remote_repo_id_mappings(self, remote: Remote) -> Dict[str, Optional[str]]:
         "Returns a map of the remote repos and their IDs"
         names = self.list_remote(remote)
 
@@ -69,7 +93,7 @@ class SSHInteractor(RemoteInteractor):
             return ssh.run(*args, warn=True, **kwargs)
 
     def _exists_remote(self, remote_repo: NamedRemoteRepo):
-        ans = self._run_ssh(f'[ -d "{remote_repo.get_path()}" ]', url=remote_repo.get_url())
+        ans = self._run_ssh(f'[ -d "{remote_repo.get_path()}" ]', url=remote_repo.remote.url)
         if ans.return_code == 0:
             return True
         else:

@@ -1,5 +1,5 @@
-from mgit.state.state import RepoState, NamedRemoteRepo, Remote, RemoteType, UnnamedRemoteRepo
-from mgit.state.config_state_interactor import ConfigStateInteractor
+from mgit.state import RepoState, NamedRemoteRepo, Remote, RemoteType, UnnamedRemoteRepo
+from mgit.config_state_interactor import ConfigStateInteractor
 
 from parameterized import parameterized
 
@@ -138,15 +138,15 @@ class TestConfigState(unittest.TestCase):
 
         r1 = Remote(
                 "test_remote_1",
-                "bloodyfool@127.0.0.1",
+                "",
                 "/tmp/mgit/acceptance/test_remote_1/",
-                RemoteType.SSH
+                RemoteType.LOCAL
                 )
         r2 = Remote(
                 "test_remote_2",
-                "bloodyfool@127.0.0.1",
+                "",
                 "/tmp/mgit/acceptance/test_remote_2/",
-                RemoteType.SSH
+                RemoteType.LOCAL
                 )
 
         self.assertIn(
@@ -166,7 +166,7 @@ class TestConfigState(unittest.TestCase):
                 "test_remote_1",
                 "bloodyfool@127.0.0.1",
                 "/tmp/mgit/acceptance/test_remote_1/",
-                RemoteType.SSH
+                RemoteType.LOCAL
                 )
 
         self.assertEqual(
@@ -287,7 +287,7 @@ class TestConfigState(unittest.TestCase):
                 before)
 
     @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
-    def test_resolve_unnamed_remote(self, name:str):
+    def test_resolve_unnamed_remote(self, name:str="test_repo_1"):
         remote_repo = list(self.c.get_state(name=name).remotes)[0]
 
         self.assertIsInstance(remote_repo, NamedRemoteRepo)

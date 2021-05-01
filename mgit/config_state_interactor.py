@@ -1,8 +1,16 @@
-from mgit.state import RepoState, RemoteRepo, NamedRemoteRepo, UnnamedRemoteRepo, Remote, AutoCommand, RemoteBranch, LocalBranch, RemoteType
+from mgit.state import (
+        RepoState,
+        NamedRemoteRepo,
+        Remote,
+        RemoteRepo,
+        RemoteType,
+        UnnamedRemoteRepo,
+        )
 
 from typing import (
         Dict,
         Iterator,
+        List,
         Optional,
         Union,
         overload,
@@ -50,7 +58,7 @@ class ConfigStateInteractor:
             if ans:
                 return ans
         if path:
-            ans = self._get_state_by_path(path)
+            ans = self._get_state_by_path(Path(path))
             if ans:
                 return ans
         return None
@@ -144,6 +152,12 @@ class ConfigStateInteractor:
             return self._config_section_to_remote(name, self._remotes_config[name])
         return None
 
+    def get_default_remotes(self) -> List[Remote]:
+        if "defaults" not in self._remotes_config:
+            return []
+
+        return [remote for name, is_default in self._remotes_config["defaults"].items() if is_default and (remote := self.get_remote(name))]
+
     def set_remote(self, remote: Remote, write=True):
         if remote.name in self._remotes_config:
             del(self._remotes_config[remote.name])
@@ -160,7 +174,6 @@ class ConfigStateInteractor:
 
     def remove_remote(self, remote: Remote):
         if remote.name not in self._remotes_config:
-            print(remote.name)
             return None
         del(self._remotes_config[remote.name])
         self._write_configs(False, True)
@@ -189,6 +202,7 @@ class ConfigStateInteractor:
                 "ssh" : RemoteType.SSH,
                 "github" : RemoteType.GITHUB,
                 "gitlab" : RemoteType.GITLAB,
+                "local" : RemoteType.LOCAL,
                 }
         self._inverse_remote_type_map = {v: k for k, v in self._remote_type_map.items()}
 
@@ -225,7 +239,7 @@ class ConfigStateInteractor:
     def _config_section_to_remote(self, name: str, section: configparser.SectionProxy) -> Remote:
         return Remote(
                 name=name,
-                url=section.get("url"),
+                url=section.get("url", ""),
                 path=section.get("path"),
                 remote_type=self._remote_type_map.get(section.get("type"))
                 )

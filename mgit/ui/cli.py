@@ -35,7 +35,7 @@ class AbstractCommand(ABC):
 
     @abstractmethod
     def run_command(self, args):
-        raise self.NotImplementedError("This feature is not yet implemented")
+        raise NotImplementedError("This feature is not yet implemented")
 
     def _has_run(self):
         run = getattr(self, "run", None)
@@ -43,7 +43,7 @@ class AbstractCommand(ABC):
             return True
         return False
 
-    class NotImplementedError(Exception):
+    class InputError(Exception):
         pass
 
 class AbstractNodeCommand(AbstractCommand):
@@ -74,7 +74,7 @@ class AbstractNodeCommand(AbstractCommand):
 
     def build(self, parser):
         if not self.sub_commands and not self._has_run():
-            raise self.NotImplementedError("This feature has no subcommands and no run function")
+            raise NotImplementedError("This feature has no subcommands and no run function")
         subparsers = parser.add_subparsers(dest=self.unique_key, metavar=self.command)
         if not self._has_run():
             subparsers.required = True
@@ -89,7 +89,7 @@ class AbstractNodeCommand(AbstractCommand):
             return obj.run_command(args)
         elif self._has_run():
             return self.run(**args) # pylint: disable=E1101 # error says run doesn't exist, it will
-        raise self.NotImplementedError("This feature is not yet implemented")
+        raise NotImplementedError("This feature is not yet implemented")
 
 class AbstractLeafCommand(AbstractCommand):
     def repo_by_path_name_or_infer(self, parser):

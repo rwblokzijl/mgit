@@ -1,6 +1,7 @@
 from mgit.main import main
-from mgit.state.config_state_interactor import ConfigStateInteractor
-from mgit.state.system_state_interactor import SystemStateInteractor
+from mgit.config_state_interactor import ConfigStateInteractor
+from mgit.system_state_interactor import SystemStateInteractor
+from test.test_util import MgitUnitTestBase
 
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from typing import List
 
 
 @unittest.skipUnless(os.environ.get("ACCEPTANCE"), "acceptance tests run slow")
-class AcceptanceBase(unittest.TestCase):
+class AcceptanceBase(MgitUnitTestBase):
     """
     This is the baseclass that allows testing of every command for real on the system
 
@@ -78,18 +79,6 @@ class AcceptanceBase(unittest.TestCase):
         remotes   | init   | name, remote   | init repo in remote
     """
 
-    def setUp(self):
-        self.repos_config           = "./test/__files__/test_repos_acceptance.ini"
-        self.remotes_config         = "./test/__files__/test_remote_acceptance.ini"
-
-        self.default_repos_config   = "./test/__files__/test_repos_acceptance_default.ini"
-        self.default_remotes_config = "./test/__files__/test_remote_acceptance_default.ini"
-
-        self.test_dir               = Path("/tmp/mgit/")
-
-        self.config_state_interactor = ConfigStateInteractor(remotes_file=self.remotes_config, repos_file=self.repos_config)
-        self.system_state_interactor = SystemStateInteractor()
-
     def assertRepoNotExists(self, path):
         with self.assertRaises(NoSuchPathError):
             Repo(path)
@@ -116,17 +105,6 @@ class AcceptanceBase(unittest.TestCase):
         for repo in all_repos:
             self.assertTrue(repo.path.startswith('/tmp/mgit'))
             self.system_state_interactor.set_state(repo)
-
-    def clear_test_dir(self):
-        shutil.rmtree("/tmp/mgit/", ignore_errors=True)
-
-    def tearDown(self):
-        self.reset_configs()
-        self.clear_test_dir()
-
-    def reset_configs(self):
-        shutil.copy(self.default_remotes_config, self.remotes_config)
-        shutil.copy(self.default_repos_config, self.repos_config)
 
     def run_test_command(self, command):
         return main(

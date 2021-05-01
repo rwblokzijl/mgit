@@ -10,6 +10,7 @@ class RemoteType(Enum):
     SSH = 1
     GITHUB = 2
     GITLAB = 3
+    LOCAL  = 4
 
 @dataclass(frozen=True)
 class Remote:
@@ -19,12 +20,18 @@ class Remote:
     remote_type: RemoteType
 
     def get_url(self) -> str:
-        return f"{self.url}:{self.path}"
+        if self.url:
+            return f"{self.url}:{self.path}"
+        else:
+            return self.path
 
     def get_subpath(self, remote_repo: 'UnnamedRemoteRepo') -> Optional[str]:
         if not remote_repo.url.startswith(self.get_url()):
             return None
-        path = remote_repo.url[len(self.url + ":"):]
+        if self.url:
+            path = remote_repo.url[len(self.url + ":"):]
+        else:
+            path = remote_repo.url
         if not self.path:
             return path
         try:
@@ -78,7 +85,10 @@ class NamedRemoteRepo(RemoteRepo):
         return os.path.join(self.remote.path, self.project_name)
 
     def get_url(self) -> str:
-        return self.remote.url + ":" + self.get_path()
+        if self.remote.url:
+            return self.remote.url + ":" + self.get_path()
+        else:
+            return self.get_path()
 
     def __repr__(self) -> str:
         return f"Named: {self.get_url()} {self.get_name()}"

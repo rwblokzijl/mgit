@@ -4,7 +4,7 @@ from git import Repo
 from git.exc import GitError
 from pathlib import Path
 
-from typing import Optional, Set, List
+from typing import Optional, Set, List, Union
 
 from subprocess import Popen, PIPE, STDOUT
 import dataclasses
@@ -17,14 +17,14 @@ class SystemStateInteractor:
     This only interacts with the Repo through the Repo object
     """
 
-    def get_state(self, path: Path) -> Optional[RepoState]:
+    def get_state(self, path: Union[Path, str]) -> Optional[RepoState]:
         try:
-            repo = Repo(path, search_parent_directories=True)
+            repo = Repo(Path(path).expanduser().absolute(), search_parent_directories=True)
         except GitError:
             return None
         return self._get_state_from_repo(repo)
 
-    def set_state(self, repo_state: RepoState):
+    def set_state(self, repo_state: RepoState, init=False):
         if not repo_state.path:
             raise ValueError(f"'{repo_state.name}' does not specify a path")
         repo_keys = list(dataclasses.asdict(repo_state).keys())
@@ -37,7 +37,10 @@ class SystemStateInteractor:
         repo_keys.remove("categories")
 
         # will raise if not repo
-        repo = self._get_clone_or_init_repo(repo_state)
+        if init:
+            repo = self._init_repo(repo_state.path.expanduser().absolute())
+        else:
+            repo = self._get_clone_or_init_repo(repo_state)
         repo_keys.remove("path")
 
         for remote_repo in repo_state.remotes:
@@ -53,12 +56,12 @@ class SystemStateInteractor:
 
         assert not repo_keys, repo_keys
 
-    def get_all_local_repos_in_path(self, path, ignore_paths=None) -> List[RepoState]:
+    def get_all_local_repos_in_path(self, path: Union[Path, str], ignore_paths=None) -> List[RepoState]:
         if ignore_paths is None:
             # ignore_paths = []
             ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache', '~/.config/vim'] # TODO: get from config
-        local_git_paths = self._get_local_git_paths(path, ignore_paths)
-        return [state for path in local_git_paths if (state := self.get_state(path)) is not None]
+        local_git_paths = self._get_local_git_paths(Path(path), ignore_paths)
+        return [state for local_path in local_git_paths if (state := self.get_state(local_path)) is not None]
 
     def _get_clone_or_init_repo(self, repo_state) -> Repo:
         repo = self._get_repo_from_path(repo_state.path)
@@ -71,24 +74,15 @@ class SystemStateInteractor:
             repo = self._init_repo(repo_state.path)
         return repo
 
-    def _init_repo(self, path) -> Repo:
-        # Should raise
-        # try:
-        # os.mkdir(path)
-        return Repo.init(path=path)
-        # except GitError:
-        #     return None
+    def _init_repo(self, path: Path) -> Repo:
+        return Repo.init(path=path.expanduser().absolute())
 
     def _clone_repo(self, path, remote_repo: RemoteRepo) -> Repo:
-        # Should just raise for now
-        # try:
-        return Repo.clone_from(url=remote_repo.get_url(), to_path=path, origin=remote_repo.get_name())
-        # except GitError:
-        #     return None
+        return Repo.clone_from(url=remote_repo.get_url(), to_path=path.expanduser().absolute(), origin=remote_repo.get_name())
 
     def _get_repo_from_path(self, path: Path) -> Optional[Repo]:
         try:
-            repo = Repo(path)
+            repo = Repo(path.expanduser().absolute())
         except GitError:
             return None
         return repo
@@ -105,7 +99,7 @@ class SystemStateInteractor:
     def _get_parent(self, repo):
         parent_path = Path(repo.working_dir).parents[0]
         try:
-            parent = Repo(parent_path, search_parent_directories=True)
+            parent = Repo(parent_path.expanduser().absolute(), search_parent_directories=True)
         except GitError:
             return None
         return self._get_state_from_repo(parent)
@@ -128,23 +122,23 @@ class SystemStateInteractor:
                 )
         return rs
 
-    def _should_include(self, line, excludes):
+    def _should_include(self, path: Path, excludes):
         for exclude in excludes:
-            if line.startswith(exclude):
+            try:
+                path.relative_to(exclude)
                 return False
+            except ValueError:
+                pass
         return True
 
-    def _get_local_git_paths(self, path, ignore_paths):
-        excludes = [os.path.abspath(os.path.expanduser(path)) for path in ignore_paths]
-        command  = "find "+path+" -xdev -name '.git'"
-        result   = [os.path.abspath(os.path.expanduser(line.strip().decode("utf-8"))) for line in self._run_command(command)]
-        result   = [line for line in result if self._should_include(line, excludes)]
-        repos    = list()
-        for line in result:
-            try:
-                repos.append(os.path.realpath(line[:-4]))
-            except:
-                pass
+    def _get_local_git_paths(self, path: Path, ignore_paths):
+        excludes = [Path(i_path).expanduser().absolute() for i_path in ignore_paths]
+        command  = f"find {path} -xdev -name '.git'"
+        result   = self._run_command(command)
+        lines    = [line.strip().decode("utf-8") for line in result]
+        paths    = [Path(line).expanduser().absolute() for line in lines]
+        filtered = [path for path in paths if self._should_include(path, excludes)]
+        repos    = [path.parent for path in filtered]
         return repos
 
     def _run_command(self, command):

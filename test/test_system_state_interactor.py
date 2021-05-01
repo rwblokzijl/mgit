@@ -1,6 +1,6 @@
-from mgit.state.system_state_interactor import SystemStateInteractor
+from mgit.system_state_interactor import SystemStateInteractor
 
-from mgit.state.state import RepoState, UnnamedRemoteRepo
+from mgit.state import RepoState, UnnamedRemoteRepo
 
 from git import Repo
 
@@ -54,7 +54,7 @@ class TestSystemState(unittest.TestCase):
         self.rmdir("/tmp/mgit_dir_missing")
 
     def setUp(self):
-        self.repo_dir = Repo(os.path.abspath(__file__), search_parent_directories=True).working_dir #use this very git repo to test
+        self.repo_dir = Path(Repo(os.path.abspath(__file__), search_parent_directories=True).working_dir) #use this very git repo to test
         self.setUp_dirs()
 
     def tearDown(self):
@@ -82,11 +82,11 @@ class TestSystemState(unittest.TestCase):
                 )
 
     def test_non_exist(self):
-        ans = SystemStateInteractor().get_state("/tmp/mgit_notexist")
+        ans = SystemStateInteractor().get_state(Path("/tmp/mgit_notexist"))
         self.assertIsNone(ans)
 
     def test_parent(self):
-        ans = SystemStateInteractor().get_state("~/school/thesis/4_implementation/gateway/backend/")
+        ans = SystemStateInteractor().get_state(Path("~/school/thesis/4_implementation/gateway/backend/"))
         self.assertEqual(
                 "f428e4998a7d8084cb7d557807672aa2b0f5ece9",
                 ans.repo_id

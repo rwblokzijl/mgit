@@ -1,5 +1,7 @@
 from mgit.state import Conflict, RepoState
 
+from pathlib import Path
+
 from typing import List, Optional, Tuple, Dict
 
 class GeneralStateInteractor:
@@ -13,7 +15,7 @@ class GeneralStateInteractor:
     def get_both_from_name_or_path(self, name_or_path):
         config_state = self.config_state_interactor.get_state(name=name_or_path)
         if not config_state:
-            system_state = self.system_state_interactor.get_state(path=name_or_path)
+            system_state = self.system_state_interactor.get_state(path=name_or_path or Path("."))
             if not system_state:
                 raise ValueError(f"'{name_or_path}' is not a tracked repo nor an existing path")
             config_state = self.get_config_from_system(system_state)

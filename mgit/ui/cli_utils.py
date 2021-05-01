@@ -13,13 +13,18 @@ def query_yes_no(question, default="yes"):
     valid = {"yes": True, "y": True, "ye": True,
              "no": False, "n": False}
     if default is None:
-        prompt = " [y/n] "
+        prompt = "[y/n] "
     elif default == "yes":
-        prompt = " [Y/n] "
+        prompt = "[Y/n] "
     elif default == "no":
-        prompt = " [y/N] "
+        prompt = "[y/N] "
     else:
         raise ValueError("invalid default answer: '%s'" % default)
+
+    if '\n' in question:
+        prompt = '\n' + prompt
+    else:
+        prompt = ' ' + prompt
 
     while True:
         sys.stdout.write(question + prompt)
