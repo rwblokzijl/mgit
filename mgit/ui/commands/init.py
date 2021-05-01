@@ -13,20 +13,14 @@ class CommandInit(AbstractLeafCommand):
     command = "init"
     help="Create a new local/remote repo pair"
 
-    def remote_repo(self, s):
-        if ":" in s:
-            return s.split(":", 1)
-        else:
-            return s, None
-
     def build(self, parser):
         parser.add_argument("name", help="Name of the project", nargs="?", default=None, type=str)
         parser.add_argument("--path", help="Path to local repo", metavar="DIR", nargs="?", default=".", type=str)
-        parser.add_argument("--remotes", help="Name of remote repo", metavar="REMOTE[:REPO]", nargs="?", default=None, type=lambda x: self.remote_repo(x))
+        parser.add_argument("--remotes", help="Name of remote repo", metavar="REMOTE[:REPO]", nargs="?", default=None, type=str)
         parser.add_argument("--categories", help="Categories for the repo", nargs="+", default=[], type=str)
 
         # TODO: what to do with origin gets removed??
-        # parser.add_argument("--origin", help="Name of remote to be default push", metavar="REMOTE", type=lambda x: self.remote_repo(x))
+        # parser.add_argument("--origin", help="Name of remote to be default push", metavar="REMOTE", type=lambda x: self.type_remote_repo(x))
 
         parser.add_argument("-y", help="Skip asking for confirmation", action='store_true')
 
@@ -82,6 +76,7 @@ class CommandInit(AbstractLeafCommand):
             self.remote_interactor.init_repo(remote_repo)
 
     def run(self, y=False, name=None, path='.', remotes=None, categories=[]):
+
         """ Prepares the details to init a repo """
 
         if not name:

@@ -57,3 +57,4 @@ class TestInitCommand(MgitUnitTestBase):
                 "test_repo_name",
                 self.remote_interactor.list_remote(remote2.remote)
                 )
+

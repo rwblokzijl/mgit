@@ -10,13 +10,17 @@ class CommandRemoteAdd(AbstractLeafCommand):
         self.repo_by_path_name_or_infer(parser)
         parser.add_argument("remotes", help="Name of remotes", metavar="REMOTE", nargs="*", type=str)
 
-    def run(self, **args):
-        repo = args["repo"]
-        if args["name"]:
-            self.general_state_interactor.get_config_from_name_or_raise(name)
-        if args["path"]:
-            self.general_state_interactor.get_config_from_path_or_raise(name)
-        repo = repo or "."
-        remotes = [self.general_state_interactor.get_remote_from_config_or_raise(remote_name) for remote_name in args['remotes']]
+    def get_repo_state(self, name, path, repo):
+        if name:
+            config_state, system_state = self.general_state_interactor.get_both_from_name(repo)
+        elif path:
+            config_state, system_state = self.general_state_interactor.get_both_from_path(repo)
+        else: #infer
+            config_state, system_state = self.general_state_interactor.get_both_from_name_or_path(repo)
+        return config_state + system_state
+
+    def run(self, name, path, repo, remotes):
+        repo_state = self.get_repo_state(name, path, repo)
+        remotes = [self.general_state_interactor.get_remote_from_config_or_raise(remote_name) for remote_name in remotes]
         return self.interactor.remotes_add(**args)
 

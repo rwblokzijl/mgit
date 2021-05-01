@@ -26,7 +26,7 @@ class AbstractCommand(ABC):
         self.local_system_interactor:  LocalSystemInteractor  = local_system_interactor
         self.remote_interactor:        RemoteInteractor       = remote_interactor
 
-        assert self.command is not None
+        assert self.__class__.command is not None
         self.sub_commands = None
 
     @abstractmethod
