@@ -1,13 +1,16 @@
-from mgit.ui.cli import AbstractLeafCommand
+from mgit.ui.parse_groups import MgitLeafCommand, ArgRepoStateOrAll
 from mgit.ui.commands._mgit import MgitCommand
 
 @MgitCommand.register
-class CommandSingleRepoCheck(AbstractLeafCommand):
+class CommandCheck(MgitLeafCommand):
     command = "check"
     help="Compares a repo config state to the repo state on the system"
 
     def build(self, parser):
-        self.repo_by_path_name_or_infer_or_all(parser)
+        self.add_parse_group(ArgRepoStateOrAll(
+            general_state_interactor=self.general_state_interactor,
+            parser=parser,
+            combine=False))
 
     def compare_all(self):
         ans = []
@@ -17,16 +20,9 @@ class CommandSingleRepoCheck(AbstractLeafCommand):
                 ans += system_state.compare(config_state)
         return ans
 
-    def run(self, **args):
-        if args["all"]:
+    def run(self, config_state, system_state, all):
+        if all:
             return self.compare_all()
-        repo = args["repo"]
-        if args["name"]:
-            config_state, system_state = self.general_state_interactor.get_both_from_name(repo)
-        if args["path"]:
-            config_state, system_state = self.general_state_interactor.get_both_from_path(repo)
-        repo = repo or "."
-        config_state, system_state = self.general_state_interactor.get_both_from_name_or_path(repo)
 
         return config_state.compare(system_state)
 

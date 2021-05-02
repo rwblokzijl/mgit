@@ -1,6 +1,7 @@
 from mgit.state import Remote, RepoState, NamedRemoteRepo, RemoteType
 
 from typing import Dict, Type, List, Optional
+from git import GitError
 
 from fabric  import Connection
 from git     import Repo
@@ -9,6 +10,9 @@ from pathlib import Path
 import os
 
 class RemoteInteractor:
+
+    class RemoteError(Exception):
+        pass
 
     def __init__(self):
         self.class_map: Dict[RemoteType, Type[RemoteInteractor]] = {
@@ -33,8 +37,11 @@ class RemoteInteractor:
 class LocalRemoteInteractor(RemoteInteractor):
 
     def init_repo(self, remote_repo: NamedRemoteRepo) -> str:
-        Repo.init(remote_repo.get_path(), mkdir=True)
-        return remote_repo.get_path()
+        try:
+            Repo.init(remote_repo.get_path(), mkdir=True)
+            return remote_repo.get_path()
+        except GitError:
+            raise self.RemoteError("Cannot init '{remote_repo.project_name}' in '{remote_repo.remote.name}'")
 
     def list_remote(self, remote: Remote) -> List[str]:
         return os.listdir(remote.path)
@@ -53,17 +60,17 @@ class LocalRemoteInteractor(RemoteInteractor):
 
 class SSHInteractor(RemoteInteractor):
 
-    def init_repo(self, remote_repo: NamedRemoteRepo):
-        "Inits a new repo"
+    def init_repo(self, remote_repo: NamedRemoteRepo) -> str:
+        "Inits a new repo and returns its url"
         remote_path = remote_repo.get_path()
         remote_url = remote_repo.remote.url
         if self._exists_remote(remote_repo):
             print("WARNING: Remote folder already exists, not creating remote repo")
             return remote_url
         if not self._run_ssh('mkdir ' + remote_path, url=remote_url):
-            raise ConnectionError("Couldn't create folder, check permissions")
+            raise self.RemoteError("Couldn't create folder, check permissions")
         if not self._run_ssh('git init --bare ' + remote_path, url=remote_url, hide=True):
-            raise ConnectionError("Created folder but could not init repo, manual action required")
+            raise self.RemoteError("Created folder but could not init repo, manual action required")
         return remote_url
 
     def list_remote(self, remote: Remote) -> List[str]:

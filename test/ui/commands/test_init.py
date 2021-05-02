@@ -1,7 +1,5 @@
-from mgit.ui.commands.init import CommandInit
+import mgit.ui.commands.init #import important for decorators to run
 from test.test_util import MgitUnitTestBase
-
-from unittest.mock import Mock
 
 from pathlib import Path
 
@@ -18,30 +16,19 @@ class TestInitCommand(MgitUnitTestBase):
         # doesnt exist in system
         self.assertIsNone(self.system_state_interactor.get_state(path=path))
 
-        list(CommandInit(**self.interactors).run(
-                y=True,
-                name=name,
-                path=path,
-                remotes=set(),
-                categories=set()
-                ))
+        self.run_command(f"init -y {name} --path {path} --remotes")
 
         # exists in config
         self.assertIsNotNone(self.config_state_interactor.get_state(name=name))
         # exists in system
         self.assertIsNotNone(self.system_state_interactor.get_state(path=path))
 
-    def test_init_remotes(self):
+    def test_init_explicit_remotes(self):
         name="test"
         path=Path("/tmp/mgit/kek")
+        remotes="test_remote_1 test_remote_2:test_repo_name"
 
-        list(CommandInit(**self.interactors).run(
-                y=True,
-                name=name,
-                path=path,
-                remotes=["test_remote_1", "test_remote_2:test_repo_name"],
-                categories=set()
-                ))
+        self.run_command(f"init -y {name} --path {path} --remotes {remotes}")
 
         repo = self.config_state_interactor.get_state(name=name)
         remote1, remote2 = sorted(repo.remotes, key=lambda x: x.project_name)
@@ -56,5 +43,61 @@ class TestInitCommand(MgitUnitTestBase):
         self.assertIn(
                 "test_repo_name",
                 self.remote_interactor.list_remote(remote2.remote)
+                )
+
+    def test_init_implicit(self):
+        "Tests that when --remotes is not specified, the defaults are used"
+        name="test"
+        path=Path("/tmp/mgit/kek")
+
+        self.run_command(f"init -y {name} --path {path}")
+
+        # init worked
+        self.assertIsNotNone(
+                self.config_state_interactor.get_state(name=name)
+                )
+
+        remote1, remote2 = sorted(
+                self.config_state_interactor.get_all_remotes_from_config(),
+                key=lambda x: x.name)
+
+        # Remote 1 instantiated (default)
+        self.assertIn(
+                name,
+                self.remote_interactor.list_remote(remote1)
+                )
+
+        # Remote 2 not instantiated
+        self.assertNotIn(
+                "test_repo_name",
+                self.remote_interactor.list_remote(remote2)
+                )
+
+    def test_init_no_remotes(self):
+        "Tests that when --remotes is specified without anything, no remotes are inited"
+        name="test"
+        path=Path("/tmp/mgit/kek")
+        remotes=""
+
+        self.run_command(f"init -y {name} --path {path} --remotes {remotes}")
+
+        # init worked
+        self.assertIsNotNone(
+                self.config_state_interactor.get_state(name=name)
+                )
+        remote1, remote2 = sorted(
+                self.config_state_interactor.get_all_remotes_from_config(),
+                key=lambda x: x.name)
+
+        # Remote 1 not instantiated
+        self.assertNotIn(
+                name,
+                self.remote_interactor.list_remote(remote1)
+                )
+
+        # Remote 2 instantiated
+        self.assertNotIn(
+                "test_repo_name",
+                self.remote_interactor.list_remote(remote2)
                 )
 

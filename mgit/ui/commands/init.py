@@ -1,7 +1,8 @@
-from mgit.state             import RepoState, RemoteRepo, NamedRemoteRepo
-from mgit.ui.cli            import AbstractLeafCommand
-from mgit.ui.cli_utils      import query_yes_no
-from mgit.ui.commands._mgit import MgitCommand
+from mgit.state              import RepoState, RemoteRepo, NamedRemoteRepo
+from mgit.ui.cli             import AbstractLeafCommand
+from mgit.ui.cli_utils       import query_yes_no, path_relative_to_home
+from mgit.ui.parsers         import RemoteParser
+from mgit.ui.commands._mgit  import MgitCommand
 
 from typing import List, Sequence, Set, Iterable
 
@@ -16,7 +17,7 @@ class CommandInit(AbstractLeafCommand):
     def build(self, parser):
         parser.add_argument("name", help="Name of the project", nargs="?", default=None, type=str)
         parser.add_argument("--path", help="Path to local repo", metavar="DIR", nargs="?", default=".", type=str)
-        parser.add_argument("--remotes", help="Name of remote repo", metavar="REMOTE[:REPO]", nargs="?", default=None, type=str)
+        parser.add_argument("--remotes", help="Name of remote repo", metavar="REMOTE[:REPO]", nargs="*", default=None, type=str)
         parser.add_argument("--categories", help="Categories for the repo", nargs="+", default=[], type=str)
 
         # TODO: what to do with origin gets removed??
@@ -36,36 +37,6 @@ class CommandInit(AbstractLeafCommand):
         if existing_config_state:
             raise self.InputError(f"'{name}' already exists in the config")
 
-    def _split_remote_and_repo(self, default_name:str, remote_repo_name:str):
-        if ':' in remote_repo_name:
-            return remote_repo_name.split(":")
-        else:
-            return remote_repo_name, default_name
-
-    def parse_remote_input(self, default_name: str, remote_repo_name: str) -> NamedRemoteRepo:
-        remote_name, name = self._split_remote_and_repo(default_name, remote_repo_name)
-        remote = self.config_state_interactor.get_remote(remote_name)
-        if not remote:
-            raise self.InputError(f"'{remote_name}' is not a known remote")
-        return NamedRemoteRepo(remote=remote, project_name=name)
-
-    def _get_default_remote_repos(self, name: str) -> Set[NamedRemoteRepo]:
-        remotes = self.config_state_interactor.get_default_remotes()
-        remote_repos = {NamedRemoteRepo(remote=remote, project_name=name) for remote in remotes}
-        return remote_repos
-
-    def _path_relative_to_home(self, path):
-        try:
-            return Path("~") / Path(path).absolute().relative_to(Path('~').expanduser())
-        except:
-            return Path(path).absolute()
-
-    def resolve_remotes(self, default_name, remote_names) -> Set[NamedRemoteRepo]:
-        # TODO: Allow UnnamedRemoteRepo?
-        if remote_names is None:
-            return self._get_default_remote_repos(default_name)
-        return {self.parse_remote_input(default_name, remote) for remote in remote_names}
-
     def assert_remotes_available(self, remote_repos: Set[NamedRemoteRepo]):
         for remote_repo in remote_repos:
             if remote_repo.project_name in self.remote_interactor.list_remote(remote_repo.remote):
@@ -76,7 +47,6 @@ class CommandInit(AbstractLeafCommand):
             self.remote_interactor.init_repo(remote_repo)
 
     def run(self, y=False, name=None, path='.', remotes=None, categories=[]):
-
         """ Prepares the details to init a repo """
 
         if not name:
@@ -89,8 +59,8 @@ class CommandInit(AbstractLeafCommand):
                 source="new repo",
                 name=name,
                 repo_id=None,
-                path=self._path_relative_to_home(path),
-                remotes=self.resolve_remotes(name, remotes),
+                path=path_relative_to_home(path),
+                remotes=RemoteParser(self.config_state_interactor).parse(name, remotes),
                 auto_commands=None,
                 archived=None,
                 categories=set(categories),

@@ -12,58 +12,30 @@ class GeneralStateInteractor:
         self.local_system_interactor = local_system_interactor
         self.remote_interactor       = remote_interactor
 
-    def get_both_from_name_or_path(self, name_or_path):
+    def get_both_from_name_or_path(self, name_or_path, raise_if_missing):
         config_state = self.config_state_interactor.get_state(name=name_or_path)
         if not config_state:
             system_state = self.system_state_interactor.get_state(path=name_or_path or Path("."))
             if not system_state:
-                raise ValueError(f"'{name_or_path}' is not a tracked repo nor an existing path")
-            config_state = self.get_config_from_system(system_state)
+                return self._raise_or_none(f"'{name_or_path}' is not a tracked repo nor an existing path", raise_if_missing)
+            config_state = self._get_config_from_system(system_state, raise_if_missing)
             return config_state, system_state
-        system_state = self.get_system_from_config(config_state)
+        system_state = self._get_system_from_config(config_state, raise_if_missing)
         return config_state, system_state
 
-    def get_system_from_config(self, config_state) -> RepoState:
-        if not config_state.path:
-            raise ValueError(f"'{config_state.name}'' doesn't specify a path")
-        system_state = self.system_state_interactor.get_state(path=config_state.path)
-        if not system_state:
-            raise ValueError(f"Local repo '{config_state.name}' does not exist in '{config_state.path}'")
-        return system_state
-
-    def get_config_from_system(self, system_state) -> RepoState:
-        config_state = None
-        if system_state.repo_id:
-            config_state = self.config_state_interactor.get_state(repo_id=system_state.repo_id)
-        if not config_state:
-            config_state = self.config_state_interactor.get_state(path=system_state.path)
-        if not config_state:
-            raise ValueError(f"Repo in '{system_state.path}', cannot be found in config")
-        return config_state
-
-    def get_both_from_path(self, path) -> Tuple[RepoState, RepoState]:
+    def get_both_from_path(self, path, raise_if_missing) -> Tuple[Optional[RepoState], Optional[RepoState]]:
         system_state = self.system_state_interactor.get_state(path=path)
         if not system_state:
-            raise ValueError(f"No repo found in {path}")
-        config_state = self.get_config_from_system(system_state)
+            self._raise_or_none(f"No repo found in {path}", raise_if_missing)
+        config_state = self._get_config_from_system(system_state, raise_if_missing)
         return config_state, system_state
 
-    def get_both_from_name(self, name) -> Tuple[RepoState, RepoState]:
-        config_state = self.get_config_from_name_or_raise(name)
-        system_state= self.get_system_from_config(config_state)
-        return config_state, system_state
-
-    def get_config_from_name_or_raise(self, name) -> RepoState:
+    def get_both_from_name(self, name, raise_if_missing) -> Tuple[Optional[RepoState], Optional[RepoState]]:
         config_state = self.config_state_interactor.get_state(name=name)
         if not config_state:
-            raise ValueError(f"'{name}' is not known as a tracked repo")
-        return config_state
-
-    def get_remote_from_config_or_raise(self, name) -> RepoState:
-        remote = self.config_state_interactor.get_remote(name=name)
-        if not remote:
-            raise ValueError(f"'{name}' is not known as a tracked remote")
-        return remote
+            return self._raise_or_none(f"'{name}' is not known as a tracked repo", raise_if_missing)
+        system_state= self._get_system_from_config(config_state, raise_if_missing)
+        return config_state, system_state
 
     def combine_all(self) -> Tuple[List[RepoState], List[Tuple[RepoState, RepoState]], List[RepoState]]:
         installed: List[RepoState]                     = []
@@ -95,4 +67,35 @@ class GeneralStateInteractor:
                 ans[category].append(repo_state)
         return ans
 
+    def get_config_from_name_or_raise(self, name) -> RepoState:
+        config_state = self.config_state_interactor.get_state(name=name)
+        if not config_state:
+            raise ValueError(f"'{name}' is not known as a tracked repo")
+        return config_state
+
+
+
+    def _get_system_from_config(self, config_state, raise_if_missing) -> Optional[RepoState]:
+        if not config_state.path:
+            return self._raise_or_none(f"'{config_state.name}'' doesn't specify a path", raise_if_missing)
+        system_state = self.system_state_interactor.get_state(path=config_state.path)
+        if not system_state:
+            self._raise_or_none(f"Local repo '{config_state.name}' does not exist in '{config_state.path}'",
+                    raise_if_missing)
+        return system_state
+
+    def _get_config_from_system(self, system_state, raise_if_missing) -> RepoState:
+        config_state = None
+        if system_state.repo_id:
+            config_state = self.config_state_interactor.get_state(repo_id=system_state.repo_id)
+        if not config_state:
+            config_state = self.config_state_interactor.get_state(path=system_state.path)
+        if not config_state:
+            return self._raise_or_none(f"Repo in '{system_state.path}', cannot be found in config", raise_if_missing)
+        return config_state
+
+    def _raise_or_none(self, message, should_raise):
+        if should_raise:
+            raise ValueError(message)
+        return None
 

@@ -1,19 +1,17 @@
 from mgit.ui.cli               import CLI
 from mgit.ui.commands._mgit import MgitCommand
 
-from mgit.state                    import RepoState
+from mgit.printing import pretty_string
 
 from mgit.config_state_interactor  import ConfigStateInteractor
 from mgit.system_state_interactor  import SystemStateInteractor
 from mgit.general_state_interactor import GeneralStateInteractor
-from mgit.local_system_interactor  import LocalSystemInteractor, Status
+from mgit.local_system_interactor  import LocalSystemInteractor
 from mgit.remote_interactor        import RemoteInteractor
 
-from collections.abc import Iterable
 from pathlib import Path
 
 import sys
-import six
 
 def import_commands():
     """
@@ -28,38 +26,13 @@ def import_commands():
     files = [p for p in (current_dir / "ui/commands").rglob("*.py") if os.path.isfile(p) and not str(p).endswith("__init__.py")]
     modules = [str(m.relative_to(current_dir.parent))[:-3].replace('/', '.') for m in files]
     for module in modules:
-        importlib.import_module(module)
+        try:
+            importlib.import_module(module)
+        except ImportError as e:
+            print(f"Module: {module}")
+            raise e
 
 import_commands()
-
-def is_iterable(arg):
-    return ( isinstance(arg, Iterable) and not isinstance(arg, six.string_types))
-
-def indent_str(string: str, indent: int=2) -> str:
-    return (" " * indent) + string.strip('\n').replace('\n', '\n' + ' ' * indent)
-
-def collapse(gen):
-    return "\n".join(gen)
-
-def pretty_string(data):
-    if isinstance(data, dict):
-        for key, value in data.items():
-            if '\n' not in collapse(pretty_string(value)):
-                yield str(key) + " = " + str(value or "")
-            else:
-                yield str(key) + ":"
-                for element in pretty_string(value):
-                    yield indent_str(element)
-    elif is_iterable(data):
-        for value in data:
-            yield from pretty_string(value)
-    elif data is None:
-        pass
-    else:
-        yield str(data)
-
-def pperror(error):
-    print(error, file=sys.stderr)
 
 def main(repos_config, remotes_config, args=None):
     config_state_interactor = ConfigStateInteractor(
@@ -93,7 +66,7 @@ def main_cli(*args, **kwargs):
         return 0
     except Exception as e:
         if str(e):
-            pperror(e)
+            print(e, file=sys.stderr)
             raise e #TODO remove when done
         return 1
 

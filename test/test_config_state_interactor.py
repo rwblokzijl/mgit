@@ -318,3 +318,7 @@ class TestConfigState(unittest.TestCase):
                 new,
                 before)
 
+    def test_get_all_not_none(self):
+        ans = self.c.get_all_repo_state()
+
+        self.assertNotIn(None, ans)

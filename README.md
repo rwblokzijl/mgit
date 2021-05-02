@@ -289,27 +289,60 @@ Maintain information on extra remotes "in the repo".
     - Less granular, allows :
         * remote1:rbranch:lbranch
 
-1. Migrate from complex "interactior" model to source and sink model
-    a. Create base classes:
-        - Dataclass Repo
-        - Peripherals that Generate and Consume dataclass
-            * Local system
-                + Generate -> inspect disk repo
-                + Consume  -> make changes on the disk
-            * Config
-                + Generate -> load
-                + Consume  -> update
-        - Interactor (business logic) defines functions to act on peripherals
-        - Git_interactor
-            * Does things
-            * Includes remote init
-    b. FLOW: Update state
-        i. UI generates inputs to interactor
-        ii. Interactor either
-            - generates desired state object and sends to peripherals OR
-            - asks peripherals for current state object
-    c. FLOW: Do git command
-        i. UI generates inputs to interactor
-        ii. Interactor
-            - Asks git interactor to do its thing
+# Desired commands
+
+General:
+|------|--------|----------------------------------------------------------------------------|
+|      | update | update properties about the repos that can be infered                      |
+| TODO | sanity | full sanity check of all repos/remotes/configs                             |
+| TODO | config | commands for handling the configs                                          |
+| TODO |        | where to back them up and keep them consistent across remotes and machines |
+
+repo config actions:
+|------|-----------|--------|-------------------------|---------------------------------------------------------|
+|      | show      |        | name                    | show a repo by name                                     |
+|      | init      |        | path, [[remote name]..] | init a repo local and remote                            |
+| todo | add       |        | path, name              | add a repo (init remote?)                               |
+| todo | move      |        | path, name              | move a repo to another path                             |
+| todo | remove    |        | name                    | stop tracking a repo                                    |
+|      | rename    |        | name, name              | rename the repo in the config                           |
+| todo | archive   |        | name                    | add archive flag to                                     |
+| todo | unarchive |        | name                    | remove archive flag to                                  |
+| TODO | install   |        | name                    | install a repo from remote by name (add listed remotes) |
+| todo | category  |        |                         | category actions                                        |
+|      |           | list   |                         | lists all categories                                    |
+|      |           | show   | category                | show the category and children                          |
+|      |           | add    | repo, category          | add category                                            |
+|      |           | remove | repo, category          | remote category                                         |
+| TODO | remote    |        |                         | Repo remote actions                                     |
+| TODO |           | add    | repo, remote, name      | add a remote to the repo, and vv                        |
+| TODO |           | remove | repo, remote, name      | remove a remote from the repo, and vv                   |
+| TODO |           | origin | repo, remote, name      | set a remote as origin, and vv                          |
+
+mutli repo actions:
+|--------|----------|------------------|------------------------------------------------|
+|        | dirty    | repos            | is any repo dirty                              |
+|        | status   | repos            | show status of all repos (clean up ordering)   |
+| ------ | -------- | ---------------- | ---------------------------------------------- |
+| TODO   | fetch    | repos, remotes   | mass fetch                                     |
+| TODO   | pull     | repos, remotes   | mass pull                                      |
+| TODO   | push     | repos, remotes   | mass push (after shutdown)                     |
+
+remote actions:
+|--------|-----------|----------|------------------|----------------------------------------------------------------|
+| TODO   | remotes   |          |                  | manage remotes                                                 |
+|--------|-----------|----------|------------------|----------------------------------------------------------------|
+| TODO|           | list     |                  | list remotes                                                   |
+|TODO|           | add      | name, url        | add a remote                                                   |
+|TODO|           | remove   | name             | remove a remote                                                |
+| ------ | --------- | -------- | ---------------- | -------------------------------------------------------------- |
+| TODO   |           | init     | name, remote     | init repo in remote                                            |
+| TODO   |           | delete   | name, remote     | remove repo from remote, maybe not implement for safety!!!     |
+| TODO   |           | clone    | repos, remote    | clone to remotes to another                                    |
+| ------ | --------- | -------- | ---------------- | -------------------------------------------------------------- |
+| TODO   |           | show     | name             | show the remote and its repos                                  |
+| TODO   |           | check    | repos, remotes   | find non up to date repos across all remotes                   |
+| TODO   |           | sync     | repos, remotes   | fix non up to date repos across all remotes                    |
+|--------|-----------|----------|------------------|----------------------------------------------------------------|
+"""
 

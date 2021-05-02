@@ -321,8 +321,11 @@ class ConfigStateInteractor:
 
     def get_all_repo_state(self):
         for name, section in self._repos_config.items():
-            if name != "DEFAULT":
-                yield self._config_section_to_repo(name, section)
+            if not self._is_special_section(name):
+                ans = self._config_section_to_repo(name, section)
+                if not ans:
+                    continue
+                yield ans
 
     def get_all_repo_names(self):
         for name in self._repos_config.keys():

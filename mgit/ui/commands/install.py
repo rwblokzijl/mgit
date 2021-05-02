@@ -14,17 +14,24 @@ class CommandSingleRepoInstall(AbstractLeafCommand):
     def build(self, parser):
         parser.add_argument("name", help="Name of the project", type=str)
         parser.add_argument("-y", help="Skip asking for confirmation", action='store_true')
-        parser.add_argument("--remote", help="Name of remote to install repo from", metavar="REMOTE", type=str) # TODO: install from this remote
+        parser.add_argument("--remote", help="Name of remote to install repo from", metavar="REMOTE", type=str)
 
-    def install_repo(self, state):
-        return self.system_state_interactor.set_state(state)
+    def install_repo(self, state, remote):
+        return self.system_state_interactor.set_state(state, remote=remote)
+
+    def find_remote_in_repo_state(self, remote_name, repo_state):
+        for remote_repo in repo_state.remotes:
+            if remote_repo.remote.name == remote_name:
+                return remote_repo
+        return None
 
     def run(self, name, y, remote):
         config_state = self.general_state_interactor.get_config_from_name_or_raise(name)
-        config_state.source = ""
-        if y or query_yes_no(f"Do you want to install the following repo: \n{config_state.represent()}"):
-            self.install_repo(config_state)
-            return "Installed"
-        else:
+
+        target_remote = self.find_remote_in_repo_state(remote, config_state)
+
+        if not y and not query_yes_no(f"Do you want to install the following repo: \n{config_state.represent()}"):
             return "Doing nothing"
+
+        self.install_repo(config_state, target_remote)
 

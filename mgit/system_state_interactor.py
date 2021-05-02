@@ -1,5 +1,7 @@
 from mgit.state import RepoState, RemoteRepo, NamedRemoteRepo, UnnamedRemoteRepo, Remote, AutoCommand, RemoteBranch, LocalBranch, RemoteType
 
+from mgit.remote_interactor import RemoteInteractor
+
 from git import Repo
 from git.exc import GitError
 from pathlib import Path
@@ -24,7 +26,7 @@ class SystemStateInteractor:
             return None
         return self._get_state_from_repo(repo)
 
-    def set_state(self, repo_state: RepoState, init=False):
+    def set_state(self, repo_state: RepoState, remote: RemoteRepo=None, init=False):
         if not repo_state.path:
             raise ValueError(f"'{repo_state.name}' does not specify a path")
         repo_keys = list(dataclasses.asdict(repo_state).keys())
@@ -37,10 +39,12 @@ class SystemStateInteractor:
         repo_keys.remove("categories")
 
         # will raise if not repo
-        if init:
+        if remote:
+            repo = self._clone_repo_from_remote_or_raise(repo_state, remote)
+        elif init:
             repo = self._init_repo(repo_state.path.expanduser().absolute())
         else:
-            repo = self._get_clone_or_init_repo(repo_state)
+            repo = self._get_clone_or_init_repo(repo_state, remote)
         repo_keys.remove("path")
 
         for remote_repo in repo_state.remotes:
@@ -56,6 +60,12 @@ class SystemStateInteractor:
 
         assert not repo_keys, repo_keys
 
+    def _clone_repo_from_remote_or_raise(self, repo_state, remote) -> Repo:
+        repo = self._clone_repo_from_remote(repo_state.path, remote)
+        if not repo:
+            raise RemoteInteractor.RemoteError("Cannot clone from")
+        return repo
+
     def get_all_local_repos_in_path(self, path: Union[Path, str], ignore_paths=None) -> List[RepoState]:
         if ignore_paths is None:
             # ignore_paths = []
@@ -63,13 +73,10 @@ class SystemStateInteractor:
         local_git_paths = self._get_local_git_paths(Path(path), ignore_paths)
         return [state for local_path in local_git_paths if (state := self.get_state(local_path)) is not None]
 
-    def _get_clone_or_init_repo(self, repo_state) -> Repo:
+    def _get_clone_or_init_repo(self, repo_state, remote=None) -> Repo:
         repo = self._get_repo_from_path(repo_state.path)
         if repo is None:
-            for remote in repo_state.remotes:
-                repo = self._clone_repo(repo_state.path, remote)
-                if repo:
-                    break
+            repo = self._clone_repo(repo_state, remote)
         if repo is None:
             repo = self._init_repo(repo_state.path)
         return repo
@@ -77,8 +84,19 @@ class SystemStateInteractor:
     def _init_repo(self, path: Path) -> Repo:
         return Repo.init(path=path.expanduser().absolute())
 
-    def _clone_repo(self, path, remote_repo: RemoteRepo) -> Repo:
-        return Repo.clone_from(url=remote_repo.get_url(), to_path=path.expanduser().absolute(), origin=remote_repo.get_name())
+    def _clone_repo(self, repo_state: RepoState, default_remote=None):
+        repo = None
+        for remote in repo_state.remotes:
+            repo = self._clone_repo_from_remote(repo_state.path, remote)
+            if repo:
+                break
+        return repo
+
+    def _clone_repo_from_remote(self, path, remote_repo: RemoteRepo) -> Repo:
+        try:
+            return Repo.clone_from(url=remote_repo.get_url(), to_path=path.expanduser().absolute(), origin=remote_repo.get_name())
+        except GitError:
+            return None
 
     def _get_repo_from_path(self, path: Path) -> Optional[Repo]:
         try:
@@ -148,4 +166,5 @@ class SystemStateInteractor:
                 stderr=STDOUT) as p:
             while (line := p.stdout.readline()):
                 yield line # TODO make non blocking, idk how right now
+
 
