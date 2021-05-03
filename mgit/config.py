@@ -22,7 +22,7 @@ import configparser
 import os
 import dataclasses
 
-class ConfigStateInteractor:
+class Config:
 
     """
     Reads config state and returns a RepoState object

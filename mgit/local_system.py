@@ -56,7 +56,7 @@ class Status:
         ans += '\n  '.join([repr(x) for x in self.branch_status if x])
         return ans.strip('\n')
 
-class LocalSystemInteractor:
+class LocalSystem:
 
     def get_status_for_repos(self, repo_states: List[RepoState]) -> Iterable[Status]:
         return (status for repo_state in repo_states if (status := self.get_status_for_repo(repo_state)) is not None)

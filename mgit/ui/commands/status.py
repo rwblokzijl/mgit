@@ -24,15 +24,15 @@ class CommandMultiRepoStatus(AbstractLeafCommand):
         # TODO: Missing???
         if name:
             repo_states = [self.general_state_interactor.get_config_from_name_or_raise(name=name) for name in name]
-            all_status = self.local_system_interactor.get_status_for_repos(repo_states)
+            all_status = self.local_system.get_status_for_repos(repo_states)
             all_status = sorted(all_status, key=lambda x: x.repo_state.name)
         elif local:
-            repo_states = self.system_state_interactor.get_all_local_repos_in_path(local)
-            all_status = [status for status in self.local_system_interactor.get_status_for_repos(repo_states) if status or not dirty]
+            repo_states = self.system.get_all_local_repos_in_path(local)
+            all_status = [status for status in self.local_system.get_status_for_repos(repo_states) if status or not dirty]
             all_status = sorted(all_status, key=lambda x: x.repo_state.path)
         else:
-            repo_states = self.system_state_interactor.get_all_local_repos_in_path(".")
-            all_status = [status for status in self.local_system_interactor.get_status_for_repos(repo_states) if status or not dirty]
+            repo_states = self.system.get_all_local_repos_in_path(".")
+            all_status = [status for status in self.local_system.get_status_for_repos(repo_states) if status or not dirty]
 
         # filter down the results
         if dirty: #dirty only

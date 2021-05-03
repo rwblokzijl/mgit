@@ -26,25 +26,25 @@ class CommandInit(AbstractLeafCommand):
         parser.add_argument("-y", help="Skip asking for confirmation", action='store_true')
 
     def assert_path_available(self, path: Path):
-        existing_system_state = self.system_state_interactor.get_state(path=path)
+        existing_system_state = self.system.get_state(path=path)
         if (existing_system_state and
                 existing_system_state.path is not None and
                 existing_system_state.path.absolute == path.absolute):
             raise self.InputError(f"'{path}' is already a git repo use 'mgit add' instead")
 
     def assert_name_available(self, name: str):
-        existing_config_state = self.config_state_interactor.get_state(name=name)
+        existing_config_state = self.config.get_state(name=name)
         if existing_config_state:
             raise self.InputError(f"'{name}' already exists in the config")
 
     def assert_remotes_available(self, remote_repos: Set[NamedRemoteRepo]):
         for remote_repo in remote_repos:
-            if remote_repo.project_name in self.remote_interactor.list_remote(remote_repo.remote):
+            if remote_repo.project_name in self.remote_system.list_remote(remote_repo.remote):
                 raise self.InputError(f"'{remote_repo.project_name}' already exists in '{remote_repo.remote.name}'")
 
     def create_remotes(self, remote_repos: Set[NamedRemoteRepo]):
         for remote_repo in remote_repos:
-            self.remote_interactor.init_repo(remote_repo)
+            self.remote_system.init_repo(remote_repo)
 
     def run(self, y=False, name=None, path='.', remotes=None, categories=[]):
         """ Prepares the details to init a repo """
@@ -60,11 +60,11 @@ class CommandInit(AbstractLeafCommand):
                 name=name,
                 repo_id=None,
                 path=path_relative_to_home(path),
-                remotes=RemoteParser(self.config_state_interactor).parse(name, remotes),
+                remotes=RemoteParser(self.config).parse(name, remotes),
                 auto_commands=None,
                 archived=None,
                 categories=set(categories),
-                parent=self.system_state_interactor.get_state(Path(path))
+                parent=self.system.get_state(Path(path))
                 )
 
         if not y and not query_yes_no(f"Do you want to init with the following values: \n name={new_state.represent()}"):
@@ -80,10 +80,10 @@ class CommandInit(AbstractLeafCommand):
 
         # yield "Adding submodule to parent"
         yield "Creating local repo"
-        self.system_state_interactor.set_state(new_state, init=True)
+        self.system.set_state(new_state, init=True)
 
         yield "Adding to config"
-        self.config_state_interactor.set_state(new_state)
+        self.config.set_state(new_state)
 
         yield "Done"
 

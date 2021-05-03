@@ -15,7 +15,7 @@ class CommandRemoteList(AbstractLeafCommand):
         if args['remotes']:
             remotes = [self.general_state_interactor.get_remote_from_config_or_raise(remote_name) for remote_name in args['remotes']]
         else:
-            remotes = self.config_state_interactor.get_all_remotes_from_config()
+            remotes = self.config.get_all_remotes_from_config()
 
-        return {remote.name:self.remote_interactor.list_remote(remote) for remote in remotes}
+        return {remote.name:self.remote_system.list_remote(remote) for remote in remotes}
 

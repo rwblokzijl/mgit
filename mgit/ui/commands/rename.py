@@ -12,16 +12,16 @@ class CommandRename(AbstractLeafCommand):
 
     def run(self, name, new_name):
 
-        new_state = self.config_state_interactor.get_state(name=new_name)
+        new_state = self.config.get_state(name=new_name)
         if new_state:
             raise NameError(f"Repo {new_name} already exists")
 
-        config_state = self.config_state_interactor.get_state(name=name)
+        config_state = self.config.get_state(name=name)
         if not config_state:
             raise NameError(f"No repo named {name}")
 
-        self.config_state_interactor.remove_state(config_state)
+        self.config.remove_state(config_state)
         config_state.name = new_name
-        self.config_state_interactor.set_state(config_state)
+        self.config.set_state(config_state)
         return config_state
 

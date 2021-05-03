@@ -1,5 +1,5 @@
 from mgit.state import RepoState, NamedRemoteRepo, Remote, RemoteType, UnnamedRemoteRepo
-from mgit.config_state_interactor import ConfigStateInteractor
+from mgit.config import Config
 
 from parameterized import parameterized
 
@@ -69,7 +69,7 @@ class TestConfigState(unittest.TestCase):
         self.default_repos_config   = "./test/__files__/test_repos_acceptance_default.ini"
         self.default_remotes_config = "./test/__files__/test_remote_acceptance_default.ini"
 
-        self.c = ConfigStateInteractor(
+        self.c = Config(
                 self.remotes_config,
                 self.repos_config
                 )

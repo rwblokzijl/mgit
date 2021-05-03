@@ -1,6 +1,6 @@
 from mgit.main import main
-from mgit.config_state_interactor import ConfigStateInteractor
-from mgit.system_state_interactor import SystemStateInteractor
+from mgit.config import Config
+from mgit.system import System
 from test.test_util import MgitUnitTestBase
 
 from pathlib import Path
@@ -89,7 +89,7 @@ class AcceptanceBase(MgitUnitTestBase):
                 )
 
     def init_remotes_for_test_repos(self, names: List[str]=[]):
-        all_repos = self.config_state_interactor.get_all_repo_state()
+        all_repos = self.config.get_all_repo_state()
         if names: #only init relevant repos
             all_repos = [r for r in all_repos if r.name in names]
         for repo in all_repos:
@@ -99,12 +99,12 @@ class AcceptanceBase(MgitUnitTestBase):
                 Path(path).mkdir(parents=True, exist_ok=False)
 
     def init_test_repos(self, names: List[str]=[]):
-        all_repos = self.config_state_interactor.get_all_repo_state()
+        all_repos = self.config.get_all_repo_state()
         if names: #only init relevant repos
             all_repos = [r for r in all_repos if r.name in names]
         for repo in all_repos:
             self.assertTrue(repo.path.startswith('/tmp/mgit'))
-            self.system_state_interactor.set_state(repo)
+            self.system.set_state(repo)
 
     def run_test_command(self, command):
         return main(

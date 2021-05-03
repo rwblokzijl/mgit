@@ -17,7 +17,7 @@ class CommandSingleRepoInstall(AbstractLeafCommand):
         parser.add_argument("--remote", help="Name of remote to install repo from", metavar="REMOTE", type=str)
 
     def install_repo(self, state, remote):
-        return self.system_state_interactor.set_state(state, remote=remote)
+        return self.system.set_state(state, remote=remote)
 
     def find_remote_in_repo_state(self, remote_name, repo_state):
         for remote_repo in repo_state.remotes:

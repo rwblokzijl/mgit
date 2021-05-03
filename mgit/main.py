@@ -3,11 +3,11 @@ from mgit.ui.commands._mgit import MgitCommand
 
 from mgit.printing import pretty_string
 
-from mgit.config_state_interactor  import ConfigStateInteractor
-from mgit.system_state_interactor  import SystemStateInteractor
+from mgit.config  import Config
+from mgit.system  import System
 from mgit.general_state_interactor import GeneralStateInteractor
-from mgit.local_system_interactor  import LocalSystemInteractor
-from mgit.remote_interactor        import RemoteInteractor
+from mgit.local_system  import LocalSystem
+from mgit.remote_system        import RemoteSystem
 
 from pathlib import Path
 
@@ -35,25 +35,25 @@ def import_commands():
 import_commands()
 
 def main(repos_config, remotes_config, args=None):
-    config_state_interactor = ConfigStateInteractor(
+    config = Config(
             remotes_file = remotes_config,
             repos_file   = repos_config,
             )
-    local_system_interactor = LocalSystemInteractor()
-    remote_interactor = RemoteInteractor()
-    system_state_interactor = SystemStateInteractor()
+    local_system = LocalSystem()
+    remote_system = RemoteSystem()
+    system = System()
     general_state_interactor = GeneralStateInteractor(
-            config_state_interactor = config_state_interactor,
-            system_state_interactor = system_state_interactor,
-            local_system_interactor = local_system_interactor,
-            remote_interactor       = remote_interactor,
+            config = config,
+            system = system,
+            local_system = local_system,
+            remote_system       = remote_system,
             )
     ui = CLI(MgitCommand(
-        config_state_interactor=config_state_interactor,
-        system_state_interactor=system_state_interactor,
+        config=config,
+        system=system,
         general_state_interactor=general_state_interactor,
-        local_system_interactor = local_system_interactor,
-        remote_interactor       = remote_interactor,
+        local_system = local_system,
+        remote_system       = remote_system,
         ))
     return ui.run(args)
 

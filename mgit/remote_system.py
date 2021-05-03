@@ -9,17 +9,17 @@ from pathlib import Path
 
 import os
 
-class RemoteInteractor:
+class RemoteSystem:
 
     class RemoteError(Exception):
         pass
 
     def __init__(self):
-        self.class_map: Dict[RemoteType, Type[RemoteInteractor]] = {
-                RemoteType.SSH: SSHInteractor,
+        self.class_map: Dict[RemoteType, Type[RemoteSystem]] = {
+                RemoteType.SSH: SSHRemoteSystem,
                 # RemoteType.GITHUB: None,
                 # RemoteType.GITLAB: None
-                RemoteType.LOCAL: LocalRemoteInteractor
+                RemoteType.LOCAL: LocalRemoteSystem
                 }
 
     def init_repo(self, remote_repo: NamedRemoteRepo):
@@ -31,10 +31,10 @@ class RemoteInteractor:
     def get_remote_repo_id_mappings(self, remote: Remote) -> Dict[str, Optional[str]]:
         return self._get_interactor(remote).get_remote_repo_id_mappings(remote)
 
-    def _get_interactor(self, remote: Remote) -> 'RemoteInteractor':
+    def _get_interactor(self, remote: Remote) -> 'RemoteSystem':
         return self.class_map[remote.remote_type]()
 
-class LocalRemoteInteractor(RemoteInteractor):
+class LocalRemoteSystem(RemoteSystem):
 
     def init_repo(self, remote_repo: NamedRemoteRepo) -> str:
         try:
@@ -58,7 +58,7 @@ class LocalRemoteInteractor(RemoteInteractor):
             return None
         return commits[-1].hexsha
 
-class SSHInteractor(RemoteInteractor):
+class SSHRemoteSystem(RemoteSystem):
 
     def init_repo(self, remote_repo: NamedRemoteRepo) -> str:
         "Inits a new repo and returns its url"

@@ -18,37 +18,37 @@ from mgit.ui.cli import CLI
 from mgit.ui.commands._mgit import MgitCommand
 from mgit.printing import pretty_string
 
-from mgit.config_state_interactor  import ConfigStateInteractor
-from mgit.system_state_interactor  import SystemStateInteractor
-from mgit.remote_interactor        import RemoteInteractor
+from mgit.config  import Config
+from mgit.system  import System
+from mgit.remote_system        import RemoteSystem
 from mgit.general_state_interactor import GeneralStateInteractor
-from mgit.local_system_interactor  import LocalSystemInteractor
+from mgit.local_system  import LocalSystem
 
 from typing import Union, List, Optional
 from types import GeneratorType
 
-class MockRemoteInteractor(RemoteInteractor):
+class MockRemoteSystem(RemoteSystem):
     "Makes sure we never test using a remote repo"
 
     def __init__(self, test_dir):
         self.test_dir = Path(test_dir)
-        super(MockRemoteInteractor, self).__init__()
+        super(MockRemoteSystem, self).__init__()
 
     def _assert_local_path(self, path: str):
         "will error if not in test dir"
         Path(path).expanduser().absolute().relative_to(self.test_dir.expanduser().absolute())
 
-    def _get_interactor(self, remote: Remote) -> 'RemoteInteractor':
+    def _get_interactor(self, remote: Remote) -> RemoteSystem:
         assert remote.remote_type == RemoteType.LOCAL
         self._assert_local_path(remote.get_url())
-        return super(MockRemoteInteractor, self)._get_interactor(remote)
+        return super(MockRemoteSystem, self)._get_interactor(remote)
 
-class MockSystemStateInteractor(SystemStateInteractor):
+class MockSystem(System):
     "Makes sure we never test repos outside the test dir"
 
     def __init__(self, test_dir):
         self.test_dir = Path(test_dir)
-        super(MockSystemStateInteractor, self).__init__()
+        super(MockSystem, self).__init__()
 
     def _assert_local_path(self, path):
         if path is None:
@@ -58,15 +58,15 @@ class MockSystemStateInteractor(SystemStateInteractor):
 
     def get_all_local_repos_in_path(self, *args, **kwargs) -> List[RepoState]:
         self._assert_local_path(kwargs.get("path") or args[0])
-        return super(MockSystemStateInteractor, self).get_all_local_repos_in_path(*args, **kwargs)
+        return super(MockSystem, self).get_all_local_repos_in_path(*args, **kwargs)
 
     def set_state(self, *args, **kwargs):
         self._assert_local_path((kwargs.get("repo_state") or args[0]).path)
-        return super(MockSystemStateInteractor, self).set_state(*args, **kwargs)
+        return super(MockSystem, self).set_state(*args, **kwargs)
 
     def get_state(self, *args, **kwargs) -> Optional[RepoState]:
         self._assert_local_path(kwargs.get("path") or args[0])
-        return super(MockSystemStateInteractor, self).get_state(*args, **kwargs)
+        return super(MockSystem, self).get_state(*args, **kwargs)
 
 class MgitUnitTestBase(unittest.TestCase):
     def setUp(self):
@@ -78,23 +78,23 @@ class MgitUnitTestBase(unittest.TestCase):
 
         self.test_dir               = Path("/tmp/mgit/")
 
-        self.config_state_interactor  = ConfigStateInteractor(repos_file=self.repos_config, remotes_file=self.remotes_config)
-        self.system_state_interactor  = MockSystemStateInteractor(self.test_dir)
-        self.remote_interactor        = MockRemoteInteractor(self.test_dir)
-        self.local_system_interactor  = LocalSystemInteractor() #read only
+        self.config  = Config(repos_file=self.repos_config, remotes_file=self.remotes_config)
+        self.system  = MockSystem(self.test_dir)
+        self.remote_system        = MockRemoteSystem(self.test_dir)
+        self.local_system  = LocalSystem() #read only
         self.general_state_interactor = GeneralStateInteractor(
-                config_state_interactor = self.config_state_interactor,
-                system_state_interactor = self.system_state_interactor,
-                local_system_interactor = self.local_system_interactor,
-                remote_interactor       = self.remote_interactor,
+                config = self.config,
+                system = self.system,
+                local_system = self.local_system,
+                remote_system       = self.remote_system,
                 )
 
         self.interactors = {
-                'config_state_interactor':  self.config_state_interactor,
-                'system_state_interactor':  self.system_state_interactor,
-                'remote_interactor':        self.remote_interactor,
+                'config':  self.config,
+                'system':  self.system,
+                'remote_system':        self.remote_system,
                 'general_state_interactor': self.general_state_interactor,
-                'local_system_interactor':  self.local_system_interactor
+                'local_system':  self.local_system
                 }
 
         os.makedirs(self.test_dir / "acceptance/test_remote_1")
@@ -109,20 +109,20 @@ class MgitUnitTestBase(unittest.TestCase):
 
     def get_repo_states(self, names: List[str]=[]):
         if names:
-            return [ self.config_state_interactor.get_state(name=r) for r in names ]
+            return [ self.config.get_state(name=r) for r in names ]
         else:
-            return self.config_state_interactor.get_all_repo_state()
+            return self.config.get_all_repo_state()
 
     def init_repos(self, names: List[str]=[]):
         all_repos = self.get_repo_states(names)
         for repo in all_repos:
-            self.system_state_interactor.set_state(repo)
+            self.system.set_state(repo)
 
     def init_remotes_for_test_repos(self, names: List[str]=[]):
         all_repos = self.get_repo_states(names)
         for repo in all_repos:
             for remote_repo in repo.remotes:
-                self.remote_interactor.init_repo(remote_repo)
+                self.remote_system.init_repo(remote_repo)
 
     def reset_configs(self):
         shutil.copy(self.default_remotes_config, self.remotes_config)

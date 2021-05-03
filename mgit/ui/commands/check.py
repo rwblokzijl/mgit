@@ -14,8 +14,8 @@ class CommandCheck(MgitLeafCommand):
 
     def compare_all(self):
         ans = []
-        for config_state in self.config_state_interactor.get_all_repo_state():
-            system_state = self.system_state_interactor.get_state(path=config_state.path)
+        for config_state in self.config.get_all_repo_state():
+            system_state = self.system.get_state(path=config_state.path)
             if system_state:
                 ans += system_state.compare(config_state)
         return ans

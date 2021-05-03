@@ -5,8 +5,8 @@ from mgit.exceptions import InputError
 from typing import Set
 
 class RemoteParser:
-    def __init__(self, config_state_interactor):
-        self.config_state_interactor = config_state_interactor
+    def __init__(self, config):
+        self.config = config
 
     def _split_remote_and_repo(self, default_name:str, remote_repo_name:str):
         if ':' in remote_repo_name:
@@ -16,13 +16,13 @@ class RemoteParser:
 
     def _parse_remote_input(self, default_name: str, remote_repo_name: str) -> NamedRemoteRepo:
         remote_name, name = self._split_remote_and_repo(default_name, remote_repo_name)
-        remote = self.config_state_interactor.get_remote(remote_name)
+        remote = self.config.get_remote(remote_name)
         if not remote:
             raise InputError(f"'{remote_name}' is not a known remote")
         return NamedRemoteRepo(remote=remote, project_name=name)
 
     def _get_default_remote_repos(self, name: str) -> Set[NamedRemoteRepo]:
-        remotes = self.config_state_interactor.get_default_remotes()
+        remotes = self.config.get_default_remotes()
         remote_repos = {NamedRemoteRepo(remote=remote, project_name=name) for remote in remotes}
         return remote_repos
 

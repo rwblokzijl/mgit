@@ -9,16 +9,16 @@ class TestRenameCommand(MgitUnitTestBase):
         new_name="new_name"
 
         # old name exists in config
-        self.assertIsNotNone(self.config_state_interactor.get_state(name=name))
+        self.assertIsNotNone(self.config.get_state(name=name))
         # new name doesnt exist in config
-        self.assertIsNone(self.config_state_interactor.get_state(name=new_name))
+        self.assertIsNone(self.config.get_state(name=new_name))
 
         self.run_command(f"rename {name} {new_name}")
 
         # old name doesnt exist in config
-        self.assertIsNone(self.config_state_interactor.get_state(name=name))
+        self.assertIsNone(self.config.get_state(name=name))
         # new name exists in config
-        self.assertIsNotNone(self.config_state_interactor.get_state(name=new_name))
+        self.assertIsNotNone(self.config.get_state(name=new_name))
 
 
 

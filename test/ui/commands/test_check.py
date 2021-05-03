@@ -12,8 +12,8 @@ import unittest
 class TestCheckCommand(MgitUnitTestBase):
 
     def init_repo(self, name):
-        config = self.config_state_interactor.get_state(name="test_repo_1")
-        self.system_state_interactor.set_state(config, init=True)
+        config = self.config.get_state(name="test_repo_1")
+        self.system.set_state(config, init=True)
 
     def test_check_raises_missing(self):
         with self.assertRaises(ValueError):
@@ -33,7 +33,7 @@ class TestCheckCommand(MgitUnitTestBase):
         self.init_repo("test_repo_1")
 
         # change config
-        config = self.config_state_interactor.get_state(name="test_repo_1")
+        config = self.config.get_state(name="test_repo_1")
 
         original: NamedRemoteRepo = list(config.remotes)[0]
         changed: NamedRemoteRepo = replace(original, remote=replace(original.remote, name="new_name"))
@@ -41,7 +41,7 @@ class TestCheckCommand(MgitUnitTestBase):
         config.remotes.discard(original)
         config.remotes.add(changed)
 
-        self.config_state_interactor.set_state(config)
+        self.config.set_state(config)
 
         # check if mismatch is caught
         self.assertTrue(

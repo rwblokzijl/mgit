@@ -8,7 +8,7 @@ class TestCategoryAdd(MgitUnitTestBase):
 
     def test_init(self):
         self.assertEqual(
-                self.config_state_interactor.get_state(name="test_repo_1").categories,
+                self.config.get_state(name="test_repo_1").categories,
                 { 'category2', 'category1' }
                 )
         CommandCategoryAdd(
@@ -17,7 +17,7 @@ class TestCategoryAdd(MgitUnitTestBase):
                         categories=["c1", "c2"]
                         )
         self.assertEqual(
-                self.config_state_interactor.get_state(name="test_repo_1").categories,
+                self.config.get_state(name="test_repo_1").categories,
                 { 'category2', 'category1', "c1", "c2"}
                 )
 

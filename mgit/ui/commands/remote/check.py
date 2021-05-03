@@ -10,6 +10,6 @@ class CommandRemoteCheck(AbstractLeafCommand):
         parser.add_argument("remote", help="Name of remote repo", metavar="REMOTE", type=str)
 
     def run(self, **args):
-        remote = self.config_state_interactor.get_remote(args["remote"])
-        return self.remote_interactor.get_remote_repo_id_mappings(remote)
+        remote = self.config.get_remote(args["remote"])
+        return self.remote_system.get_remote_repo_id_mappings(remote)
 

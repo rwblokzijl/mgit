@@ -1,6 +1,6 @@
 from mgit.state import RepoState, RemoteRepo, NamedRemoteRepo, UnnamedRemoteRepo, Remote, AutoCommand, RemoteBranch, LocalBranch, RemoteType
 
-from mgit.remote_interactor import RemoteInteractor
+from mgit.remote_system import RemoteSystem
 
 from git import Repo
 from git.exc import GitError
@@ -12,7 +12,7 @@ from subprocess import Popen, PIPE, STDOUT
 import dataclasses
 import os
 
-class SystemStateInteractor:
+class System:
     """
     Reads system state and returns a RepoState object
 
@@ -63,7 +63,7 @@ class SystemStateInteractor:
     def _clone_repo_from_remote_or_raise(self, repo_state, remote) -> Repo:
         repo = self._clone_repo_from_remote(repo_state.path, remote)
         if not repo:
-            raise RemoteInteractor.RemoteError("Cannot clone from")
+            raise RemoteSystem.RemoteError("Cannot clone from")
         return repo
 
     def get_all_local_repos_in_path(self, path: Union[Path, str], ignore_paths=None) -> List[RepoState]:

@@ -1,4 +1,4 @@
-from mgit.system_state_interactor import SystemStateInteractor
+from mgit.system import System
 
 from mgit.state import RepoState, UnnamedRemoteRepo
 
@@ -61,11 +61,11 @@ class TestSystemState(unittest.TestCase):
         self.tearDownDirs()
 
     def test_get_state_type(self):
-        ans = SystemStateInteractor().get_state(self.repo_dir)
+        ans = System().get_state(self.repo_dir)
         self.assertIsInstance(ans, RepoState)
 
     def test_get_state_remotes(self):
-        ans = SystemStateInteractor().get_state(self.repo_dir)
+        ans = System().get_state(self.repo_dir)
         self.assertIn(
                 UnnamedRemoteRepo("home", "bloodyfool@git.blokzijl.family:/data/git/projects/mgit"),
                 ans.remotes
@@ -75,18 +75,18 @@ class TestSystemState(unittest.TestCase):
                 ans.remotes)
 
     def test_get_id(self):
-        ans = SystemStateInteractor().get_state(path=self.repo_dir)
+        ans = System().get_state(path=self.repo_dir)
         self.assertEqual(
                 "9392e7789458d330301039232d2c72254c2aed3a",
                 ans.repo_id
                 )
 
     def test_non_exist(self):
-        ans = SystemStateInteractor().get_state(Path("/tmp/mgit_notexist"))
+        ans = System().get_state(Path("/tmp/mgit_notexist"))
         self.assertIsNone(ans)
 
     def test_parent(self):
-        ans = SystemStateInteractor().get_state(Path("~/school/thesis/4_implementation/gateway/backend/"))
+        ans = System().get_state(Path("~/school/thesis/4_implementation/gateway/backend/"))
         self.assertEqual(
                 "f428e4998a7d8084cb7d557807672aa2b0f5ece9",
                 ans.repo_id
@@ -97,7 +97,7 @@ class TestSystemState(unittest.TestCase):
                 )
 
     def test_get_state(self):
-        ans = SystemStateInteractor().get_state(path=self.repo_with_commit)
+        ans = System().get_state(path=self.repo_with_commit)
         self.assertIsNotNone(ans.repo_id)
 
     "Writing"
@@ -105,7 +105,7 @@ class TestSystemState(unittest.TestCase):
     def test_write_clone(self) -> None:
         path = self.unittest_path / Path("test_1")
 
-        origin = SystemStateInteractor().get_state(path=self.repo_with_commit)
+        origin = System().get_state(path=self.repo_with_commit)
 
         self.assertIsNotNone(origin)
 
@@ -130,12 +130,12 @@ class TestSystemState(unittest.TestCase):
                 )
 
         self.assertEqual(
-                SystemStateInteractor().get_state(path),
+                System().get_state(path),
                 None)
 
-        SystemStateInteractor().set_state(repo_state)
+        System().set_state(repo_state)
 
-        ans = SystemStateInteractor().get_state(path)
+        ans = System().get_state(path)
 
         self.assertEqual(
                 ans,
@@ -159,12 +159,12 @@ class TestSystemState(unittest.TestCase):
                 )
 
         self.assertEqual(
-                SystemStateInteractor().get_state(path),
+                System().get_state(path),
                 None)
 
-        SystemStateInteractor().set_state(repo_state)
+        System().set_state(repo_state)
 
-        ans = SystemStateInteractor().get_state(path)
+        ans = System().get_state(path)
 
         self.assertEqual(
                 ans,

@@ -12,16 +12,16 @@ class TestInitCommand(MgitUnitTestBase):
         path=Path("/tmp/mgit/kek")
 
         # doesnt exist in config
-        self.assertIsNone(self.config_state_interactor.get_state(name=name))
+        self.assertIsNone(self.config.get_state(name=name))
         # doesnt exist in system
-        self.assertIsNone(self.system_state_interactor.get_state(path=path))
+        self.assertIsNone(self.system.get_state(path=path))
 
         self.run_command(f"init -y {name} --path {path} --remotes")
 
         # exists in config
-        self.assertIsNotNone(self.config_state_interactor.get_state(name=name))
+        self.assertIsNotNone(self.config.get_state(name=name))
         # exists in system
-        self.assertIsNotNone(self.system_state_interactor.get_state(path=path))
+        self.assertIsNotNone(self.system.get_state(path=path))
 
     def test_init_explicit_remotes(self):
         name="test"
@@ -30,19 +30,19 @@ class TestInitCommand(MgitUnitTestBase):
 
         self.run_command(f"init -y {name} --path {path} --remotes {remotes}")
 
-        repo = self.config_state_interactor.get_state(name=name)
+        repo = self.config.get_state(name=name)
         remote1, remote2 = sorted(repo.remotes, key=lambda x: x.project_name)
 
         # Remote 1 instantiated
         self.assertIn(
                 name,
-                self.remote_interactor.list_remote(remote1.remote)
+                self.remote_system.list_remote(remote1.remote)
                 )
 
         # Remote 2 instantiated
         self.assertIn(
                 "test_repo_name",
-                self.remote_interactor.list_remote(remote2.remote)
+                self.remote_system.list_remote(remote2.remote)
                 )
 
     def test_init_implicit(self):
@@ -54,23 +54,23 @@ class TestInitCommand(MgitUnitTestBase):
 
         # init worked
         self.assertIsNotNone(
-                self.config_state_interactor.get_state(name=name)
+                self.config.get_state(name=name)
                 )
 
         remote1, remote2 = sorted(
-                self.config_state_interactor.get_all_remotes_from_config(),
+                self.config.get_all_remotes_from_config(),
                 key=lambda x: x.name)
 
         # Remote 1 instantiated (default)
         self.assertIn(
                 name,
-                self.remote_interactor.list_remote(remote1)
+                self.remote_system.list_remote(remote1)
                 )
 
         # Remote 2 not instantiated
         self.assertNotIn(
                 "test_repo_name",
-                self.remote_interactor.list_remote(remote2)
+                self.remote_system.list_remote(remote2)
                 )
 
     def test_init_no_remotes(self):
@@ -83,21 +83,21 @@ class TestInitCommand(MgitUnitTestBase):
 
         # init worked
         self.assertIsNotNone(
-                self.config_state_interactor.get_state(name=name)
+                self.config.get_state(name=name)
                 )
         remote1, remote2 = sorted(
-                self.config_state_interactor.get_all_remotes_from_config(),
+                self.config.get_all_remotes_from_config(),
                 key=lambda x: x.name)
 
         # Remote 1 not instantiated
         self.assertNotIn(
                 name,
-                self.remote_interactor.list_remote(remote1)
+                self.remote_system.list_remote(remote1)
                 )
 
         # Remote 2 instantiated
         self.assertNotIn(
                 "test_repo_name",
-                self.remote_interactor.list_remote(remote2)
+                self.remote_system.list_remote(remote2)
                 )
 

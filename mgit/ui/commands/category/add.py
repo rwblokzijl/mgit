@@ -15,6 +15,6 @@ class CommandCategoryAdd(AbstractLeafCommand):
     def run(self, project, categories=[]):
         config_state = self.general_state_interactor.get_config_from_name_or_raise(project)
         config_state.categories.update(categories)
-        self.config_state_interactor.set_state(config_state)
+        self.config.set_state(config_state)
         return config_state
 

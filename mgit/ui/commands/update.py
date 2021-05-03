@@ -20,7 +20,7 @@ class CommandSingleRepoUpdate(AbstractLeafCommand):
 
         state = config_state + system_state
 
-        self.config_state_interactor.set_state(state)
-        self.system_state_interactor.set_state(state)
+        self.config.set_state(state)
+        self.system.set_state(state)
         return state
 

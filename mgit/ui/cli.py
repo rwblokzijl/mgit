@@ -1,8 +1,8 @@
-from mgit.config_state_interactor  import ConfigStateInteractor
-from mgit.system_state_interactor  import SystemStateInteractor
+from mgit.config  import Config
+from mgit.system  import System
 from mgit.general_state_interactor import GeneralStateInteractor
-from mgit.local_system_interactor  import LocalSystemInteractor
-from mgit.remote_interactor        import RemoteInteractor
+from mgit.local_system  import LocalSystem
+from mgit.remote_system        import RemoteSystem
 
 import argparse
 
@@ -14,17 +14,17 @@ class AbstractCommand(ABC):
     command: Optional[str] = None
     help:    Optional[str] = None
     def __init__(self,
-        config_state_interactor:ConfigStateInteractor,
-        system_state_interactor:SystemStateInteractor,
+        config:Config,
+        system:System,
         general_state_interactor:GeneralStateInteractor,
-        local_system_interactor:LocalSystemInteractor,
-        remote_interactor:RemoteInteractor
+        local_system:LocalSystem,
+        remote_system:RemoteSystem
             ):
-        self.config_state_interactor:  ConfigStateInteractor  = config_state_interactor
-        self.system_state_interactor:  SystemStateInteractor  = system_state_interactor
+        self.config:  Config  = config
+        self.system:  System  = system
         self.general_state_interactor: GeneralStateInteractor = general_state_interactor
-        self.local_system_interactor:  LocalSystemInteractor  = local_system_interactor
-        self.remote_interactor:        RemoteInteractor       = remote_interactor
+        self.local_system:  LocalSystem  = local_system
+        self.remote_system:        RemoteSystem       = remote_system
 
         assert self.__class__.command is not None
         self.sub_commands = None

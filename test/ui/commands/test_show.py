@@ -43,7 +43,7 @@ class TestShowCommand(MgitUnitTestBase):
         config.remotes.discard(original)
         config.remotes.add(changed)
 
-        self.config_state_interactor.set_state(config)
+        self.config.set_state(config)
 
         # check if mismatch is caught
 
@@ -85,7 +85,7 @@ class TestShowCommand(MgitUnitTestBase):
         config.remotes.discard(original)
         config.remotes.add(changed)
 
-        self.config_state_interactor.set_state(config)
+        self.config.set_state(config)
 
         # check if mismatch is caught
 
