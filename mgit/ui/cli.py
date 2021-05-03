@@ -1,6 +1,6 @@
 from mgit.config  import Config
 from mgit.system  import System
-from mgit.general_state_interactor import GeneralStateInteractor
+from mgit.state_helper import StateHelper
 from mgit.local_system  import LocalSystem
 from mgit.remote_system        import RemoteSystem
 
@@ -16,13 +16,13 @@ class AbstractCommand(ABC):
     def __init__(self,
         config:Config,
         system:System,
-        general_state_interactor:GeneralStateInteractor,
+        state_helper:StateHelper,
         local_system:LocalSystem,
         remote_system:RemoteSystem
             ):
         self.config:  Config  = config
         self.system:  System  = system
-        self.general_state_interactor: GeneralStateInteractor = general_state_interactor
+        self.state_helper: StateHelper = state_helper
         self.local_system:  LocalSystem  = local_system
         self.remote_system:        RemoteSystem       = remote_system
 

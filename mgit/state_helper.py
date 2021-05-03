@@ -4,7 +4,7 @@ from pathlib import Path
 
 from typing import List, Optional, Tuple, Dict
 
-class GeneralStateInteractor:
+class StateHelper:
 
     def __init__(self, config, system, local_system, remote_system):
         self.config = config

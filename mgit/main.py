@@ -5,7 +5,7 @@ from mgit.printing import pretty_string
 
 from mgit.config  import Config
 from mgit.system  import System
-from mgit.general_state_interactor import GeneralStateInteractor
+from mgit.state_helper import StateHelper
 from mgit.local_system  import LocalSystem
 from mgit.remote_system        import RemoteSystem
 
@@ -42,7 +42,7 @@ def main(repos_config, remotes_config, args=None):
     local_system = LocalSystem()
     remote_system = RemoteSystem()
     system = System()
-    general_state_interactor = GeneralStateInteractor(
+    state_helper = StateHelper(
             config = config,
             system = system,
             local_system = local_system,
@@ -51,7 +51,7 @@ def main(repos_config, remotes_config, args=None):
     ui = CLI(MgitCommand(
         config=config,
         system=system,
-        general_state_interactor=general_state_interactor,
+        state_helper=state_helper,
         local_system = local_system,
         remote_system       = remote_system,
         ))

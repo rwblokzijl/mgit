@@ -2,7 +2,7 @@ from mgit.ui.cli            import AbstractLeafCommand
 from mgit.ui.commands._mgit import MgitCommand
 
 @MgitCommand.register
-class CommandMultiRepoStatus(AbstractLeafCommand):
+class CommandStatus(AbstractLeafCommand):
     command = "status"
     help="Show the git status for all "
 
@@ -23,7 +23,7 @@ class CommandMultiRepoStatus(AbstractLeafCommand):
         # ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache', '~/.config/vim'] # TODO: get from config
         # TODO: Missing???
         if name:
-            repo_states = [self.general_state_interactor.get_config_from_name_or_raise(name=name) for name in name]
+            repo_states = [self.state_helper.get_config_from_name_or_raise(name=name) for name in name]
             all_status = self.local_system.get_status_for_repos(repo_states)
             all_status = sorted(all_status, key=lambda x: x.repo_state.name)
         elif local:

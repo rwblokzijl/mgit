@@ -6,7 +6,7 @@ class TestCategoryAdd(MgitUnitTestBase):
 
     """Test case docstring."""
 
-    def test_init(self):
+    def test_add(self):
         self.assertEqual(
                 self.config.get_state(name="test_repo_1").categories,
                 { 'category2', 'category1' }

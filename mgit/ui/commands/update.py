@@ -12,11 +12,11 @@ class CommandSingleRepoUpdate(AbstractLeafCommand):
     def run(self, **args):
         repo = args["repo"]
         if args["name"]:
-            config_state, system_state = self.general_state_interactor.get_both_from_name(repo)
+            config_state, system_state = self.state_helper.get_both_from_name(repo)
         if args["path"]:
-            config_state, system_state = self.general_state_interactor.get_both_from_path(repo)
+            config_state, system_state = self.state_helper.get_both_from_path(repo)
         repo = repo or "."
-        config_state, system_state = self.general_state_interactor.get_both_from_name_or_path(repo)
+        config_state, system_state = self.state_helper.get_both_from_name_or_path(repo)
 
         state = config_state + system_state
 

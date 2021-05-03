@@ -8,7 +8,7 @@ class CommandCheck(MgitLeafCommand):
 
     def build(self, parser):
         self.add_parse_group(ArgRepoStateOrAll(
-            general_state_interactor=self.general_state_interactor,
+            state_helper=self.state_helper,
             parser=parser,
             combine=False))
 

@@ -26,7 +26,7 @@ class CommandSingleRepoInstall(AbstractLeafCommand):
         return None
 
     def run(self, name, y, remote):
-        config_state = self.general_state_interactor.get_config_from_name_or_raise(name)
+        config_state = self.state_helper.get_config_from_name_or_raise(name)
 
         target_remote = self.find_remote_in_repo_state(remote, config_state)
 

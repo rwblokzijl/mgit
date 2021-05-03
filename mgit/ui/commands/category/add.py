@@ -13,7 +13,7 @@ class CommandCategoryAdd(AbstractLeafCommand):
         parser.add_argument("categories", help="List of categories to show", nargs="*", type=str)
 
     def run(self, project, categories=[]):
-        config_state = self.general_state_interactor.get_config_from_name_or_raise(project)
+        config_state = self.state_helper.get_config_from_name_or_raise(project)
         config_state.categories.update(categories)
         self.config.set_state(config_state)
         return config_state

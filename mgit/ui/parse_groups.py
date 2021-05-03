@@ -23,8 +23,8 @@ class ParseGroup(ABC):
         pass
 
 class ArgRepoState(ParseGroup):
-    def __init__(self, general_state_interactor, *args, combine=True, raise_if_missing=True, **kwargs):
-        self.general_state_interactor = general_state_interactor
+    def __init__(self, state_helper, *args, combine=True, raise_if_missing=True, **kwargs):
+        self.state_helper = state_helper
         self.should_combine = combine
         self.raise_if_missing = raise_if_missing
         super(ArgRepoState, self).__init__(*args, **kwargs)
@@ -38,11 +38,11 @@ class ArgRepoState(ParseGroup):
 
     def _get_both(self, MGIT_NAME, MGIT_PATH, repo):
         if MGIT_NAME:
-            config_state, system_state = self.general_state_interactor.get_both_from_name(MGIT_NAME, self.raise_if_missing)
+            config_state, system_state = self.state_helper.get_both_from_name(MGIT_NAME, self.raise_if_missing)
         elif MGIT_PATH:
-            config_state, system_state = self.general_state_interactor.get_both_from_path(MGIT_PATH, self.raise_if_missing)
+            config_state, system_state = self.state_helper.get_both_from_path(MGIT_PATH, self.raise_if_missing)
         else: #infer
-            config_state, system_state = self.general_state_interactor.get_both_from_name_or_path(repo, self.raise_if_missing)
+            config_state, system_state = self.state_helper.get_both_from_name_or_path(repo, self.raise_if_missing)
         return config_state, system_state
 
     def parse(self, MGIT_NAME, MGIT_PATH, repo): #type: ignore # idfk how to solve the error

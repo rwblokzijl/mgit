@@ -13,7 +13,7 @@ class CommandCategoryList(AbstractLeafCommand):
         parser.add_argument("categories", help="List of categories to show", nargs="*", type=str)
 
     def run(self, categories=[], verbose=0):
-        by_category = self.general_state_interactor.get_all_by_category()
+        by_category = self.state_helper.get_all_by_category()
         if categories:
             by_category = {cat:l for cat, l in by_category.items() if cat in categories}
         if verbose == 0:
