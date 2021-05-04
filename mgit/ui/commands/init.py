@@ -1,10 +1,9 @@
-from mgit.state              import RepoState, RemoteRepo, NamedRemoteRepo
-from mgit.ui.cli             import AbstractLeafCommand
-from mgit.ui.cli_utils       import query_yes_no, path_relative_to_home
-from mgit.ui.parsers         import RemoteParser
-from mgit.ui.commands._mgit  import MgitCommand
-
-from typing import List, Sequence, Set, Iterable
+from mgit.ui.cli            import AbstractLeafCommand
+from mgit.ui.cli_utils      import query_yes_no, path_relative_to_home
+from mgit.ui.parsers        import RemoteParser
+from mgit.ui.commands._mgit import MgitCommand
+from mgit.state.state       import *
+from typing                 import *
 
 from pathlib import Path
 import os
@@ -46,7 +45,7 @@ class CommandInit(AbstractLeafCommand):
         for remote_repo in remote_repos:
             self.remote_system.init_repo(remote_repo)
 
-    def run(self, y=False, name=None, path='.', remotes=None, categories=[]):
+    def run(self, y, name, path, remotes, categories):
         """ Prepares the details to init a repo """
 
         if not name:

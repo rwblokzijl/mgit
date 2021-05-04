@@ -1,5 +1,5 @@
-from mgit.state import RepoState, NamedRemoteRepo, Remote, RemoteType, UnnamedRemoteRepo
-from mgit.config import Config
+from mgit.state.state import RepoState, NamedRemoteRepo, Remote, RemoteType, UnnamedRemoteRepo
+from mgit.state.config import Config
 
 from parameterized import parameterized
 

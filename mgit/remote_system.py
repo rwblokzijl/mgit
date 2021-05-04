@@ -1,12 +1,11 @@
-from mgit.state import Remote, RepoState, NamedRemoteRepo, RemoteType
+from mgit.state.state import *
+from typing import *
 
-from typing import Dict, Type, List, Optional
 from git import GitError
 
 from fabric  import Connection
 from git     import Repo
 from pathlib import Path
-
 import os
 
 class RemoteSystem:

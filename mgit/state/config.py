@@ -1,20 +1,5 @@
-from mgit.state import (
-        RepoState,
-        NamedRemoteRepo,
-        Remote,
-        RemoteRepo,
-        RemoteType,
-        UnnamedRemoteRepo,
-        )
-
-from typing import (
-        Dict,
-        Iterator,
-        List,
-        Optional,
-        Union,
-        overload,
-        )
+from mgit.state.state import *
+from typing     import *
 
 from pathlib import Path
 
@@ -23,7 +8,6 @@ import os
 import dataclasses
 
 class Config:
-
     """
     Reads config state and returns a RepoState object
 
@@ -39,12 +23,10 @@ class Config:
     ignore = 1
     """
 
-    def get_state(self,
-            repo_state: RepoState=None,
+    def get_state(self, repo_state: RepoState=None,
             repo_id: Optional[str]=None,
             name: Optional[str]=None,
-            path: Union[Path, str, None]=None,
-            ) -> Optional[RepoState]:
+            path: Union[Path, str, None]=None,) -> Optional[RepoState]:
         if repo_state:
             repo_id = repo_state.repo_id
             name = repo_state.name

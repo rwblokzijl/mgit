@@ -1,16 +1,15 @@
-from mgit.ui.parse_groups import MgitLeafCommand, ArgRepoStateOrAll
+from mgit.ui.parse_groups import MultiRepoCommand
 from mgit.ui.commands._mgit import MgitCommand
 
 @MgitCommand.register
-class CommandCheck(MgitLeafCommand):
+class CommandCheck(MultiRepoCommand):
     command = "check"
     help="Compares a repo config state to the repo state on the system"
 
+    combine=False
+
     def build(self, parser):
-        self.add_parse_group(ArgRepoStateOrAll(
-            state_helper=self.state_helper,
-            parser=parser,
-            combine=False))
+        pass
 
     def compare_all(self):
         ans = []
@@ -20,9 +19,9 @@ class CommandCheck(MgitLeafCommand):
                 ans += system_state.compare(config_state)
         return ans
 
-    def run(self, config_state, system_state, all):
+    def run(self, repo_states, all):
         if all:
             return self.compare_all()
 
-        return config_state.compare(system_state)
+        return [config_state.compare(system_state) for config_state, system_state in repo_states]
 

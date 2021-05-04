@@ -1,16 +1,11 @@
-from mgit.state import RepoState, RemoteRepo, NamedRemoteRepo, UnnamedRemoteRepo, Remote, AutoCommand, RemoteBranch, LocalBranch, RemoteType
-
 from mgit.remote_system import RemoteSystem
+from mgit.state.state import *
+from typing import *
 
-from git import Repo
-from git.exc import GitError
+from git import Repo, GitError
 from pathlib import Path
-
-from typing import Optional, Set, List, Union
-
 from subprocess import Popen, PIPE, STDOUT
-import dataclasses
-import os
+from dataclasses import asdict
 
 class System:
     """
@@ -29,7 +24,7 @@ class System:
     def set_state(self, repo_state: RepoState, remote: RemoteRepo=None, init=False):
         if not repo_state.path:
             raise ValueError(f"'{repo_state.name}' does not specify a path")
-        repo_keys = list(dataclasses.asdict(repo_state).keys())
+        repo_keys = list(asdict(repo_state).keys())
         repo_keys.remove("source")
 
         # Not relevant for system state

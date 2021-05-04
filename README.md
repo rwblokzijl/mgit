@@ -346,3 +346,18 @@ remote actions:
 |--------|-----------|----------|------------------|----------------------------------------------------------------|
 """
 
+# How to select multiple repos
+
+Program chooses:
+1. require config
+2. require system
+3. combine
+
+
+- all (in config)
+- name* + path*
+- recursive path (system only)
+
+- [installed]
+- [missing]
+    * [archived] include archived repos

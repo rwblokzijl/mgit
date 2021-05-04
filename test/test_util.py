@@ -11,14 +11,12 @@ from pathlib import Path
 
 from mgit.ui.cli            import CLI
 from mgit.ui.commands._mgit import MgitCommand
-from mgit.printing          import pretty_string
+from mgit.util.printing     import pretty_string
+from mgit.state.config            import Config
+from mgit.state.system            import System
+from mgit.remote_system     import RemoteSystem
 
-from mgit.state import Remote, RemoteType, RepoState
-from mgit.config        import Config
-from mgit.system        import System
-from mgit.remote_system import RemoteSystem
-from mgit.state_helper  import StateHelper
-from mgit.local_system  import LocalSystem
+from mgit.state.state import *
 
 class MockRemoteSystem(RemoteSystem):
     "Makes sure we never test using a remote repo"
@@ -80,20 +78,11 @@ class MgitUnitTestBase(unittest.TestCase):
         self.config  = Config(repos_file=self.repos_config, remotes_file=self.remotes_config)
         self.system  = MockSystem(self.test_dir)
         self.remote_system        = MockRemoteSystem(self.test_dir)
-        self.local_system  = LocalSystem() #read only
-        self.state_helper = StateHelper(
-                config = self.config,
-                system = self.system,
-                local_system = self.local_system,
-                remote_system       = self.remote_system,
-                )
 
         self.interactors = {
                 'config':  self.config,
                 'system':  self.system,
                 'remote_system':        self.remote_system,
-                'state_helper': self.state_helper,
-                'local_system':  self.local_system
                 }
 
         os.makedirs(self.test_dir / "acceptance/test_remote_1")
@@ -135,6 +124,6 @@ class MgitUnitTestBase(unittest.TestCase):
     def run_command(self, command: str):
         output = self.run_command_raw(command)
         possible_generator = pretty_string(output)
-        ans = list(possible_generator)
+        ans = "\n".join(list(possible_generator))
         return ans
 

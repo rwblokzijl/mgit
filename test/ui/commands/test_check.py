@@ -3,7 +3,7 @@ from test.test_util import MgitUnitTestBase
 
 from dataclasses import replace
 
-from mgit.state import NamedRemoteRepo, Remote
+from mgit.state.state import NamedRemoteRepo, Remote
 
 from pathlib import Path
 
@@ -17,7 +17,7 @@ class TestCheckCommand(MgitUnitTestBase):
 
     def test_check_raises_missing(self):
         with self.assertRaises(ValueError):
-            self.run_command( f"check test_repo_1" )
+            self.run_command( f"check -n test_repo_1" )
 
     def test_check_nothing_if_equal(self):
         # init directly from config
@@ -25,7 +25,7 @@ class TestCheckCommand(MgitUnitTestBase):
 
         # no errors
         self.assertFalse(
-                self.run_command( f"check test_repo_1" )
+                self.run_command( f"check -n test_repo_1" )
                 )
 
     def test_check_something_if_differs(self):
@@ -45,7 +45,7 @@ class TestCheckCommand(MgitUnitTestBase):
 
         # check if mismatch is caught
         self.assertTrue(
-                self.run_command( f"check test_repo_1" )
+                self.run_command( f"check -n test_repo_1" )
                 )
 
     def test_all(self):

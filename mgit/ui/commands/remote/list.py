@@ -1,8 +1,6 @@
 from mgit.ui.cli import AbstractLeafCommand
 from mgit.ui.commands.remote._remote import CommandRemote
 
-from mgit.ui.cli_utils import query_yes_no
-
 @CommandRemote.register
 class CommandRemoteList(AbstractLeafCommand):
     command = "list"

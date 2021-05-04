@@ -19,7 +19,7 @@ class TestInstallCommand(MgitUnitTestBase):
         # not exists in system
         self.assertIsNone(self.system.get_state(path=path))
 
-        self.run_command(f"install -y {name}")
+        self.run_command(f"install -y -n {name}")
 
         # exists in system
         self.assertIsNotNone(self.system.get_state(path=path))
@@ -33,7 +33,7 @@ class TestInstallCommand(MgitUnitTestBase):
 
         # force install from non-existant remote raises
         with self.assertRaises(self.remote_system.RemoteError):
-            self.run_command(f"install -y test_repo_1 --remote {remote2.remote.name}")
+            self.run_command(f"install -y -n test_repo_1 --remote {remote2.remote.name}")
 
         # not exists in system
         self.assertIsNone(
@@ -41,7 +41,7 @@ class TestInstallCommand(MgitUnitTestBase):
                 )
 
         # force install from existant remote succeeds
-        self.run_command(f"install -y test_repo_1 --remote {remote1.remote.name}")
+        self.run_command(f"install -y -n test_repo_1 --remote {remote1.remote.name}")
 
         # exists in system
         self.assertIsNotNone(

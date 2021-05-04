@@ -1,8 +1,6 @@
 from typing import Iterable
-
 from six import string_types
 
-import sys
 def is_iterable(arg):
     return ( isinstance(arg, Iterable) and not isinstance(arg, string_types))
 

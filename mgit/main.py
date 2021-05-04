@@ -1,13 +1,9 @@
-from mgit.ui.cli               import CLI
+from mgit.ui.cli            import CLI
 from mgit.ui.commands._mgit import MgitCommand
-
-from mgit.printing import pretty_string
-
-from mgit.config  import Config
-from mgit.system  import System
-from mgit.state_helper import StateHelper
-from mgit.local_system  import LocalSystem
-from mgit.remote_system        import RemoteSystem
+from mgit.util.printing     import pretty_string
+from mgit.state.config      import Config
+from mgit.state.system      import System
+from mgit.remote_system     import RemoteSystem
 
 from pathlib import Path
 
@@ -39,21 +35,12 @@ def main(repos_config, remotes_config, args=None):
             remotes_file = remotes_config,
             repos_file   = repos_config,
             )
-    local_system = LocalSystem()
     remote_system = RemoteSystem()
     system = System()
-    state_helper = StateHelper(
-            config = config,
-            system = system,
-            local_system = local_system,
-            remote_system       = remote_system,
-            )
     ui = CLI(MgitCommand(
         config=config,
         system=system,
-        state_helper=state_helper,
-        local_system = local_system,
-        remote_system       = remote_system,
+        remote_system=remote_system,
         ))
     return ui.run(args)
 

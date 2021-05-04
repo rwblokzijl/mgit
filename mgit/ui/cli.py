@@ -1,10 +1,6 @@
-from mgit.config  import Config
-from mgit.system  import System
-from mgit.state_helper import StateHelper
-from mgit.local_system  import LocalSystem
-from mgit.remote_system        import RemoteSystem
-
-import argparse
+from mgit.state.config        import Config
+from mgit.state.system        import System
+from mgit.remote_system import RemoteSystem
 
 from typing import Optional, List, Type, Dict
 
@@ -16,14 +12,10 @@ class AbstractCommand(ABC):
     def __init__(self,
         config:Config,
         system:System,
-        state_helper:StateHelper,
-        local_system:LocalSystem,
         remote_system:RemoteSystem
             ):
         self.config:  Config  = config
         self.system:  System  = system
-        self.state_helper: StateHelper = state_helper
-        self.local_system:  LocalSystem  = local_system
         self.remote_system:        RemoteSystem       = remote_system
 
         assert self.__class__.command is not None

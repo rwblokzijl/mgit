@@ -1,9 +1,7 @@
-import mgit.ui.commands.init #import important for decorators to run
+import mgit.ui.commands.init # pylint: disable=W0611 #import important for decorators to run
 from test.test_util import MgitUnitTestBase
 
 from pathlib import Path
-
-import unittest
 
 class TestInitCommand(MgitUnitTestBase):
 

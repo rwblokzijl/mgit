@@ -1,11 +1,33 @@
 from mgit.ui.cli import AbstractLeafCommand
-from abc         import ABC, abstractmethod
+from typing      import *
+from mgit.state.state  import *
 
-class ParseGroup(ABC):
-    def __init__(self, parser):
-        self._parser = parser
+class AbstractMgitCommand(AbstractLeafCommand):
+    """
+    Base class for all special mgit commands
+    """
+    combine         = True
+    config_required = True
+    system_required = True
+
+    def __init__(self, *args, **kwargs):
         self.args = []
-        self.build()
+        super().__init__(*args, **kwargs)
+
+    @abstractmethod
+    def pre_build(self):
+        pass
+
+    @abstractmethod
+    def post_parse(self, args):
+        pass
+
+    def build_decorator(self, func):
+        def wrapper(parser):
+            self._parser = parser
+            self.pre_build()
+            return func(self, parser)
+        return wrapper
 
     def add_argument(self, *args, add_to=None, **kwargs):
         if add_to is None:
@@ -14,76 +36,119 @@ class ParseGroup(ABC):
             add_to.add_argument(*args, **kwargs)
         self.args.append(kwargs['dest']) #dest must be specified
 
-    @abstractmethod
-    def build(self):
-        pass
+    def __getattribute__(self, name):
+        if name == "build":
+            func = getattr(type(self), "build")
+            return self.build_decorator(func)
+        else:
+            return object.__getattribute__(self, name)
 
-    @abstractmethod
-    def parse(self, *args, **kwargs):
-        pass
+    def run_command(self, args):
+        args_to_pass = {k:v for k, v in args.items() if k in self.args}
+        args = {k:v for k, v in args.items() if k not in self.args}
+        new_args = self.post_parse(**args_to_pass)
+        for arg, val in new_args.items():
+            assert arg not in args, f"'{arg}' already in args"
+            args[arg] = val
 
-class ArgRepoState(ParseGroup):
-    def __init__(self, state_helper, *args, combine=True, raise_if_missing=True, **kwargs):
-        self.state_helper = state_helper
-        self.should_combine = combine
-        self.raise_if_missing = raise_if_missing
-        super(ArgRepoState, self).__init__(*args, **kwargs)
+        return self.run(**args)
 
-    def build(self):
-        me_group = self._parser.add_mutually_exclusive_group()
-        self.add_argument("-n", "--name", add_to=me_group, dest="MGIT_NAME",help="Name of the repo", type=str) # if set: definitely name
-        self.add_argument("-p", "--path", add_to=me_group, dest="MGIT_PATH", help="Path of the repo", type=str) # if set: definitely path
-        self.add_argument(dest="repo",    add_to=me_group, help="Name or path of the repo", nargs="?", type=str) # else: try to infer
-        return me_group
+class MgitBaseCommand(AbstractMgitCommand):
+    """
+    This is the base class for all special mgit commands
+    """
+    def _get_config(self, name) -> Optional[RepoState]:
+        config_state = self.config.get_state(name=name)
+        if not config_state and self.config_required:
+            raise ValueError(f"'{name}' is not known as a tracked repo")
+        return config_state
 
-    def _get_both(self, MGIT_NAME, MGIT_PATH, repo):
-        if MGIT_NAME:
-            config_state, system_state = self.state_helper.get_both_from_name(MGIT_NAME, self.raise_if_missing)
-        elif MGIT_PATH:
-            config_state, system_state = self.state_helper.get_both_from_path(MGIT_PATH, self.raise_if_missing)
-        else: #infer
-            config_state, system_state = self.state_helper.get_both_from_name_or_path(repo, self.raise_if_missing)
+    def _get_system(self, path):
+        system_state = self.system.get_state(path=path)
+        if not system_state and self.system_required:
+            raise ValueError(f"No repo found in {path}")
+        return system_state
+
+    def _get_config_from_system(self, system_state) -> Optional[RepoState]:
+        config_state = None
+        if system_state.repo_id:
+            config_state = self.config.get_state(repo_id=system_state.repo_id)
+        if not config_state:
+            config_state = self.config.get_state(path=system_state.path)
+        if not config_state and self.config_required:
+            raise ValueError(f"Repo in '{system_state.path}', cannot be found in config")
+        return config_state
+
+    def _get_system_from_config(self, config_state) -> Optional[RepoState]:
+        if not config_state.path:
+            if self.config_required:
+                raise ValueError(f"'{config_state.name}'' doesn't specify a path")
+            return None
+        else:
+            system_state = self.system.get_state(path=config_state.path)
+            if not system_state and self.system_required:
+                raise ValueError(f"Local repo '{config_state.name}' does not exist in '{config_state.path}'")
+            return system_state
+
+    def get_both_from_name(self, name) -> Tuple[Optional[RepoState], Optional[RepoState]]:
+        config_state = self._get_config(name)
+        system_state = self._get_system_from_config(config_state)
         return config_state, system_state
 
-    def parse(self, MGIT_NAME, MGIT_PATH, repo): #type: ignore # idfk how to solve the error
-        config_state, system_state = self._get_both(MGIT_NAME, MGIT_PATH, repo)
+    def get_both_from_path(self, path) -> Tuple[Optional[RepoState], Optional[RepoState]]:
+        system_state = self._get_system(path)
+        config_state = self._get_config_from_system(system_state)
+        return config_state, system_state
 
-        if self.should_combine:
-            return {'repo_state': config_state + system_state}
+class SingleRepoCommand(MgitBaseCommand):
+    """
+    Base command for all commands that take a single repo
+    """
+    def pre_build(self):
+        me_group = self._parser.add_mutually_exclusive_group()
+        self.add_argument("-n", "--name", add_to=me_group, dest="MGIT_NAME", metavar="NAME", help="Name of the repo") # if set: definitely name
+        self.add_argument("-p", "--path", add_to=me_group, dest="MGIT_PATH", metavar="PATH", help="Path of the repo") # if set: definitely path
+        return me_group
+
+    def _get_repo_states(self, MGIT_NAME, MGIT_PATH):
+        if MGIT_NAME:
+            config_state, system_state = self.get_both_from_name(MGIT_NAME)
+        else:
+            config_state, system_state = self.get_both_from_path(MGIT_PATH or ".")
+        return config_state, system_state
+
+    def post_parse(self, MGIT_NAME, MGIT_PATH): #type: ignore # idfk how to solve the error
+        config_state, system_state = self._get_repo_states(MGIT_NAME, MGIT_PATH)
+
+        if self.combine:
+            if config_state and system_state:
+                repo_state = config_state + system_state
+            else:
+                repo_state = config_state or system_state
+            return {'repo_state': repo_state}
         else:
             return {'config_state': config_state, 'system_state': system_state}
 
-class ArgRepoStateOrAll(ArgRepoState):
-    def build(self):
-        me_group = super(ArgRepoStateOrAll, self).build()
-        self.add_argument("-a", "--all", add_to=me_group, dest="MGIT_ALL", help="All repos in config", action="store_true") # all repos in config
+class MultiRepoCommand(MgitBaseCommand):
+    """
+    Base command for all commands that take multple repos
 
-    def parse(self, MGIT_NAME, MGIT_PATH, repo, MGIT_ALL): #type: ignore # idfk how to solve the error
+    This class will set up all required arguments and return them as a list of repo_states
+    """
+    def pre_build(self):
+        group    = self._parser.add_argument_group('repos')
+        self.add_argument("-n", "--name", add_to=group, dest="MGIT_NAMES", metavar="NAME", action="append", default=[], help="Name of the repo") # if set: definitely name
+        self.add_argument("-p", "--path", add_to=group, dest="MGIT_PATHS", metavar="PATH", action="append", default=[], help="Path of the repo") # if set: definitely path
+        self.add_argument("-a", "--all",  add_to=group, dest="MGIT_ALL", help="All repos in config", action="store_true") # all repos in config
+
+    def post_parse(self, MGIT_NAMES, MGIT_PATHS, MGIT_ALL):
         if MGIT_ALL:
-            if not self.should_combine:
-                return {'all': True, 'config_state': None, 'system_state': None}
-            else:
-                return {'all': True, 'repo_state': None}
+            return {'all': True, 'repo_states': None}
         else:
-            ans = {'all': False}
-            ans.update(super(ArgRepoStateOrAll, self).parse(MGIT_NAME, MGIT_PATH, repo))
-            return ans
-
-class MgitLeafCommand(AbstractLeafCommand):
-    def __init__(self, *args, **kwargs):
-        super(MgitLeafCommand, self).__init__(*args, **kwargs)
-        self.parse_args_map = []
-
-    def add_parse_group(self, group):
-        self.parse_args_map.append(group)
-
-    def run_command(self, args):
-        for parse_group in self.parse_args_map:
-            args_to_pass = {k:v for k, v in args.items() if k in parse_group.args}
-            args = {k:v for k, v in args.items() if k not in parse_group.args}
-            new_args = parse_group.parse(**args_to_pass)
-            for arg, val in new_args.items():
-                assert arg not in args, f"'{arg}' already in args"
-                args[arg] = val
-        return self.run(**args)
-
+            repo_states  = [self.get_both_from_name(name) for name in MGIT_NAMES]
+            repo_states += [self.get_both_from_path(path) for path in MGIT_PATHS]
+            if not repo_states:
+                repo_states += [self.get_both_from_path(".")]
+            if self.combine:
+                repo_states = [config + system for config, system in repo_states]
+            return {'all': False, 'repo_states': repo_states}

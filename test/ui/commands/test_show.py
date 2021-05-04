@@ -3,7 +3,7 @@ from test.test_util import MgitUnitTestBase
 
 from dataclasses import replace
 
-from mgit.state import NamedRemoteRepo, Remote
+from mgit.state.state import NamedRemoteRepo, Remote
 
 class TestShowCommand(MgitUnitTestBase):
 
@@ -58,7 +58,7 @@ class TestShowCommand(MgitUnitTestBase):
     def test_show_missing(self):
         name = "test_repo_1"
 
-        ans = self.run_command_raw(f"show -vv {name}")
+        ans = self.run_command(f"show -vvn {name}")
 
         self.assertIn( "test_repo_1", ans)
 
@@ -66,7 +66,7 @@ class TestShowCommand(MgitUnitTestBase):
         name = "test_repo_1"
         self.init_repos([name])
 
-        ans = self.run_command_raw(f"show {name}")
+        ans = self.run_command(f"show -n {name}")
 
         self.assertIn( "test_repo_1", ans)
 
@@ -89,6 +89,6 @@ class TestShowCommand(MgitUnitTestBase):
 
         # check if mismatch is caught
 
-        ans = self.run_command(f"show -vv {name}")
+        ans = self.run_command(f"show -vvn {name}")
 
-        self.assertIn( "Unnamed", ans[0])
+        self.assertFalse(ans)

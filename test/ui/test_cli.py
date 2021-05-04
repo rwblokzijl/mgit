@@ -31,14 +31,14 @@ class TestCommands(unittest.TestCase):
         pass
 
     def test_nested_same_name(self):
-        command = MgitCommand(Mock(), Mock(), Mock(), Mock(), Mock())
+        command = MgitCommand(Mock(), Mock(), Mock())
         self.assertEqual(
                 CLI(command).run("parent".split()),
                 "parent_res"
                 )
 
     def test_nested_nested_nested(self):
-        command = MgitCommand(Mock(), Mock(), Mock(), Mock(), Mock())
+        command = MgitCommand(Mock(), Mock(), Mock())
         self.assertEqual(
                 CLI(command).run("parent child".split()),
                 "child_res"

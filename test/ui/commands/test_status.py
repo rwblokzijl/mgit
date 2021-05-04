@@ -1,19 +1,18 @@
-import mgit.ui.commands.status #import important for decorators to run
+import mgit.ui.commands.status # pylint: disable=W0611 #import important for decorators to run
 from test.test_util import MgitUnitTestBase
 
 class TestStatusCommand(MgitUnitTestBase):
 
     def test_status(self):
 
-        pass
+        # TODO: test better
 
-        # self.init_repos()
-
+        self.init_repos()
         # self.make_dirty()
 
-        # ans = self.run_command_raw(f"status -cdul /tmp/mgit")
+        ans = self.run_command_raw("status -cdul /tmp/mgit")
 
-        # self.assertEqual(
-        #         ans,
-        #         0)
+        self.assertEqual(
+                ans,
+                0)
 
