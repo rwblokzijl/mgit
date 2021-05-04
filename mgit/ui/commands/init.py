@@ -2,7 +2,7 @@ from mgit.ui.cli            import AbstractLeafCommand
 from mgit.ui.cli_utils      import query_yes_no, path_relative_to_home
 from mgit.ui.parsers        import RemoteParser
 from mgit.ui.commands._mgit import MgitCommand
-from mgit.state.state       import *
+from mgit.local.state       import *
 from typing                 import *
 
 from pathlib import Path

@@ -1,5 +1,5 @@
-from mgit.remote_system import RemoteSystem
-from mgit.state.state import *
+from mgit.remote.remote_system import RemoteSystem
+from mgit.local.state import *
 from typing import *
 
 from git import Repo, GitError

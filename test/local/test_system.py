@@ -1,6 +1,6 @@
-from mgit.state.system import System
+from mgit.local.system import System
 
-from mgit.state.state import RepoState, UnnamedRemoteRepo
+from mgit.local.state import RepoState, UnnamedRemoteRepo
 
 from git import Repo
 

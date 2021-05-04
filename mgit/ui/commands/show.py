@@ -1,6 +1,6 @@
 from mgit.ui.parse_groups import MultiRepoCommand
 from mgit.ui.commands._mgit import MgitCommand
-from mgit.state.state import *
+from mgit.local.state import *
 
 from typing import *
 

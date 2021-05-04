@@ -1,4 +1,4 @@
-from mgit.state.state import NamedRemoteRepo
+from mgit.local.state import NamedRemoteRepo
 
 from mgit.exceptions import InputError
 

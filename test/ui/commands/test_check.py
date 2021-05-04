@@ -3,7 +3,7 @@ from test.test_util import MgitUnitTestBase
 
 from dataclasses import replace
 
-from mgit.state.state import NamedRemoteRepo, Remote
+from mgit.local.state import NamedRemoteRepo, Remote
 
 from pathlib import Path
 

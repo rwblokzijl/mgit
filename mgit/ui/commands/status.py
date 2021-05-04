@@ -1,4 +1,4 @@
-from mgit.state.state  import *
+from mgit.local.state  import *
 from git         import Repo, GitError
 from typing      import *
 from dataclasses import dataclass

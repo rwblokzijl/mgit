@@ -1,6 +1,6 @@
 from mgit.ui.cli import AbstractLeafCommand
 from typing      import *
-from mgit.state.state  import *
+from mgit.local.state  import *
 
 class AbstractMgitCommand(AbstractLeafCommand):
     """

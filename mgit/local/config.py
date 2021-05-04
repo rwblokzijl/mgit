@@ -1,4 +1,4 @@
-from mgit.state.state import *
+from mgit.local.state import *
 from typing     import *
 
 from pathlib import Path

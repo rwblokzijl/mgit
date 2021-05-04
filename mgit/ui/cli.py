@@ -1,6 +1,6 @@
-from mgit.state.config        import Config
-from mgit.state.system        import System
-from mgit.remote_system import RemoteSystem
+from mgit.local.config        import Config
+from mgit.local.system        import System
+from mgit.remote.remote_system import RemoteSystem
 
 from typing import Optional, List, Type, Dict
 

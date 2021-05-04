@@ -1,7 +1,7 @@
 from mgit.ui.cli import AbstractLeafCommand
 from mgit.ui.commands.category._category import CommandCategory
 
-from mgit.state.state import *
+from mgit.local.state import *
 from typing import *
 
 from collections import OrderedDict
