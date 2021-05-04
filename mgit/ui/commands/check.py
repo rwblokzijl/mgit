@@ -1,4 +1,4 @@
-from mgit.ui.parse_groups import MultiRepoCommand
+from mgit.ui.base_commands import MultiRepoCommand
 from mgit.ui.commands._mgit import MgitCommand
 
 @MgitCommand.register

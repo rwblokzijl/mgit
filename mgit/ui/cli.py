@@ -1,3 +1,4 @@
+"cli"
 from mgit.local.config        import Config
 from mgit.local.system        import System
 from mgit.remote.remote_system import RemoteSystem

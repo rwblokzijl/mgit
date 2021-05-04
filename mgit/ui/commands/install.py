@@ -1,5 +1,5 @@
 from mgit.ui.commands._mgit import MgitCommand
-from mgit.ui.parse_groups                import SingleRepoCommand
+from mgit.ui.base_commands                import SingleRepoCommand
 
 from mgit.ui.cli_utils import query_yes_no
 

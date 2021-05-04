@@ -1,5 +1,5 @@
 from mgit.ui.commands.remote._remote import CommandRemote
-from mgit.ui.parse_groups import SingleRepoCommand
+from mgit.ui.base_commands import SingleRepoCommand
 
 @CommandRemote.register
 class CommandRemoteAdd(SingleRepoCommand):

@@ -1,5 +1,5 @@
 from mgit.ui.commands.category._category import CommandCategory
-from mgit.ui.parse_groups                import SingleRepoCommand
+from mgit.ui.base_commands                import SingleRepoCommand
 
 @CommandCategory.register
 class CommandCategoryAdd(SingleRepoCommand):

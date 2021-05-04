@@ -1,11 +1,11 @@
-from mgit.ui.parse_groups import MultiRepoCommand
+from mgit.ui.base_commands import MultiRepoCommand
 from mgit.ui.commands._mgit import MgitCommand
 from mgit.local.state import *
 
 from typing import *
 
 @MgitCommand.register
-class CommandSingleRepoShow(MultiRepoCommand):
+class CommandShow(MultiRepoCommand):
     command = "show"
     help="Show a tracked repo state"
 
