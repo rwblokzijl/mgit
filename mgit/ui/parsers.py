@@ -1,6 +1,6 @@
 from mgit.local.state import NamedRemoteRepo
 
-from mgit.exceptions import InputError
+from mgit.util.exceptions import InputError
 
 from typing import Set
 
