@@ -58,25 +58,33 @@ class MgitBaseCommand(AbstractMgitCommand):
     This is the base class for all special mgit commands
     """
     def _get_config(self, name) -> Optional[RepoState]:
-        config_state = self.config.get_state(name=name)
-        if not config_state and self.config_required:
-            raise ValueError(f"'{name}' is not known as a tracked repo")
-        return config_state
+        try:
+            return self.config.get_state(name=name)
+        except self.config.ConfigError as e:
+            if self.config_required:
+                raise e
+            return None
 
     def _get_system(self, path):
-        system_state = self.system.get_state(path=path)
-        if not system_state and self.system_required:
-            raise ValueError(f"No repo found in {path}")
-        return system_state
+        try:
+            return self.system.get_state(path=path)
+        except self.system.SystemError as e:
+            if self.system_required:
+                raise e
+            return None
 
     def _get_config_from_system(self, system_state) -> Optional[RepoState]:
         config_state = None
         if system_state.repo_id:
-            config_state = self.config.get_state(repo_id=system_state.repo_id)
-        if not config_state:
-            config_state = self.config.get_state(path=system_state.path)
-        if not config_state and self.config_required:
-            raise ValueError(f"Repo in '{system_state.path}', cannot be found in config")
+            try:
+                return self.config.get_state(repo_id=system_state.repo_id)
+            except self.config.ConfigError:
+                pass
+        try:
+            return self.config.get_state(path=system_state.path)
+        except self.config.ConfigError as e:
+            if self.config_required:
+                raise e
         return config_state
 
     def _get_system_from_config(self, config_state) -> Optional[RepoState]:
@@ -85,10 +93,13 @@ class MgitBaseCommand(AbstractMgitCommand):
                 raise ValueError(f"'{config_state.name}'' doesn't specify a path")
             return None
         else:
-            system_state = self.system.get_state(path=config_state.path)
-            if not system_state and self.system_required:
-                raise ValueError(f"Local repo '{config_state.name}' does not exist in '{config_state.path}'")
-            return system_state
+            try:
+                return self.system.get_state(path=config_state.path)
+            except self.system.SystemError as e:
+                if self.system_required:
+                    raise e
+                return None
+            return None
 
     def get_both_from_name(self, name) -> Tuple[Optional[RepoState], Optional[RepoState]]:
         config_state = self._get_config(name)

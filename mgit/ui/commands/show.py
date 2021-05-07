@@ -21,14 +21,14 @@ class CommandShow(MultiRepoCommand):
         conflicting: List[Tuple[RepoState, RepoState]] = []
         missing: List[RepoState]                       = []
         for config_state in sorted(self.config.get_all_repo_state()):
-            system_state = self.system.get_state(path=config_state.path)
-            if system_state:
+            try:
+                system_state = self.system.get_state(path=config_state.path)
                 combined = system_state + config_state
                 if combined:
                     installed.append(combined)
                 else:
                     conflicting.append((config_state, system_state))
-            else:
+            except self.system.SystemError:
                 missing.append(config_state)
         return installed, conflicting, missing
 

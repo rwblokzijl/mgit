@@ -10,9 +10,11 @@ class TestInitCommand(MgitUnitTestBase):
         path=Path("/tmp/mgit/kek")
 
         # doesnt exist in config
-        self.assertIsNone(self.config.get_state(name=name))
+        with self.assertRaises(self.config.ConfigError):
+            self.config.get_state(name=name)
         # doesnt exist in system
-        self.assertIsNone(self.system.get_state(path=path))
+        with self.assertRaises(self.system.SystemError):
+            self.system.get_state(path=path)
 
         self.run_command(f"init -y {name} --path {path} --remotes")
 

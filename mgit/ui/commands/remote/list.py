@@ -9,9 +9,9 @@ class CommandRemoteList(AbstractLeafCommand):
     def build(self, parser):
         parser.add_argument("remotes", help="Name of remote repo", metavar="REMOTE", nargs="*", type=str)
 
-    def run(self, **args):
-        if args['remotes']:
-            remotes = [self.state_helper.get_remote_from_config_or_raise(remote_name) for remote_name in args['remotes']]
+    def run(self, remotes):
+        if remotes:
+            remotes = [self.config.get_remote(r) for r in remotes]
         else:
             remotes = self.config.get_all_remotes_from_config()
 

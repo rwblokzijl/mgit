@@ -3,11 +3,12 @@ from test.test_util import MgitUnitTestBase
 
 class TestStatusCommand(MgitUnitTestBase):
 
+
     def test_status(self):
 
         # TODO: test better
 
-        self.init_repos()
+        self.init_repos([ 'test_repo_1', 'test_repo_2', 'test_repo_6', ])
         # self.make_dirty()
 
         ans = self.run_command_raw("status -cdul /tmp/mgit")

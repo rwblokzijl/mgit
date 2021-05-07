@@ -25,16 +25,19 @@ class CommandInit(AbstractLeafCommand):
         parser.add_argument("-y", help="Skip asking for confirmation", action='store_true')
 
     def assert_path_available(self, path: Path):
-        existing_system_state = self.system.get_state(path=path)
-        if (existing_system_state and
-                existing_system_state.path is not None and
-                existing_system_state.path.absolute == path.absolute):
+        try:
+            existing_system_state = self.system.get_state(path=path)
+        except self.system.SystemError:
+            return
+        if (existing_system_state.path.absolute == path.absolute):
             raise self.InputError(f"'{path}' is already a git repo use 'mgit add' instead")
 
     def assert_name_available(self, name: str):
-        existing_config_state = self.config.get_state(name=name)
-        if existing_config_state:
+        try:
+            self.config.get_state(name=name)
             raise self.InputError(f"'{name}' already exists in the config")
+        except self.config.ConfigError:
+            pass
 
     def assert_remotes_available(self, remote_repos: Set[NamedRemoteRepo]):
         for remote_repo in remote_repos:
@@ -54,6 +57,12 @@ class CommandInit(AbstractLeafCommand):
         self.assert_name_available(name)
         self.assert_path_available(Path(path))
 
+        try:
+            parent=self.system.get_state(Path(path))
+        except self.system.SystemError:
+            parent=None
+
+
         new_state = RepoState(
                 source="new repo",
                 name=name,
@@ -63,7 +72,7 @@ class CommandInit(AbstractLeafCommand):
                 auto_commands=None,
                 archived=None,
                 categories=set(categories),
-                parent=self.system.get_state(Path(path))
+                parent=parent
                 )
 
         if not y and not query_yes_no(f"Do you want to init with the following values: \n name={new_state.represent()}"):

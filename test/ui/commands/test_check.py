@@ -16,7 +16,7 @@ class TestCheckCommand(MgitUnitTestBase):
         self.system.set_state(config, init=True)
 
     def test_check_raises_missing(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(self.system.SystemError):
             self.run_command( f"check -n test_repo_1" )
 
     def test_check_nothing_if_equal(self):

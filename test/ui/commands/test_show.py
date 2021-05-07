@@ -1,9 +1,9 @@
-import mgit.ui.commands.show #import important for decorators to run
+import mgit.ui.commands.show # pylint: disable=W0611 #import important for decorators to run
 from test.test_util import MgitUnitTestBase
 
 from dataclasses import replace
 
-from mgit.local.state import NamedRemoteRepo, Remote
+from mgit.local.state import *
 
 class TestShowCommand(MgitUnitTestBase):
 

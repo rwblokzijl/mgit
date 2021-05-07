@@ -82,8 +82,8 @@ class TestSystemState(unittest.TestCase):
                 )
 
     def test_non_exist(self):
-        ans = System().get_state(Path("/tmp/mgit_notexist"))
-        self.assertIsNone(ans)
+        with self.assertRaises(System.SystemError):
+            System().get_state(Path("/tmp/mgit_notexist"))
 
     def test_parent(self):
         ans = System().get_state(Path("~/school/thesis/4_implementation/gateway/backend/"))
@@ -129,9 +129,8 @@ class TestSystemState(unittest.TestCase):
                 categories    = None
                 )
 
-        self.assertEqual(
-                System().get_state(path),
-                None)
+        with self.assertRaises(System.SystemError):
+            System().get_state(path)
 
         System().set_state(repo_state)
 
@@ -158,9 +157,8 @@ class TestSystemState(unittest.TestCase):
                 categories    = None
                 )
 
-        self.assertEqual(
-                System().get_state(path),
-                None)
+        with self.assertRaises(System.SystemError):
+            System().get_state(path)
 
         System().set_state(repo_state)
 

@@ -212,8 +212,8 @@ class TestConfigState(unittest.TestCase):
                 )
 
     def test_get_state_ignored(self):
-        ans = self.c.get_state(name="Example")
-        self.assertIsNone(ans)
+        with self.assertRaises(self.c.ConfigError):
+            self.c.get_state(name="Example")
 
     def test_get_state_by_path(self):
         ans = self.c.get_state( path="/tmp/mgit/acceptance/local/test_repo_2/test_repo_3")
@@ -276,8 +276,8 @@ class TestConfigState(unittest.TestCase):
         before = self.c.get_state(name=name)
         self.c.remove_state(before)
 
-        ans = self.c.get_state(name=name)
-        self.assertIsNone(ans)
+        with self.assertRaises(self.c.ConfigError):
+            self.c.get_state(name=name)
 
         self.c.set_state(before)
 
@@ -308,8 +308,8 @@ class TestConfigState(unittest.TestCase):
         before = self.c.get_remote(name=name)
         self.c.remove_remote(before)
 
-        ans = self.c.get_remote(name=name)
-        self.assertIsNone(ans)
+        with self.assertRaises(self.c.ConfigError):
+            self.c.get_remote(name=name)
 
         self.c.set_remote(before)
 
@@ -322,3 +322,8 @@ class TestConfigState(unittest.TestCase):
         ans = self.c.get_all_repo_state()
 
         self.assertNotIn(None, ans)
+
+    def test_raise_on_non_existent_remote(self):
+        with self.assertRaises(self.c.ConfigError):
+            self.c.get_remote("not_exist")
+

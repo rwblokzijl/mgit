@@ -277,6 +277,13 @@ Maintain information on extra remotes "in the repo".
 
 # TODO order of change
 
+1. Make combine raise if it doesnt work
+2. Make check print the error
+3. Make update auto-fix the issue
+4. Use combine everywhere??
+
+1. all failing gets from config and system should raise, we'll catch if we dont want to end
+
 1. Define BranchRelation s (formerly auto commands)
 
     - mgit push:
