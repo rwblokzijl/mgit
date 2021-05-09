@@ -16,7 +16,7 @@ class CommandShow(MultiRepoCommand):
     def build(self, parser):
         parser.add_argument('-v', '--verbose', help="Verbose", action='count', default=0)
 
-    def combine_all(self) -> Tuple[List[RepoState], List[Tuple[RepoState, RepoState]], List[RepoState]]:
+    def _combine_all(self) -> Tuple[List[RepoState], List[Tuple[RepoState, RepoState]], List[RepoState]]:
         installed: List[RepoState]                     = []
         conflicting: List[Tuple[RepoState, RepoState]] = []
         missing: List[RepoState]                       = []
@@ -32,8 +32,8 @@ class CommandShow(MultiRepoCommand):
                 missing.append(config_state)
         return installed, conflicting, missing
 
-    def show_all(self, repo_states=None, verbosity=1):
-        installed, conflicting, missing = self.combine_all()
+    def _show_all(self, repo_states=None, verbosity=1):
+        installed, conflicting, missing = self._combine_all()
         installed   = {r.represent(verbosity=verbosity) for r in installed}
         conflicting = {r.represent(verbosity=verbosity) for c in conflicting for r in c}
         missing     = {r.represent(verbosity=verbosity) for r in missing}
@@ -41,7 +41,7 @@ class CommandShow(MultiRepoCommand):
 
     def run(self, repo_states, verbose, all):
         if all:
-            return self.show_all(verbosity=verbose)
+            return self._show_all(verbosity=verbose)
 
         ans = []
         for config_state, system_state in repo_states:
@@ -49,6 +49,8 @@ class CommandShow(MultiRepoCommand):
                 repo_state = config_state + system_state
                 if repo_state:
                     ans.append(repo_state.represent(verbosity=verbose+1))
+                else:
+                    ans += config_state.compare(system_state)
             else:
                 repo_state = config_state or system_state
                 ans.append(repo_state.represent(verbosity=verbose+1))
