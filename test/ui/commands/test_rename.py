@@ -1,6 +1,5 @@
+import mgit.ui.commands.rename # pylint: disable=W0611 #import important for decorators to run
 from test.test_util import MgitUnitTestBase
-from mgit.ui.commands.rename import CommandRename
-import unittest
 
 class TestRenameCommand(MgitUnitTestBase):
 
@@ -19,6 +18,4 @@ class TestRenameCommand(MgitUnitTestBase):
         self.assertIsNone(self.config.get_state(name=name))
         # new name exists in config
         self.assertIsNotNone(self.config.get_state(name=new_name))
-
-
 
