@@ -277,6 +277,75 @@ Maintain information on extra remotes "in the repo".
 
 # TODO order of change
 
+What do we want concretely?
+
+## Sync mechanic. How does it work
+
+### Intro
+
+- "branches" need to be synced through all remotes
+- syncing local branches to remote is handled through the local branch tracking the remote:
+    * [branch "master"]
+	    remote = bagn
+	    merge = refs/heads/master
+- For the remote branch, it specifies the remote name as well as the head IN THE REMOTE (not the local fetched head)
+- we want to fetch from a remote, then the next, then the next
+- problem is we sometimes need to merge in between, this has to be handled manually by the user
+- usually git merge strategies will handle the merge
+
+## Config:
+- option 1:
+    * remote1:branch/name = local/branch
+    * remote2:branch/name = local/branch
+
+- option 2:
+    - remote1:branch/name = tag # ignores local and tracks directly between remotes
+    - remote2:branch/name = tag
+
+changeing the config:
+
+`mgit track [REPO] [tag?? | localbranch] [[remote_branch]..] `
+
+remote_branches can be specified as a remote, this infers branch from local or
+specify explicitly: remote:branch
+
+## usage
+
+- Multi REPO
+- specify branches
+    * default = all
+- secify a subset of remotes to use
+
+take (all branches in all "repos" if branch is in the input)
+<push/sync/pull/fetch/merge> to/from all those branches to all remotes
+
+Multiple repo and branches seem to be in conflict, and really they are..., but i
+see no reason to not push all "masters" to a subset of remotes. One issue is it
+might be confusing to users
+
+`mgit fetch [REPOS] branches remotes`
+
+1. Fetch all remotes
+
+`mgit merge [REPOS] branches remotes`
+
+- Merge currently copies of remotes into local branches
+
+`mgit pull [REPOS] branches remotes`
+
+- Fetch followed by merge
+- If some remotes conflict, cancel the merge and include the "error" in the
+  "check"
+
+`mgit push [REPOS] branches remotes`
+
+1. Push to all remotes
+
+`mgit sync [REPOS] branches remotes`
+
+- Pull followed by push
+
+## Usage
 1. Make combine raise if it doesnt work
 2. Make check print the error
 3. Make update auto-fix the issue
@@ -301,9 +370,7 @@ Maintain information on extra remotes "in the repo".
 General:
 |------|--------|----------------------------------------------------------------------------|
 |      | update | update properties about the repos that can be infered                      |
-| TODO | sanity | full sanity check of all repos/remotes/configs                             |
-| TODO | config | commands for handling the configs                                          |
-| TODO |        | where to back them up and keep them consistent across remotes and machines |
+| TODO | check  | full sanity check of all repos/remotes/configs                             |
 
 repo config actions:
 |------|-----------|--------|-------------------------|---------------------------------------------------------|
@@ -313,10 +380,10 @@ repo config actions:
 | todo | move      |        | path, name              | move a repo to another path                             |
 | todo | remove    |        | name                    | stop tracking a repo                                    |
 |      | rename    |        | name, name              | rename the repo in the config                           |
-| todo | archive   |        | name                    | add archive flag to                                     |
-| todo | unarchive |        | name                    | remove archive flag to                                  |
-| TODO | install   |        | name                    | install a repo from remote by name (add listed remotes) |
-| todo | category  |        |                         | category actions                                        |
+|      | archive   |        | name                    | add archive flag to                                     |
+|      | unarchive |        | name                    | remove archive flag to                                  |
+|      | install   |        | name                    | install a repo from remote by name (add listed remotes) |
+|      | category  |        |                         | category actions                                        |
 |      |           | list   |                         | lists all categories                                    |
 |      |           | show   | category                | show the category and children                          |
 |      |           | add    | repo, category          | add category                                            |
@@ -324,7 +391,6 @@ repo config actions:
 | TODO | remote    |        |                         | Repo remote actions                                     |
 | TODO |           | add    | repo, remote, name      | add a remote to the repo, and vv                        |
 | TODO |           | remove | repo, remote, name      | remove a remote from the repo, and vv                   |
-| TODO |           | origin | repo, remote, name      | set a remote as origin, and vv                          |
 
 mutli repo actions:
 |--------|----------|------------------|------------------------------------------------|
@@ -339,9 +405,9 @@ remote actions:
 |--------|-----------|----------|------------------|----------------------------------------------------------------|
 | TODO   | remotes   |          |                  | manage remotes                                                 |
 |--------|-----------|----------|------------------|----------------------------------------------------------------|
-| TODO|           | list     |                  | list remotes                                                   |
-|TODO|           | add      | name, url        | add a remote                                                   |
-|TODO|           | remove   | name             | remove a remote                                                |
+| TODO   |           | list     |                  | list remotes                                                   |
+| TODO   |           | add      | name, url        | add a remote                                                   |
+| TODO   |           | remove   | name             | remove a remote                                                |
 | ------ | --------- | -------- | ---------------- | -------------------------------------------------------------- |
 | TODO   |           | init     | name, remote     | init repo in remote                                            |
 | TODO   |           | delete   | name, remote     | remove repo from remote, maybe not implement for safety!!!     |
@@ -351,6 +417,28 @@ remote actions:
 | TODO   |           | check    | repos, remotes   | find non up to date repos across all remotes                   |
 | TODO   |           | sync     | repos, remotes   | fix non up to date repos across all remotes                    |
 |--------|-----------|----------|------------------|----------------------------------------------------------------|
+
+branch actions:
+
+REF: REF/REF | string | *
+
+LOCAL : REF
+
+BRANCH: REMOTE:REF | LOCAL
+example: +refs/heads/*:refs/remotes/home/*
+
+[branch "master"]
+	remote = bagn
+	merge = refs/heads/master
+
+|------|--------|--------|--------------------------|------------------------------------|
+| TODO | branch |        |                          |                                    |
+| TODO |        | merge  | [LINK_NAME] [[BRANCH]..] |                                    |
+| TODO |        | push   | [LINK_NAME]              |                                    |
+| TODO |        | pull   | [LINK_NAME]              | git already has mass fetch i think |
+
+| TODO |  | commit | [LINK_NAME] | commit all |
+
 """
 
 # How to select multiple repos

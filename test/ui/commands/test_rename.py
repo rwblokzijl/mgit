@@ -21,5 +21,3 @@ class TestRenameCommand(MgitUnitTestBase):
         # new name exists in config
         self.assertIsNotNone(self.config.get_state(name=new_name))
 
-
-

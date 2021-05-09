@@ -18,7 +18,7 @@ class System:
         try:
             repo = Repo(Path(path).expanduser().absolute(), search_parent_directories=True)
         except GitError as e:
-            raise self.SystemError from e
+            raise self.SystemError(e)
         return self._get_state_from_repo(repo)
 
     def set_state(self, repo_state: RepoState, remote: RemoteRepo=None, init=False):
@@ -55,12 +55,18 @@ class System:
 
         assert not repo_keys, repo_keys
 
+    def _get_state_or_none(self, *args, **kwargs) -> Optional[RepoState]:
+        try:
+            return self.get_state(*args, **kwargs)
+        except self.SystemError:
+            return None
+
     def get_all_local_repos_in_path(self, path: Union[Path, str], ignore_paths=None) -> List[RepoState]:
         if ignore_paths is None:
             # ignore_paths = []
             ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache', '~/.config/vim'] # TODO: get from config
         local_git_paths = self._get_local_git_paths(Path(path), ignore_paths)
-        return [state for local_path in local_git_paths if (state := self.get_state(local_path)) is not None]
+        return [state for local_path in local_git_paths if (state := self._get_state_or_none(local_path)) is not None]
 
     def _clone_repo_from_remote_or_raise(self, repo_state, remote) -> Repo:
         repo = self._clone_repo_from_remote(repo_state.path, remote)

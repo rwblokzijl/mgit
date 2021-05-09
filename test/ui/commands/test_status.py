@@ -17,3 +17,6 @@ class TestStatusCommand(MgitUnitTestBase):
                 ans,
                 0)
 
+    def test_local_repo_status(self):
+        pass
+
