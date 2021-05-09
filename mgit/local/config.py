@@ -26,7 +26,7 @@ class Config:
     def get_state(self, repo_state: RepoState=None,
             repo_id: Optional[str]=None,
             name: Optional[str]=None,
-            path: Union[Path, str, None]=None,) -> Optional[RepoState]:
+            path: Union[Path, str, None]=None,) -> RepoState:
         if repo_state:
             repo_id = repo_state.repo_id
             name = repo_state.name
@@ -43,7 +43,7 @@ class Config:
             ans = self._get_state_by_path(Path(path))
             if ans:
                 return ans
-        return None
+        raise self.ConfigError(f"No tracked repo found for: {repo_id} {name} {path})")
 
     def remove_state(self, repo_state: RepoState):
         old_state = self.get_state(repo_state)
@@ -57,7 +57,7 @@ class Config:
         Updates an existing config with the values in the config
         """
         if not repo_state.name:
-            raise ValueError(f"Repo_state must have a name")
+            raise ValueError("Repo_state must have a name")
         repo_keys = list(dataclasses.asdict(repo_state).keys())
         if repo_state.name in self._repos_config:
             del self._repos_config[repo_state.name]
@@ -129,10 +129,10 @@ class Config:
                 return NamedRemoteRepo(remote=remote, project_name=sub_path)
         return unnamed_remote
 
-    def get_remote(self, name: str) -> Optional[Remote]:
+    def get_remote(self, name: str) -> Remote:
         if name in self._remotes_config:
             return self._config_section_to_remote(name, self._remotes_config[name])
-        return None
+        raise self.ConfigError("No remote named 'name' in config")
 
     def get_default_remotes(self) -> List[Remote]:
         if "defaults" not in self._remotes_config:
@@ -149,7 +149,7 @@ class Config:
         section["name"] = remote.name
         section["url"] = remote.url
         section["path"] = remote.path
-        section["type"] = self._inverse_remote_type_map[remote.remote_type]
+        section["type"] = self._inverse_remote_type_map[remote.type]
 
         if write:
             self._write_configs(False, True)
@@ -223,13 +223,13 @@ class Config:
                 name=name,
                 url=section.get("url", ""),
                 path=section.get("path"),
-                remote_type=self._remote_type_map.get(section.get("type"))
+                type=self._remote_type_map.get(section.get("type"))
                 )
 
     def _get_remote_repo(self, repo_name: str, remote_name: str):
         remote = self.get_remote(remote_name)
         if not remote:
-            return None
+            raise ReferenceError(f"Listed remote {name} for {name} doesn't exist")
         return NamedRemoteRepo(remote, repo_name)
 
     def _get_remotes(self, name: str, section: configparser.SectionProxy):
@@ -239,8 +239,6 @@ class Config:
                 name        = section.get(key)
                 remote_name = key[:-5]
                 remote_repo = self._get_remote_repo(name, remote_name)
-                if not remote_repo:
-                    raise ReferenceError(f"Listed remote {name} for {name} doesn't exist")
                 remotes.add(remote_repo)
         return remotes
 
@@ -314,3 +312,5 @@ class Config:
             if not self._is_special_section(name):
                 yield name
 
+    class ConfigError(Exception):
+        pass

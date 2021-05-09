@@ -14,9 +14,11 @@ class CommandCheck(MultiRepoCommand):
     def compare_all(self):
         ans = []
         for config_state in self.config.get_all_repo_state():
-            system_state = self.system.get_state(path=config_state.path)
-            if system_state:
+            try:
+                system_state = self.system.get_state(path=config_state.path)
                 ans += system_state.compare(config_state)
+            except self.system.SystemError:
+                pass
         return ans
 
     def run(self, repo_states, all):

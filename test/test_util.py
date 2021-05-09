@@ -30,7 +30,7 @@ class MockRemoteSystem(RemoteSystem):
         Path(path).expanduser().absolute().relative_to(self.test_dir.expanduser().absolute())
 
     def _get_interactor(self, remote: Remote) -> RemoteSystem:
-        assert remote.remote_type == RemoteType.LOCAL
+        assert remote.type == RemoteType.LOCAL
         self._assert_local_path(remote.get_url())
         return super()._get_interactor(remote)
 

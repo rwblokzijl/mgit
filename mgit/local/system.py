@@ -14,11 +14,11 @@ class System:
     This only interacts with the Repo through the Repo object
     """
 
-    def get_state(self, path: Union[Path, str]) -> Optional[RepoState]:
+    def get_state(self, path: Union[Path, str]) -> RepoState:
         try:
             repo = Repo(Path(path).expanduser().absolute(), search_parent_directories=True)
-        except GitError:
-            return None
+        except GitError as e:
+            raise self.SystemError from e
         return self._get_state_from_repo(repo)
 
     def set_state(self, repo_state: RepoState, remote: RemoteRepo=None, init=False):
@@ -55,18 +55,18 @@ class System:
 
         assert not repo_keys, repo_keys
 
-    def _clone_repo_from_remote_or_raise(self, repo_state, remote) -> Repo:
-        repo = self._clone_repo_from_remote(repo_state.path, remote)
-        if not repo:
-            raise RemoteSystem.RemoteError("Cannot clone from")
-        return repo
-
     def get_all_local_repos_in_path(self, path: Union[Path, str], ignore_paths=None) -> List[RepoState]:
         if ignore_paths is None:
             # ignore_paths = []
             ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache', '~/.config/vim'] # TODO: get from config
         local_git_paths = self._get_local_git_paths(Path(path), ignore_paths)
         return [state for local_path in local_git_paths if (state := self.get_state(local_path)) is not None]
+
+    def _clone_repo_from_remote_or_raise(self, repo_state, remote) -> Repo:
+        repo = self._clone_repo_from_remote(repo_state.path, remote)
+        if not repo:
+            raise RemoteSystem.RemoteError("Cannot clone from")
+        return repo
 
     def _get_clone_or_init_repo(self, repo_state, remote=None) -> Repo:
         repo = self._get_repo_from_path(repo_state.path)
@@ -133,6 +133,7 @@ class System:
                 archived=None,
                 categories=None
                 )
+        assert rs.path
         return rs
 
     def _should_include(self, path: Path, excludes):
@@ -162,4 +163,6 @@ class System:
             while (line := p.stdout.readline()):
                 yield line # TODO make non blocking, idk how right now
 
+    class SystemError(Exception):
+        pass
 

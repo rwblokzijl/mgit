@@ -17,7 +17,7 @@ class Remote:
     name:        str
     url:         str
     path:        str
-    remote_type: RemoteType
+    type: RemoteType
 
     def get_url(self) -> str:
         if self.url:

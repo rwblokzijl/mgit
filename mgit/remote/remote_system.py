@@ -31,7 +31,7 @@ class RemoteSystem:
         return self._get_interactor(remote).get_remote_repo_id_mappings(remote)
 
     def _get_interactor(self, remote: Remote) -> 'RemoteSystem':
-        return self.class_map[remote.remote_type]()
+        return self.class_map[remote.type]()
 
 class LocalRemoteSystem(RemoteSystem):
 
@@ -39,8 +39,8 @@ class LocalRemoteSystem(RemoteSystem):
         try:
             Repo.init(remote_repo.get_path(), mkdir=True)
             return remote_repo.get_path()
-        except GitError:
-            raise self.RemoteError("Cannot init '{remote_repo.project_name}' in '{remote_repo.remote.name}'")
+        except GitError as e:
+            raise self.RemoteError from e #("Cannot init '{remote_repo.project_name}' in '{remote_repo.remote.name}'")
 
     def list_remote(self, remote: Remote) -> List[str]:
         return os.listdir(remote.path)

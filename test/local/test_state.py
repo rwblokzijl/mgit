@@ -1,4 +1,4 @@
-from mgit.local.state import RepoState, RemoteRepo, NamedRemoteRepo, UnnamedRemoteRepo, Remote, AutoCommand, RemoteBranch, LocalBranch, RemoteType
+from mgit.local.state import *
 
 from pathlib import Path
 from git import Repo
@@ -29,7 +29,7 @@ class TestState(unittest.TestCase):
                             name="remote_name",
                             url='url',
                             path='path',
-                            remote_type=RemoteType.SSH))
+                            type=RemoteType.SSH))
         u_repo = UnnamedRemoteRepo(
                 remote_name="remote_name",
                 url="url")
@@ -66,7 +66,7 @@ class TestState(unittest.TestCase):
                                 name="remote_name",
                                 url="the_url.com",
                                 path="/",
-                                remote_type=RemoteType.SSH
+                                type=RemoteType.SSH
                                 ))
                     ))
 
@@ -77,7 +77,7 @@ class TestState(unittest.TestCase):
                             name="remote_name",
                             url='url',
                             path='path',
-                            remote_type=RemoteType.SSH)
+                            type=RemoteType.SSH)
                 )
 
         u_repo = UnnamedRemoteRepo(
@@ -168,7 +168,7 @@ class TestState(unittest.TestCase):
                     name="remote_name",
                     url='url',
                     path='path',
-                    remote_type=RemoteType.SSH)
+                    type=RemoteType.SSH)
 
         n_repo = NamedRemoteRepo(
                 project_name="name",

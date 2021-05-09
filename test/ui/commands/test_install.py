@@ -1,10 +1,7 @@
-import mgit.ui.commands.install
+import mgit.ui.commands.install # pylint: disable=W0611 #import important for decorators to run
 from test.test_util import MgitUnitTestBase
-from git import GitError
 
 from parameterized import parameterized
-
-import unittest
 
 class TestInstallCommand(MgitUnitTestBase):
 
@@ -17,7 +14,8 @@ class TestInstallCommand(MgitUnitTestBase):
         path=config.path
 
         # not exists in system
-        self.assertIsNone(self.system.get_state(path=path))
+        with self.assertRaises(self.system.SystemError):
+            self.system.get_state(path=path)
 
         self.run_command(f"install -y -n {name}")
 
@@ -36,9 +34,8 @@ class TestInstallCommand(MgitUnitTestBase):
             self.run_command(f"install -y -n test_repo_1 --remote {remote2.remote.name}")
 
         # not exists in system
-        self.assertIsNone(
-                self.system.get_state(path=config.path)
-                )
+        with self.assertRaises(self.system.SystemError):
+            self.system.get_state(path=config.path)
 
         # force install from existant remote succeeds
         self.run_command(f"install -y -n test_repo_1 --remote {remote1.remote.name}")
