@@ -127,6 +127,7 @@ class CommandStatus(AbstractLeafCommand):
             repo_states = self.system.get_all_local_repos_in_path(".")
             all_status = [status for status in self.get_status_for_repos(repo_states) if status or not dirty]
 
+
         # filter down the results
         if dirty: #dirty only
             all_status = [s for s in all_status if s] #remove all "clean"

@@ -54,6 +54,6 @@ def main_cli(*args, **kwargs):
     except Exception as e:
         if str(e):
             print(e, file=sys.stderr)
-            raise e #TODO remove when done
-        return 1
+        raise e # TODO remove when done
+        # return 1
 
