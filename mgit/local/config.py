@@ -229,7 +229,7 @@ class Config:
     def _get_remote_repo(self, repo_name: str, remote_name: str):
         remote = self.get_remote(remote_name)
         if not remote:
-            raise ReferenceError(f"Listed remote {name} for {name} doesn't exist")
+            raise ReferenceError(f"Listed remote {remote_name} for {repo_name} doesn't exist")
         return NamedRemoteRepo(remote, repo_name)
 
     def _get_remotes(self, name: str, section: configparser.SectionProxy):
@@ -267,12 +267,12 @@ class Config:
 
         return RepoState(
                 source="config",
-                repo_id=section.get("repo_id"),
-                path=Path(path),
+                repo_id=section.get("repo_id") or None,
+                path=Path(path) or None,
                 remotes=remotes,
                 name=name,
                 # origin=self._get_origin(remotes, name, section),
-                auto_commands = None, #TODO
+                auto_commands=None, #TODO
                 categories=self._get_categories(section),
                 parent=parent,
                 archived=bool(section.get("archived"))

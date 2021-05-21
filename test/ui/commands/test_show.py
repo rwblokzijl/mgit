@@ -47,7 +47,7 @@ class TestShowCommand(MgitUnitTestBase):
 
         # check if mismatch is caught
 
-        ans = self.run_command_raw(f"show -a")
+        ans = self.run_command_raw("show -a")
 
 
         self.assertIn(
@@ -76,6 +76,9 @@ class TestShowCommand(MgitUnitTestBase):
         # init from config
         self.init_repos([name])
 
+        ans = self.run_command_raw(f"show -vvn {name}")
+        self.assertIsInstance(ans[0], str)
+
         # change config
         config, = self.get_repo_states([name])
 
@@ -89,6 +92,5 @@ class TestShowCommand(MgitUnitTestBase):
 
         # check if mismatch is caught
 
-        ans = self.run_command(f"show -vvn {name}")
-
-        self.assertFalse(ans)
+        ans = self.run_command_raw(f"show -vvn {name}")
+        self.assertIsInstance(ans[0], Conflict)

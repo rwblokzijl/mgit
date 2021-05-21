@@ -1,7 +1,6 @@
 from mgit.local.state import *
 
 from pathlib import Path
-from git import Repo
 
 import unittest
 
@@ -156,12 +155,6 @@ class TestState(unittest.TestCase):
         self.assertIsInstance( list(comb2.remotes)[0], NamedRemoteRepo)
         self.assertEqual( comb1.categories, {"2", "3"})
         self.assertEqual( comb2.categories, {"2", "3"})
-
-    # def test_ref(self):
-    #     reader = Repo("~/devel/mgit").config_reader()
-    #     remote = reader.sections()[2]
-    #     for k, v in reader.items_all(remote):
-    #         print(k, v)
 
     def test_subpath(self):
         remote=Remote(

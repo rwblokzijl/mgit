@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 import unittest
+from git import Repo
 
 from pathlib import Path
 
@@ -55,7 +56,7 @@ class MockSystem(System):
         self._assert_local_path((kwargs.get("repo_state") or args[0]).path)
         return super().set_state(*args, **kwargs)
 
-    def get_state(self, *args, **kwargs) -> Optional[RepoState]:
+    def get_state(self, *args, **kwargs) -> RepoState: # type: ignore
         self._assert_local_path(kwargs.get("path") or args[0])
         return super().get_state(*args, **kwargs)
 
@@ -110,6 +111,13 @@ class MgitUnitTestBase(unittest.TestCase):
         for repo in all_repos:
             for remote_repo in repo.remotes:
                 self.remote_system.init_repo(remote_repo)
+
+    def commit_in_repo(self, repo_state: RepoState):
+        repo = Repo(repo_state.path)
+        new_file_path = os.path.join(repo.working_tree_dir, 'new-file')
+        open(new_file_path, 'wb').close()                             # create new file in working tree
+        repo.index.add([new_file_path])     # add it to the index
+        repo.index.commit("Commit message") # Commit the changes to deviate masters history
 
     def reset_configs(self):
         shutil.copy(self.default_remotes_config, self.remotes_config)

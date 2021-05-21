@@ -29,6 +29,7 @@ class CommandInit(AbstractLeafCommand):
             existing_system_state = self.system.get_state(path=path)
         except self.system.SystemError:
             return
+        assert existing_system_state.path
         if (existing_system_state.path.absolute == path.absolute):
             raise self.InputError(f"'{path}' is already a git repo use 'mgit add' instead")
 

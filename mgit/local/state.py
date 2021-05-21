@@ -227,9 +227,6 @@ class RepoState:   # No defaults to catch changes around the code
             if key == "remotes" and not hard:
                 our_remotes = sorted([r.remote_key() for r in our])
                 their_remotes = sorted([r.remote_key() for r in their])
-                # if key == "parent":
-                #     ans += our.compare(their)
-                # else:
                 if our_remotes == their_remotes:
                     return True
                 return False
@@ -242,11 +239,11 @@ class RepoState:   # No defaults to catch changes around the code
         else:
             return str(self.path) < str(other.path)
 
-    def __add__(self, other: "RepoState") -> Optional["RepoState"]:
+    def __add__(self, other: "RepoState") -> 'RepoState':
         repo_state: dict = {"source": ""}
         for key, our, their in self.zip(other):
             if not self.compare_key(key, our, their, hard=False):
-                return None
+                raise self.StateConflict(f"{our} != {their}")
 
             if our is None:
                 repo_state[key] = their
@@ -273,4 +270,7 @@ class RepoState:   # No defaults to catch changes around the code
         repo_state['categories'] = (self.categories or set()).union(other.categories or set())
 
         return RepoState(**repo_state)
+
+    class StateConflict(Exception):
+        pass
 

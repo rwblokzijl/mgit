@@ -23,10 +23,10 @@ class CommandShow(MultiRepoCommand):
         for config_state in sorted(self.config.get_all_repo_state()):
             try:
                 system_state = self.system.get_state(path=config_state.path)
-                combined = system_state + config_state
-                if combined:
+                try:
+                    combined = system_state + config_state
                     installed.append(combined)
-                else:
+                except RepoState.StateConflict:
                     conflicting.append((config_state, system_state))
             except self.system.SystemError:
                 missing.append(config_state)
@@ -46,10 +46,10 @@ class CommandShow(MultiRepoCommand):
         ans = []
         for config_state, system_state in repo_states:
             if config_state and system_state: #both
-                repo_state = config_state + system_state
-                if repo_state:
+                try:
+                    repo_state = config_state + system_state
                     ans.append(repo_state.represent(verbosity=verbose+1))
-                else:
+                except RepoState.StateConflict:
                     ans += config_state.compare(system_state)
             else:
                 repo_state = config_state or system_state

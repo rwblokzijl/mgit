@@ -127,7 +127,7 @@ class System:
         remotes: Set[RemoteRepo] = set([UnnamedRemoteRepo(rem.name, rem.url) for rem in repo.remotes])
         rs =  RepoState(
                 source="repo",
-                repo_id=self._get_repo_id(repo),
+                repo_id=self._get_repo_id(repo) or None,
                 path=Path(repo.working_dir),
                 remotes=remotes,
                 parent=self._get_parent(repo),
