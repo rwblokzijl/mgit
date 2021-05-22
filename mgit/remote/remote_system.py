@@ -37,8 +37,8 @@ class LocalRemoteSystem(RemoteSystem):
 
     def init_repo(self, remote_repo: NamedRemoteRepo) -> str:
         try:
-            Repo.init(remote_repo.get_path(), mkdir=True)
-            return remote_repo.get_path()
+            Repo.init(remote_repo.path, mkdir=True)
+            return remote_repo.path
         except GitError as e:
             raise self.RemoteError from e #("Cannot init '{remote_repo.project_name}' in '{remote_repo.remote.name}'")
 
@@ -61,7 +61,7 @@ class SSHRemoteSystem(RemoteSystem):
 
     def init_repo(self, remote_repo: NamedRemoteRepo) -> str:
         "Inits a new repo and returns its url"
-        remote_path = remote_repo.get_path()
+        remote_path = remote_repo.path
         remote_url = remote_repo.remote.url
         if self._exists_remote(remote_repo):
             print("WARNING: Remote folder already exists, not creating remote repo")
@@ -99,7 +99,7 @@ class SSHRemoteSystem(RemoteSystem):
             return ssh.run(*args, warn=True, **kwargs)
 
     def _exists_remote(self, remote_repo: NamedRemoteRepo):
-        ans = self._run_ssh(f'[ -d "{remote_repo.get_path()}" ]', url=remote_repo.remote.url)
+        ans = self._run_ssh(f'[ -d "{remote_repo.path}" ]', url=remote_repo.remote.url)
         if ans.return_code == 0:
             return True
         else:

@@ -43,8 +43,8 @@ class System:
         repo_keys.remove("path")
 
         for remote_repo in repo_state.remotes:
-            if remote_repo.get_name() not in repo.remotes:
-                repo.create_remote(remote_repo.get_name(), remote_repo.get_url())
+            if remote_repo.name not in repo.remotes:
+                repo.create_remote(remote_repo.name, remote_repo.url)
         repo_keys.remove("remotes")
 
         # TODO: validate repo_id and parent?
@@ -95,7 +95,7 @@ class System:
 
     def _clone_repo_from_remote(self, path, remote_repo: RemoteRepo) -> Repo:
         try:
-            return Repo.clone_from(url=remote_repo.get_url(), to_path=path.expanduser().absolute(), origin=remote_repo.get_name())
+            return Repo.clone_from(url=remote_repo.url, to_path=path.expanduser().absolute(), origin=remote_repo.name)
         except GitError:
             return None
 

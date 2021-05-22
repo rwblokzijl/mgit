@@ -95,7 +95,7 @@ class Config:
             elif isinstance(remote_repo, UnnamedRemoteRepo):
                 # remote_repo: UnnamedRemoteRepo = remote_repo
                 key = remote_repo.remote_name + '-remote'
-                value = remote_repo.get_url()
+                value = remote_repo.url
             else:
                 raise NotImplementedError("Unknown remote type")
             section[key] = value
@@ -120,18 +120,20 @@ class Config:
         self._write_configs()
         return repo_state
 
-    def resolve_unnamed_remote(self, unnamed_remote: UnnamedRemoteRepo, ignore_name=True) -> RemoteRepo:
+    def resolve_remote(self, remote_repo: RemoteRepo, ignore_name=True) -> RemoteRepo:
         for remote in self.get_all_remotes_from_config():
-            if not ignore_name and remote.name != unnamed_remote.remote_name:
+            if not ignore_name and remote.name != remote_repo.name:
                 continue
-            sub_path: Optional[str] = remote.get_subpath(unnamed_remote)
+            sub_path: Optional[str] = remote.get_subpath(remote_repo)
             if sub_path:
                 return NamedRemoteRepo(remote=remote, project_name=sub_path)
-        return unnamed_remote
+        return remote
 
     def get_remote(self, name: str) -> Remote:
         if name in self._remotes_config:
-            return self._config_section_to_remote(name, self._remotes_config[name])
+            ans = self._config_section_to_remote(name, self._remotes_config[name])
+            if ans:
+                return ans
         raise self.ConfigError("No remote named 'name' in config")
 
     def get_default_remotes(self) -> List[Remote]:
@@ -167,10 +169,18 @@ class Config:
             return True
         return False
 
-    def get_all_remotes_from_config(self) -> Iterator[Remote]:
+    def _iterate_config_remotes(self):
         for name, section in self._remotes_config.items():
-            if not self._is_special_section(name):
-                yield self._config_section_to_remote(name, section)
+            if self._is_special_section(name):
+                continue
+            elif section.get("ignore"):
+                continue
+            else:
+                yield name, section
+
+    def get_all_remotes_from_config(self) -> Iterator[Remote]:
+        for name, section in self._iterate_config_remotes():
+            yield self._config_section_to_remote(name, section)
 
     def __init__(self,
             remotes_file="~/.config/mgit/remotes.ini",
@@ -219,6 +229,8 @@ class Config:
         return self._config_section_to_repo(parent_name, parent_section)
 
     def _config_section_to_remote(self, name: str, section: configparser.SectionProxy) -> Remote:
+        if section.get("ignore"):
+            return None
         return Remote(
                 name=name,
                 url=section.get("url", ""),
@@ -299,16 +311,24 @@ class Config:
                 return self._config_section_to_repo(name, repo)
         return None
 
-    def get_all_repo_state(self):
+    def _iterate_config_repos(self):
         for name, section in self._repos_config.items():
-            if not self._is_special_section(name):
-                ans = self._config_section_to_repo(name, section)
-                if not ans:
-                    continue
-                yield ans
+            if self._is_special_section(name):
+                continue
+            elif section.get("ignore"):
+                continue
+            else:
+                yield name, section
+
+    def get_all_repo_state(self):
+        for name, section in self._iterate_config_repos():
+            ans = self._config_section_to_repo(name, section)
+            if not ans:
+                continue
+            yield ans
 
     def get_all_repo_names(self):
-        for name in self._repos_config.keys():
+        for name, section in self._iterate_config_repos():
             if not self._is_special_section(name):
                 yield name
 

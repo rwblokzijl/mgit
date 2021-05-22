@@ -101,10 +101,12 @@ class MgitUnitTestBase(unittest.TestCase):
             return [ self.config.get_state(name=r) for r in names ]
         return self.config.get_all_repo_state()
 
-    def init_repos(self, names: List[str]=None):
+    def init_repos(self, names: List[str]=None, commit=False):
         all_repos = self.get_repo_states(names)
         for repo in all_repos:
             self.system.set_state(repo)
+            if commit:
+                self.commit_in_repo(repo)
 
     def init_remotes_for_test_repos(self, names: List[str]=None):
         all_repos = self.get_repo_states(names)

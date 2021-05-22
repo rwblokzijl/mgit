@@ -17,7 +17,7 @@ class CommandRemoteAdd(SingleRepoCommand):
 
     def _add_remote_repo(self, remote_repo: RemoteRepo, repo_state: RepoState):
         "Replaces remote_repo into repo_state.remotes"
-        already_exists = {r for r in repo_state.remotes if r.get_name() == remote_repo.get_name()}
+        already_exists = {r for r in repo_state.remotes if r.name == remote_repo.name}
         repo_state.remotes -= already_exists
         repo_state.remotes.add(remote_repo)
 

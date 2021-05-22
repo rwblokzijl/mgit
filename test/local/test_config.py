@@ -82,22 +82,31 @@ class TestConfigState(unittest.TestCase):
         shutil.copy(self.default_repos_config, self.repos_config)
 
     def test_get_by_id(self):
-        ans = self.c.get_state(repo_id="abc123")
-        self.assertIsInstance(ans, RepoState)
+        with self.assertRaises(self.c.ConfigError):
+            self.c.get_state(repo_id="abc123")
 
+        ans = self.c.set_state(RepoState(
+            source="",
+            name="name",
+            repo_id="abc123",
+            path=Path("/tmp/mgit/something"),
+            parent=None,
+            remotes=set(),
+            auto_commands=None,
+            archived=False,
+            categories=set()))
+
+        ans = self.c.get_state(repo_id="abc123")
+
+        self.assertIsInstance(ans, RepoState)
         self.assertEqual(
                 "abc123",
                 ans.repo_id
                 )
 
         self.assertEqual(
-                "test_repo_1",
+                "name",
                 ans.name
-                )
-
-        self.assertEqual(
-                Path("/tmp/mgit/acceptance/local/test_repo_1"),
-                ans.path
                 )
 
     def test_get_state_parent(self):
@@ -116,11 +125,6 @@ class TestConfigState(unittest.TestCase):
     def test_get_by_name(self):
         ans = self.c.get_state(name="test_repo_1")
         self.assertIsInstance(ans, RepoState)
-
-        self.assertEqual(
-                "abc123",
-                ans.repo_id
-                )
 
         self.assertEqual(
                 "test_repo_1",
@@ -293,11 +297,11 @@ class TestConfigState(unittest.TestCase):
         self.assertIsInstance(remote_repo, NamedRemoteRepo)
 
         unnamed_remote = UnnamedRemoteRepo(
-                url=remote_repo.get_url(),
-                remote_name = remote_repo.get_name()
+                url=remote_repo.url,
+                remote_name = remote_repo.name
                 )
 
-        named = self.c.resolve_unnamed_remote(unnamed_remote)
+        named = self.c.resolve_remote(unnamed_remote)
 
         self.assertIsInstance(named, NamedRemoteRepo)
 
@@ -327,3 +331,24 @@ class TestConfigState(unittest.TestCase):
         with self.assertRaises(self.c.ConfigError):
             self.c.get_remote("not_exist")
 
+    def test_all_repo_names_ignore(self):
+        names = self.c.get_all_repo_names()
+        self.assertNotIn("Example", names)
+
+    def test_all_remotes_ignore(self):
+        rs = self.c.get_all_remotes_from_config()
+        for r in rs:
+            self.assertNotEqual("Example", r.name)
+
+    def test_all_repos_ignore(self):
+        rs = self.c.get_all_repo_state()
+        for r in rs:
+            self.assertNotEqual("Example", r.name)
+
+    def test_get_ignored_remotes(self):
+        with self.assertRaises(self.c.ConfigError):
+            self.c.get_remote("Example")
+
+    def test_get_ignored_repo(self):
+        with self.assertRaises(self.c.ConfigError):
+            self.c.get_state(name="Example")

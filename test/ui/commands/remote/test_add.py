@@ -16,16 +16,16 @@ class TestRemoteAddCommand(MgitUnitTestBase):
                 )
         # in config
         config = self.config.get_state(name="test_repo_2")
-        config_remote, = [r for r in config.remotes if r.get_name() == 'test_remote_2']
+        config_remote, = [r for r in config.remotes if r.name == 'test_remote_2']
         self.assertEqual(
                 "test_repo_2",
                 config_remote.project_name
                 )
         # in system
         system = self.system.get_state(config.path)
-        system_remote, = [r for r in system.remotes if r.get_name() == 'test_remote_2']
+        system_remote, = [r for r in system.remotes if r.name == 'test_remote_2']
         self.assertEqual(
-                system_remote.get_url(),
-                config_remote.get_url()
+                system_remote.url,
+                config_remote.url
                 )
 

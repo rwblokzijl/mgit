@@ -16,7 +16,7 @@ class RemoteBranchStatus:
         return bool(self.commits_ahead) or bool(self.commits_behind)
 
     def repr(self):
-        return f"    {str(self.commits_ahead).rjust(2)}+ {str(self.commits_behind).rjust(2)}- {self.remote_branch.remote_repo.get_name()}"
+        return f"    {str(self.commits_ahead).rjust(2)}+ {str(self.commits_behind).rjust(2)}- {self.remote_branch.remote_repo.name}"
 
     def __repr__(self):
         if self.__bool__():

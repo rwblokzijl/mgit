@@ -25,7 +25,7 @@ class Remote:
         else:
             return self.path
 
-    def get_subpath(self, remote_repo: 'UnnamedRemoteRepo') -> Optional[str]:
+    def get_subpath(self, remote_repo: 'RemoteRepo') -> Optional[str]:
         if not remote_repo.url.startswith(self.get_url()):
             return None
         if self.url:
@@ -53,22 +53,24 @@ class RemoteRepo(ABC):
     def represent(self, indent=0):
         raise NotImplementedError("Subclass should implement")
 
+    @property
     @abstractmethod
-    def get_name(self):
+    def name(self):
         raise NotImplementedError("Subclass should implement")
 
+    @property
     @abstractmethod
-    def get_url(self) -> str:
+    def url(self) -> str:
         raise NotImplementedError("Subclass should implement")
 
     def compare(self, other):
-        return isinstance(other, RemoteRepo) and self.get_url() == other.get_url() and self.get_name() == other.get_name()
+        return isinstance(other, RemoteRepo) and self.url == other.url and self.name == other.name
 
     def remote_key(self) -> str:
-        return f"{self.get_name()}:{self.get_url()}"
+        return f"{self.name}:{self.url}"
 
     def __repr__(self) -> str:
-        return f"{self.get_url()} {self.get_name()}"
+        return f"{self.url} {self.name}"
 
 @dataclass(frozen=True, repr=False)
 class NamedRemoteRepo(RemoteRepo):
@@ -78,37 +80,47 @@ class NamedRemoteRepo(RemoteRepo):
     def represent(self, indent=0):
         return " " * (indent) + f"{self.remote.name}:{self.project_name}\n"
 
-    def get_name(self):
+    @property
+    def name(self):
         return self.remote.name
 
-    def get_path(self):
+    @property
+    def path(self):
         return os.path.join(self.remote.path, self.project_name)
 
-    def get_url(self) -> str:
+    @property
+    def url(self) -> str:
         if self.remote.url:
-            return self.remote.url + ":" + self.get_path()
+            return self.remote.url + ":" + self.path
         else:
-            return self.get_path()
+            return self.path
 
     def __repr__(self) -> str:
-        return f"Named: {self.get_url()} {self.get_name()}"
+        return f"Named: {self.url} {self.name}"
 
 @dataclass(frozen=True, repr=False)
 class UnnamedRemoteRepo(RemoteRepo):
     remote_name:   str
     url: str
+    _url: str = field(init=False, repr=False)
 
     def represent(self, indent=0):
         return " " * (indent) + f"{self.remote_name}:{self.url}\n"
 
-    def get_name(self):
+    @property
+    def name(self):
         return self.remote_name
 
-    def get_url(self) -> str:
-        return self.url
+    @property             # type: ignore
+    def url(self) -> str: # type: ignore # pylint: disable=E0102 # Redefinition is needed
+        return self._url
+
+    @url.setter
+    def url(self, url: str) -> None:
+        object.__setattr__(self, '_url', url)
 
     def __repr__(self) -> str:
-        return f"Unnamed: {self.get_url()} {self.get_name()}"
+        return f"Unnamed: {self.url} {self.name}"
 
 @dataclass(frozen=True)
 class RemoteBranch:
@@ -175,9 +187,9 @@ class RepoState:   # No defaults to catch changes around the code
         if self.parent:
             add_line(f"parent = {self.parent.name}")
         elif verbosity ==2:
-            add_line(f"parent = ")
+            add_line("parent = ")
 
-        add_line(f"remotes = ")
+        add_line("remotes = ")
         for remote in self.remotes:
             result[0] += remote.represent(step*2)
 
@@ -185,7 +197,7 @@ class RepoState:   # No defaults to catch changes around the code
         #     result[0] += " " * (step) + "origin = " + self.origin.represent()
 
         if self.auto_commands is not None:
-            add_line(f"auto_commands = ")
+            add_line("auto_commands = ")
             for auto in self.auto_commands:
                 result[0] += " " * (step) + str(auto)#.represent(step)
 
@@ -193,7 +205,7 @@ class RepoState:   # No defaults to catch changes around the code
         if self.categories is not None:
             add_line(f"categories = {', '.join(self.categories)}")
         elif verbosity ==2:
-            add_line(f"categories = ")
+            add_line("categories = ")
         return result[0].strip()
 
     def zip(self, other) -> Iterator[Tuple]:
