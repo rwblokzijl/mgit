@@ -171,7 +171,9 @@ class Config:
 
     def get_all_remotes_from_config(self) -> Iterator[Remote]:
         for name, section in self._iterate_config_remotes():
-            yield self._config_section_to_remote(name, section)
+            ans = self._config_section_to_remote(name, section)
+            if ans:
+                yield ans
 
     def __init__(self,
             remotes_file="~/.config/mgit/remotes.ini",
@@ -235,7 +237,7 @@ class Config:
         parent_section = self._repos_config[parent_name]
         return self._config_section_to_repo(parent_name, parent_section)
 
-    def _config_section_to_remote(self, name: str, section: configparser.SectionProxy) -> Remote:
+    def _config_section_to_remote(self, name: str, section: configparser.SectionProxy) -> Optional[Remote]:
         if section.get("ignore"):
             return None
         return Remote(

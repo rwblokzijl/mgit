@@ -1,12 +1,14 @@
 import mgit.ui.commands.update # pylint: disable=W0611 #import important for decorators to run
 from mgit.ui.commands.update import CommandUpdate
+from mgit.local.state import *
+
 from test.test_util import MgitUnitTestBase
 
 from parameterized import parameterized
-
 from dataclasses import replace
 
-from mgit.local.state import *
+import contextlib
+import io
 
 class TestUpdateCommand(MgitUnitTestBase):
 
@@ -17,7 +19,7 @@ class TestUpdateCommand(MgitUnitTestBase):
         before_config_state = self.config.get_state(name=name)
         before_system_state = self.system.get_state(path=before_config_state.path)
 
-        self.run_command_raw(f"update -ycs -n {name}")
+        self.run_command(f"update -ycs -n {name}")
 
         after_config_state = self.config.get_state(name=name)
         after_system_state = self.system.get_state(path=after_config_state.path)
@@ -43,7 +45,7 @@ class TestUpdateCommand(MgitUnitTestBase):
         before_config_state = self.config.get_state(name=name)
         before_system_state = self.system.get_state(path=before_config_state.path)
 
-        self.run_command_raw(f"update -ys -n {name}")
+        self.run_command(f"update -ys -n {name}")
 
         after_config_state = self.config.get_state(name=name)
         after_system_state = self.system.get_state(path=after_config_state.path)
@@ -69,7 +71,7 @@ class TestUpdateCommand(MgitUnitTestBase):
         before_config_state = self.config.get_state(name=name)
         before_system_state = self.system.get_state(path=before_config_state.path)
 
-        self.run_command_raw(f"update -yc -n {name}")
+        self.run_command(f"update -yc -n {name}")
 
         after_config_state = self.config.get_state(name=name)
         after_system_state = self.system.get_state(path=after_config_state.path)
@@ -87,7 +89,10 @@ class TestUpdateCommand(MgitUnitTestBase):
 class TestMerge(MgitUnitTestBase):
 
     def merge(self, config, system):
-        return CommandUpdate(**self.interactors).merge(config, system)
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(stdout):
+            return CommandUpdate(**self.interactors).merge(config, system)
 
     def merge_test_setup(self, name):
         self.init_repos([name])
@@ -217,9 +222,9 @@ class TestMerge(MgitUnitTestBase):
         # merge
         merged = self.merge(config_state, system_state)
 
-        # see if merged has the new url from system
+        # see if merged has the old url from config
         self.assertEqual(
-                system_state.remotes,
+                config_state.remotes,
                 merged.remotes)
 
     @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
@@ -260,4 +265,57 @@ class TestMerge(MgitUnitTestBase):
         # see if merged has the new remote from config
         self.assertTrue(
                 system_state.remotes.issubset(merged.remotes))
+
+    def test_merge_paths(self):
+        self.assertEqual(
+                CommandUpdate(**self.interactors).merge_paths(Path("~"), Path("~").expanduser()),
+                Path("~")
+                )
+
+        self.assertEqual(
+                CommandUpdate(**self.interactors).merge_paths(None, Path("~").expanduser()),
+                Path("~")
+                )
+
+    def test_relative(self):
+        self.assertEqual(
+                CommandUpdate(**self.interactors).relative_to_home(
+                    Path("/tmp/mgit")),
+                Path("/tmp/mgit")
+                )
+
+        self.assertEqual(
+                Path("~/test/kek"),
+                CommandUpdate(**self.interactors).relative_to_home(
+                    Path("~/test/kek").expanduser()
+                    )
+                )
+
+        with self.assertRaises(ValueError):
+            CommandUpdate(**self.interactors).relative_to_home(
+                    Path("./test/kek").expanduser()
+                    )
+
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_same_url(self, name="test_repo_1"):
+        """
+        remotes with the same url, but different names should take the name of the config
+        """
+        # init config to system
+        self.init_repos([name])
+        config_state = self.config.get_state(name=name)
+
+        # Change remote name in config
+        old_system_state = self.system.get_state(path=config_state.path)
+        unnamed  = list(old_system_state.remotes)[0]
+        new_rr     = replace(unnamed, remote_name="new_name")
+        old_system_state.remotes.add(new_rr)
+        self.system.set_state(old_system_state)
+
+        # merge
+        merged = self.merge(config_state, old_system_state)
+
+        self.assertEqual(
+                config_state.remotes,
+                merged.remotes)
 

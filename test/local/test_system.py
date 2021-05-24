@@ -15,7 +15,6 @@ class TestSystemState(unittest.TestCase):
     """Test case docstring."""
 
     def create_git_repo_with_commit(self):
-        self.repo_with_commit = Path("/tmp/mgit/with_commit")
         os.makedirs(self.repo_with_commit, exist_ok=True)
         r = Repo.init(self.repo_with_commit)
         f = self.repo_with_commit / Path("file.txt")
@@ -27,6 +26,7 @@ class TestSystemState(unittest.TestCase):
         self.unittest_path: Path = Path("/tmp/mgit/")
         os.makedirs(self.unittest_path, exist_ok=True)
         #1
+        self.repo_with_commit = Path("/tmp/mgit/with_commit")
         self.create_git_repo_with_commit()
 
         ##2
@@ -100,7 +100,7 @@ class TestSystemState(unittest.TestCase):
         ans = System().get_state(path=self.repo_with_commit)
         self.assertIsNotNone(ans.repo_id)
 
-    "Writing"
+    # Writing
 
     def test_write_clone(self) -> None:
         path = self.unittest_path / Path("test_1")
@@ -164,6 +164,51 @@ class TestSystemState(unittest.TestCase):
 
         ans = System().get_state(path)
 
+        self.assertEqual(
+                ans,
+                repo_state)
+
+    def test_remove_remotes(self):
+        path = self.unittest_path / Path("test_1")
+
+        origin = System().get_state(path=self.repo_with_commit)
+
+        self.assertIsNotNone(origin)
+
+        if not origin:
+            return
+
+        repo_state = RepoState(
+                source        = "repo",
+                repo_id       = origin.repo_id,
+                path          = path,
+                remotes       = {
+                    UnnamedRemoteRepo(remote_name="remote_1", url=str(self.repo_with_commit)),
+                    UnnamedRemoteRepo(remote_name="remote_2", url=str(self.repo_with_commit))
+                    },
+                parent        = None,
+
+                #unknown
+                name          = None,
+                auto_commands = None,
+                archived      = None,
+                categories    = None
+                )
+
+        System().set_state(repo_state)
+        ans = System().get_state(path)
+        self.assertEqual(
+                ans,
+                repo_state)
+
+        repo_state.remotes.pop()
+        repo_state.remotes.pop()
+
+        System().set_state(repo_state)
+        ans = System().get_state(path)
+        self.assertEqual(
+                ans.remotes,
+                repo_state.remotes)
         self.assertEqual(
                 ans,
                 repo_state)

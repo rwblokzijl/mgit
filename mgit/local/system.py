@@ -33,6 +33,10 @@ class System:
         repo_keys.remove("archived")
         repo_keys.remove("categories")
 
+        # TODO: validate repo_id and parent?
+        repo_keys.remove("repo_id")
+        repo_keys.remove("parent")
+
         # will raise if not repo
         if remote:
             repo = self._clone_repo_from_remote_or_raise(repo_state, remote)
@@ -42,18 +46,21 @@ class System:
             repo = self._get_clone_or_init_repo(repo_state, remote)
         repo_keys.remove("path")
 
+        # NO RAISING AFTER THIS POINT, CATS ARE ADDED
+        self._remove_remotes(repo_state.path)
         for remote_repo in repo_state.remotes:
             if remote_repo.name not in repo.remotes:
                 repo.create_remote(remote_repo.name, remote_repo.url)
         repo_keys.remove("remotes")
 
-        # TODO: validate repo_id and parent?
-        repo_keys.remove("repo_id")
-        repo_keys.remove("parent")
-
         # make changes here
 
         assert not repo_keys, repo_keys
+
+    def _remove_remotes(self, path):
+        repo: Repo = self._get_repo_from_path(path)
+        for remote in repo.remotes:
+            repo.delete_remote(remote)
 
     def _get_state_or_none(self, *args, **kwargs) -> Optional[RepoState]:
         try:

@@ -1,23 +1,26 @@
 """
 Sets up the base test class with test versions of all system components
 """
-from typing import *
+
+from mgit.local.config         import Config
+from mgit.local.system         import System
+from mgit.remote.remote_system import RemoteSystem
+from mgit.ui.cli               import CLI
+from mgit.ui.commands._mgit    import MgitCommand
+from mgit.util.printing        import pretty_string
+from mgit.local.state          import *
+
+from git     import Repo
+from pathlib import Path
+from typing  import *
+
+import contextlib
+import io
 import os
 import shutil
 import sys
 import unittest
-from git import Repo
 
-from pathlib import Path
-
-from mgit.ui.cli            import CLI
-from mgit.ui.commands._mgit import MgitCommand
-from mgit.util.printing     import pretty_string
-from mgit.local.config            import Config
-from mgit.local.system            import System
-from mgit.remote.remote_system     import RemoteSystem
-
-from mgit.local.state import *
 
 class MockRemoteSystem(RemoteSystem):
     "Makes sure we never test using a remote repo"
@@ -132,8 +135,11 @@ class MgitUnitTestBase(unittest.TestCase):
                 )
 
     def run_command(self, command: str):
-        output = self.run_command_raw(command)
-        possible_generator = pretty_string(output)
-        ans = "\n".join(list(possible_generator))
-        return ans
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(stdout):
+            output = self.run_command_raw(command)
+            possible_generator = pretty_string(output)
+            ans = "\n".join(list(possible_generator))
+            return ans
 
