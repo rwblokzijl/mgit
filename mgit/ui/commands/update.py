@@ -1,5 +1,6 @@
 from mgit.ui.base_commands import SingleRepoCommand
 from mgit.ui.commands._mgit import MgitCommand
+from mgit.ui.cli_utils      import query_yes_no
 
 from mgit.local.state import *
 
@@ -19,6 +20,8 @@ class CommandUpdate(SingleRepoCommand):
     def build(self, parser):
         parser.add_argument("-c", "--config", help="Update the config based on the system", action="store_true")
         parser.add_argument("-s", "--system", help="Update the system based on the config", action="store_true")
+
+        parser.add_argument("-y", help="Skip asking for confirmation", action='store_true')
 
     def one_or_other(self, config, system):
         # One is missing
@@ -44,9 +47,33 @@ class CommandUpdate(SingleRepoCommand):
         result = set()
         for rr in list(config):
             if rr in system:
+                print("s", rr)
                 result.add(rr)
                 config.remove(rr)
                 system.remove(rr)
+        return result
+
+    def _merge_same_urls(self, config: Set[RemoteRepo], system: Set[RemoteRepo]):
+        result = set()
+        for con_r in list(config):
+            for sys_r in list(system):
+                if con_r.url == sys_r.url:
+                    print("su", con_r)
+                    print("su", sys_r)
+                    result.add(con_r) # use the config url
+                    config.remove(con_r)
+                    system.remove(sys_r)
+        return result
+
+    def _merge_same_names(self, config: Set[RemoteRepo], system: Set[RemoteRepo]):
+        result = set()
+        for con_r in list(config):
+            for sys_r in list(system):
+                if con_r.name == sys_r.name:
+                    print(f"WARNING: Two remotes with the same name: {sys_r}, {con_r}")
+                    result.add(sys_r) # use the system url
+                    config.remove(con_r)
+                    system.remove(sys_r)
         return result
 
     def merge_remotes(self, config: Set[RemoteRepo], system: Set[RemoteRepo]):
@@ -56,10 +83,12 @@ class CommandUpdate(SingleRepoCommand):
 
         system = {self.config.resolve_remote(r) for r in system}
 
-        result = self._merge_same_remotes(config, system)
+        result  = self._merge_same_remotes(config, system)
+        result |= self._merge_same_urls(config, system)
+        result |= self._merge_same_names(config, system)
+        result |= config #leftovers
+        result |= system #leftovers
 
-        assert not config
-        assert not system
         return result
 
     def merge(self, config_state: RepoState, system_state: RepoState):
@@ -70,21 +99,24 @@ class CommandUpdate(SingleRepoCommand):
                 path          = self.merge_vals(config_state.path, system_state.path),
                 parent        = self.merge_parents(config_state.parent, system_state.parent),
                 remotes       = self.merge_remotes(config_state.remotes, system_state.remotes),
-                auto_commands = None, #
-                archived      = None, #
-                categories    = None #
+                auto_commands = None, # TODO
+                archived      = self.merge_vals(config_state.archived, system_state.archived),
+                categories    = (config_state.categories or set()) | (system_state.categories or set())
                 )
 
-    def run(self, config_state, system_state, config, system):
+    def run(self, config_state, system_state, config, system, y):
         repo_state = self.merge(config_state, system_state)
-        return repo_state
+        if not y and not query_yes_no(
+                "Do you want to update with the following values: \n" +
+                f"name={repo_state.represent()}"):
+            return "Doing nothing"
 
-        # if config and system:
-        #     self.config.set_state(repo_state)
-        #     self.system.set_state(repo_state)
-        # elif system:
-        #     self.system.set_state(repo_state)
-        # elif config:
-        #     self.config.set_state(repo_state)
-        # return repo_state
+        if config and system:
+            self.config.set_state(repo_state)
+            self.system.set_state(repo_state)
+        elif system:
+            self.system.set_state(repo_state)
+        elif config:
+            self.config.set_state(repo_state)
+        return repo_state
 

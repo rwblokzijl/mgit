@@ -81,24 +81,9 @@ class Config:
                 section["path"] = str(repo_state.path)
         repo_keys.remove("path")
 
-        for remote_repo in repo_state.remotes:
-            written_remotes: Dict[str, Remote]={}
-            if isinstance(remote_repo, NamedRemoteRepo):
-                # remote_repo: NamedRemoteRepo = remote_repo
-                key = remote_repo.remote.name + '-repo'
-                value = remote_repo.project_name
-                if remote_repo.remote.name in written_remotes:
-                    if written_remotes[remote_repo.remote.name] != remote_repo.remote:
-                        raise ValueError(f"Repo to save specifies 2 non-equal remotes with the same name: {written_remotes[remote_repo.remote.name]} and {remote_repo.remote}")
-                written_remotes[remote_repo.remote.name] = remote_repo.remote
-                self.set_remote(remote_repo.remote, write=False) # dont write until rest of function succeeds
-            elif isinstance(remote_repo, UnnamedRemoteRepo):
-                # remote_repo: UnnamedRemoteRepo = remote_repo
-                key = remote_repo.remote_name + '-remote'
-                value = remote_repo.url
-            else:
-                raise NotImplementedError("Unknown remote type")
-            section[key] = value
+        self._raise_on_duplicate_remote_name(repo_state.remotes)
+        for remote in repo_state.remotes:
+            self._write_remote(remote, section)
         repo_keys.remove("remotes")
 
         # auto_commands = None, #TODO
@@ -120,14 +105,36 @@ class Config:
         self._write_configs()
         return repo_state
 
-    def resolve_remote(self, remote_repo: RemoteRepo, ignore_name=True) -> RemoteRepo:
+    def _raise_on_duplicate_remote_name(self, remote_repos: Set[RemoteRepo]):
+        remote_repos = {self.resolve_remote(rr) for rr in remote_repos}
+        remotes_dict: Dict[str, RemoteRepo]={}
+        for remote_repo in remote_repos:
+            if remote_repo.name in remotes_dict:
+                if remotes_dict.get(remote_repo.name) != remote_repo:
+                    raise KeyError(f"Repo to save specifies 2 non-equal remotes with the same name: {remotes_dict[remote_repo.name]} and {remote_repo}")
+            remotes_dict[remote_repo.name] = remote_repo
+
+    def _write_remote(self, remote_repo, section):
+        remote_repo = self.resolve_remote(remote_repo)
+        if isinstance(remote_repo, NamedRemoteRepo):
+            key = 'named_remote:' + remote_repo.remote.name
+            value = remote_repo.project_name
+            self.set_remote(remote_repo.remote, write=False) # dont write until rest of the write succeeds
+        elif isinstance(remote_repo, UnnamedRemoteRepo):
+            key = 'remote:' + remote_repo.remote_name
+            value = remote_repo.url
+        else:
+            raise NotImplementedError("Unknown remote type")
+        section[key] = value
+
+    def resolve_remote(self, remote_repo: RemoteRepo, ignore_name=False) -> RemoteRepo:
         for remote in self.get_all_remotes_from_config():
             if not ignore_name and remote.name != remote_repo.name:
                 continue
             sub_path: Optional[str] = remote.get_subpath(remote_repo)
             if sub_path:
                 return NamedRemoteRepo(remote=remote, project_name=sub_path)
-        return remote
+        return remote_repo
 
     def get_remote(self, name: str) -> Remote:
         if name in self._remotes_config:
@@ -162,22 +169,6 @@ class Config:
         del(self._remotes_config[remote.name])
         self._write_configs(False, True)
 
-    def _is_special_section(self, name):
-        if name.lower() == "defaults":
-            return True
-        if name == "DEFAULT":
-            return True
-        return False
-
-    def _iterate_config_remotes(self):
-        for name, section in self._remotes_config.items():
-            if self._is_special_section(name):
-                continue
-            elif section.get("ignore"):
-                continue
-            else:
-                yield name, section
-
     def get_all_remotes_from_config(self) -> Iterator[Remote]:
         for name, section in self._iterate_config_remotes():
             yield self._config_section_to_remote(name, section)
@@ -198,12 +189,28 @@ class Config:
                 }
         self._inverse_remote_type_map = {v: k for k, v in self._remote_type_map.items()}
 
+    def _is_special_section(self, name):
+        if name.lower() == "defaults":
+            return True
+        if name == "DEFAULT":
+            return True
+        return False
+
+    def _iterate_config_remotes(self):
+        for name, section in self._remotes_config.items():
+            if self._is_special_section(name):
+                continue
+            elif section.get("ignore"):
+                continue
+            else:
+                yield name, section
+
     def _read_configs(self):
-        repos = configparser.ConfigParser()
+        repos = configparser.ConfigParser(delimiters=('='))
         if not repos.read(self._repos_file):
             raise FileNotFoundError(f"Failed to open {self._repos_file}")
 
-        remotes = configparser.ConfigParser()
+        remotes = configparser.ConfigParser(delimiters=('='))
         if not remotes.read(self._remotes_file):
             raise FileNotFoundError(f"Failed to open {self._remotes_file}")
 
@@ -238,19 +245,33 @@ class Config:
                 type=self._remote_type_map.get(section.get("type"))
                 )
 
-    def _get_remote_repo(self, repo_name: str, remote_name: str):
+    def _get_named_remote(self, repo_name: str, remote_name: str):
         remote = self.get_remote(remote_name)
         if not remote:
             raise ReferenceError(f"Listed remote {remote_name} for {repo_name} doesn't exist")
         return NamedRemoteRepo(remote, repo_name)
 
-    def _get_remotes(self, name: str, section: configparser.SectionProxy):
+    def _get_unnamed_remote(self, url: str, remote_name: str):
+        return UnnamedRemoteRepo(remote_name, url)
+
+    def _get_remotes(self, section: configparser.SectionProxy):
         remotes = set()
         for key in section:
-            if key.endswith("-repo"):
-                name        = section.get(key)
-                remote_name = key[:-5]
-                remote_repo = self._get_remote_repo(name, remote_name)
+            if key.startswith("named_remote:"):
+                project_name = section.get(key)
+                remote_name  = key[13:]
+                remote_repo  = self._get_named_remote(project_name, remote_name)
+                remotes.add(remote_repo)
+            elif key.endswith("-repo"): #deprecated
+                project_name = section.get(key)
+                remote_name  = key[:-5]
+                remote_repo  = self._get_named_remote(project_name, remote_name)
+                remotes.add(remote_repo)
+                print("WARNING: '-repo' suffix is deprecated, please use 'named_remote' prefix instead")
+            elif key.startswith("remote:"):
+                url         = section.get(key)
+                remote_name = key[7:]
+                remote_repo = self._get_unnamed_remote(url, remote_name)
                 remotes.add(remote_repo)
         return remotes
 
@@ -275,7 +296,7 @@ class Config:
         if path and not Path(path).expanduser().is_absolute():
             raise ValueError(f"Path {path} for {name} in config is not valid")
 
-        remotes = self._get_remotes(name, section)
+        remotes = self._get_remotes(section)
 
         return RepoState(
                 source="config",

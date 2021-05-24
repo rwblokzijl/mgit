@@ -5,6 +5,8 @@ from parameterized import parameterized
 
 from pathlib import Path
 
+from dataclasses import replace
+
 import shutil
 import unittest
 
@@ -352,3 +354,74 @@ class TestConfigState(unittest.TestCase):
     def test_get_ignored_repo(self):
         with self.assertRaises(self.c.ConfigError):
             self.c.get_state(name="Example")
+
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_write_unnamed_known_remote(self, name="test_repo_1"):
+        # get a named remote
+        before    = self.c.get_state(name=name)
+        new_state = self.c.get_state(name=name)
+        remote_repo = new_state.remotes.pop()
+
+        # make it unnamed
+        self.assertIsInstance(remote_repo, NamedRemoteRepo)
+        unnamed_remote = UnnamedRemoteRepo(
+                url=remote_repo.url,
+                remote_name = remote_repo.name
+                )
+
+        # write it to the config
+        new_state.remotes.add(unnamed_remote)
+        self.c.set_state(new_state)
+
+        # get it again
+        after = self.c.get_state(name=name)
+
+        # make sure the unnames was resolved to a named
+        self.assertEqual(before.remotes, after.remotes)
+        self.assertEqual(before, after)
+
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_duplicate_remotes(self, name="test_repo_1"):
+        new_state = self.c.get_state(name=name)
+
+        # change the url, and write to config
+        remote_repo = list(new_state.remotes)[0]
+        self.assertIsInstance(remote_repo, NamedRemoteRepo)
+        new_remote = replace(remote_repo.remote, url="NEW_URL")
+        new_rr     = replace(remote_repo, remote=new_remote)
+        new_state.remotes.add(new_rr)
+
+        with self.assertRaises(KeyError):
+            self.c.set_state(new_state)
+
+    def test_write_and_read_unnamed_remote(self):
+        before = RepoState(
+                source="",
+                name="name",
+                repo_id="abc123",
+                path=Path("/tmp/mgit/something"),
+                parent=None,
+                remotes={
+                    UnnamedRemoteRepo(
+                        "remote_name",
+                        "remote_url"
+                        )
+                    },
+                auto_commands=None,
+                archived=False,
+                categories=set()
+                )
+        self.c.set_state(before)
+
+        after = self.c.get_state(name=before.name)
+
+        self.assertEqual(
+                before.remotes,
+                after.remotes
+                )
+
+        self.assertEqual(
+                before,
+                after
+                )
+

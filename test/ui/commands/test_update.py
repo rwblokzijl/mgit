@@ -4,24 +4,90 @@ from test.test_util import MgitUnitTestBase
 
 from parameterized import parameterized
 
+from dataclasses import replace
+
+from mgit.local.state import *
+
 class TestUpdateCommand(MgitUnitTestBase):
 
-    # # @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
-    # def test_no_change(self, name="test_repo_1"):
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_no_change(self, name="test_repo_1"):
+        self.init_repos([name])
 
-    #     # TODO: test better
+        before_config_state = self.config.get_state(name=name)
+        before_system_state = self.system.get_state(path=before_config_state.path)
 
-    #     self.init_repos([name])
+        self.run_command_raw(f"update -ycs -n {name}")
 
-    #     # ans = self.run_command_raw(f"update -n {name}")
+        after_config_state = self.config.get_state(name=name)
+        after_system_state = self.system.get_state(path=after_config_state.path)
 
-    #     config_state = self.config.get_state(name=name)
-    #     system_state = self.system.get_state(path=config_state.path)
+        self.assertEqual(
+                before_config_state,
+                after_config_state
+                )
 
-    #     self.assertEqual(
-    #             config_state,
-    #             system_state
-    #             )
+        self.assertEqual(
+                before_system_state,
+                after_system_state
+                )
+
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_change_system_only(self, name="test_repo_1"):
+        self.init_repos([name])
+
+        config_state = self.config.get_state(name=name)
+        config_state.remotes.add(UnnamedRemoteRepo("new", "new"))
+        self.config.set_state(config_state)
+
+        before_config_state = self.config.get_state(name=name)
+        before_system_state = self.system.get_state(path=before_config_state.path)
+
+        self.run_command_raw(f"update -ys -n {name}")
+
+        after_config_state = self.config.get_state(name=name)
+        after_system_state = self.system.get_state(path=after_config_state.path)
+
+        self.assertEqual(
+                before_config_state,
+                after_config_state
+                )
+
+        self.assertNotEqual(
+                before_system_state,
+                after_system_state
+                )
+
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_change_config_only(self, name="test_repo_1"):
+        self.init_repos([name])
+
+        before_config_state = self.config.get_state(name=name)
+        before_config_state.remotes.pop()
+        self.config.set_state(before_config_state)
+
+        before_config_state = self.config.get_state(name=name)
+        before_system_state = self.system.get_state(path=before_config_state.path)
+
+        self.run_command_raw(f"update -yc -n {name}")
+
+        after_config_state = self.config.get_state(name=name)
+        after_system_state = self.system.get_state(path=after_config_state.path)
+
+        self.assertNotEqual(
+                before_config_state,
+                after_config_state
+                )
+
+        self.assertEqual(
+                before_system_state,
+                after_system_state
+                )
+
+class TestMerge(MgitUnitTestBase):
+
+    def merge(self, config, system):
+        return CommandUpdate(**self.interactors).merge(config, system)
 
     def merge_test_setup(self, name):
         self.init_repos([name])
@@ -32,7 +98,7 @@ class TestUpdateCommand(MgitUnitTestBase):
         self.commit_in_repo(system_state)
         system_state = self.system.get_state(path=config_state.path)
 
-        merged = CommandUpdate(**self.interactors).merge(config_state, system_state)
+        merged = self.merge(config_state, system_state)
         return config_state, system_state, merged
 
     @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
@@ -58,7 +124,7 @@ class TestUpdateCommand(MgitUnitTestBase):
 
     @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
     def test_merge_path(self, name="test_repo_1"):
-        config_state, system_state, merged = self.merge_test_setup(name)
+        _, system_state, merged = self.merge_test_setup(name)
 
         self.assertEqual(
                 system_state.path,
@@ -73,7 +139,7 @@ class TestUpdateCommand(MgitUnitTestBase):
         config_state = self.config.get_state(name=name)
         system_state = self.system.get_state(path=config_state.path)
 
-        merged = CommandUpdate(**self.interactors).merge(config_state, system_state)
+        merged = self.merge(config_state, system_state)
 
         self.assertEqual(
                 merged.parent.repo_id,
@@ -102,9 +168,96 @@ class TestUpdateCommand(MgitUnitTestBase):
                 merged.remotes
                 )
 
-    # @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
-    def test_merge_remotes_wrong_name(self, name="test_repo_1"):
-        # same named remotes, with different urls should error
-        # remotes with the same url, but different names should take the name of the config
-        # remotes in one, but not the other
-        pass
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_merge_remotes_different_name(self, name="test_repo_1"):
+        """
+        remotes with the same url, but different names should take the name of the config
+        """
+        # init config to system
+        self.init_repos([name])
+        # self.commit_in_repo(system_state)
+
+        # Change remote name in config
+        config_state = self.config.get_state(name=name)
+        named  = config_state.remotes.pop()
+        new_remote = replace(named.remote, name="new_name")
+        new_rr     = replace(named, remote=new_remote)
+        config_state.remotes.add(new_rr)
+        self.config.set_state(config_state)
+
+        system_state = self.system.get_state(path=config_state.path)
+
+        # merge
+        merged = self.merge(config_state, system_state)
+
+        # see if merged has the new name from config
+        config_state = self.config.get_state(name=name)
+        self.assertEqual(
+                config_state.remotes,
+                merged.remotes)
+
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_merge_remotes_different_url(self, name="test_repo_1"):
+        """
+        same named remotes, with different urls should take url of system, or error
+        """
+        # init config to system
+        self.init_repos([name])
+
+        config_state = self.config.get_state(name=name)
+        system_state = self.system.get_state(path=config_state.path)
+
+        # change the url in system
+        system_state.remotes = {self.config.resolve_remote(r) for r in system_state.remotes}
+        remote_repo = system_state.remotes.pop()
+        self.assertIsInstance(remote_repo, NamedRemoteRepo)
+        new_rr     = UnnamedRemoteRepo(remote_repo.name, url="NEW_URL")
+        system_state.remotes.add(new_rr)
+
+        # merge
+        merged = self.merge(config_state, system_state)
+
+        # see if merged has the new url from system
+        self.assertEqual(
+                system_state.remotes,
+                merged.remotes)
+
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_merge_remotes_differing_both(self, name="test_repo_1"):
+        """
+        remotes in one, but not the other, just include both
+        """
+        # init config to system
+        self.init_repos([name])
+
+        config_state = self.config.get_state(name=name)
+        system_state = self.system.get_state(path=config_state.path)
+        system_state.remotes = {self.config.resolve_remote(r) for r in system_state.remotes}
+
+        # add url to system
+        system_state.remotes.add(UnnamedRemoteRepo(
+            remote_name="some_system_name",
+            url="some_system_url"
+            ))
+        # add url to config
+        config_state.remotes.add(
+                NamedRemoteRepo(
+                    project_name="some_config_path_suffix",
+                    remote=Remote(
+                        name="some_config_name",
+                        url="some_sytem_url",
+                        path="some_sytem_path_prefix",
+                        type=RemoteType.LOCAL)
+                    )
+                )
+
+        # merge
+        merged = self.merge(config_state, system_state)
+
+        # see if merged has the new remote from system
+        self.assertTrue(
+                config_state.remotes.issubset(merged.remotes))
+        # see if merged has the new remote from config
+        self.assertTrue(
+                system_state.remotes.issubset(merged.remotes))
+

@@ -59,7 +59,7 @@ class RemoteRepo(ABC):
         raise NotImplementedError("Subclass should implement")
 
     @property
-    @abstractmethod
+    # @abstractmethod # makes mypy error..., but really should be set
     def url(self) -> str:
         raise NotImplementedError("Subclass should implement")
 
