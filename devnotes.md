@@ -138,6 +138,38 @@ Git has submodules already
     g. submodule-path=name ; maybe we dont want to know about the current commit as we auto update these anyway, and this is stored in the repo regardless
     h. This is nice for later, but for now we just use the path
 
+## Fetch all
+
+By fetching all repos from all remotes we set up the status command to show
+complete information
+
+mgit fetch is a multi repo command
+
+for repo in args
+    for remote in repo
+        fetch all branches
+
+## Backup system
+
+We want all repos to exist in at least 2 remotes
+
+to ensure this we use the catergory system, which we will rename to tags
+
+- Repos can have multiple tags
+- Remotes will be have some backup tags
+- for every tag of a remote
+    * all repos of that tag should have a copy in that remote
+
+We need the following commands:
+
+- mgit backup check
+    * prints all repos with a tag, that are missing from remotes with that tag
+    * prints all repos that have less than 2 remotes configured to track it
+- mgit backup update
+    * will instantiate all missing repos in their assigned remotes
+- mgit backup sync (maybe mgit sync)
+    * will make sure all remotes are up to date with one another
+    * If possible this should work without
 
 
 
