@@ -1,6 +1,7 @@
 from mgit.ui.cli import AbstractLeafCommand
 from typing      import *
 from mgit.local.state  import *
+from mgit.util.merging import StateMerger
 
 class AbstractMgitCommand(AbstractLeafCommand):
     """
@@ -57,6 +58,14 @@ class MgitBaseCommand(AbstractMgitCommand):
     """
     This is the base class for all special mgit commands
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.state_merger = StateMerger(self.config)
+
+    def merge(self, config_state: RepoState, system_state: RepoState):
+        return self.state_merger.merge(config_state, system_state)
+
     def _get_config(self, name) -> Optional[RepoState]:
         try:
             return self.config.get_state(name=name)
@@ -65,11 +74,11 @@ class MgitBaseCommand(AbstractMgitCommand):
                 raise e
             return None
 
-    def _get_system(self, path):
+    def _get_system(self, path, _raise=True):
         try:
             return self.system.get_state(path=path)
         except self.system.SystemError as e:
-            if self.system_required:
+            if self.system_required and _raise:
                 raise e
             return None
 
@@ -152,14 +161,33 @@ class MultiRepoCommand(MgitBaseCommand):
         self.add_argument("-p", "--path", add_to=group, dest="MGIT_PATHS", metavar="PATH", action="append", default=[], help="Path of the repo") # if set: definitely path
         self.add_argument("-a", "--all",  add_to=group, dest="MGIT_ALL", help="All repos in config", action="store_true") # all repos in config
 
+    def _filter(self, repo_states):
+        for config_state, system_state in repo_states:
+            if not config_state and self.config_required:
+                pass
+            elif not system_state and self.system_required:
+                pass
+            else:
+                yield config_state, system_state
+
+    def _get_all(self):
+        repo_states = ((config, self._get_system(config.path, _raise=False)) for config in self.config.get_all_repo_state())
+        return self._filter(repo_states)
+
+    def _merge(self, config_state: RepoState, system_state: RepoState):
+        if config_state is None or system_state is None:
+            return config_state or system_state
+        else:
+            return self.merge(config_state, system_state)
+
     def post_parse(self, MGIT_NAMES, MGIT_PATHS, MGIT_ALL):
         if MGIT_ALL:
-            return {'all': True, 'repo_states': None}
+            repo_states = self._get_all()
         else:
             repo_states  = [self.get_both_from_name(name) for name in MGIT_NAMES]
             repo_states += [self.get_both_from_path(path) for path in MGIT_PATHS]
             if not repo_states:
                 repo_states += [self.get_both_from_path(".")]
-            if self.combine:
-                repo_states = [config + system for config, system in repo_states]
-            return {'all': False, 'repo_states': repo_states}
+        if self.combine:
+            repo_states = (self._merge(c, s) for c, s in repo_states)
+        return {'repo_states': repo_states}

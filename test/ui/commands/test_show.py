@@ -69,28 +69,3 @@ class TestShowCommand(MgitUnitTestBase):
         ans = self.run_command(f"show -n {name}")
 
         self.assertIn( "test_repo_1", ans)
-
-    def test_show_conflicting(self):
-        name = "test_repo_1"
-
-        # init from config
-        self.init_repos([name])
-
-        ans = self.run_command_raw(f"show -vvn {name}")
-        self.assertIsInstance(ans[0], str)
-
-        # change config
-        config, = self.get_repo_states([name])
-
-        original: NamedRemoteRepo = list(config.remotes)[0]
-        changed: NamedRemoteRepo = replace(original, remote=replace(original.remote, name="new_name"))
-
-        config.remotes.discard(original)
-        config.remotes.add(changed)
-
-        self.config.set_state(config)
-
-        # check if mismatch is caught
-
-        ans = self.run_command_raw(f"show -vvn {name}")
-        self.assertIsInstance(ans[0], Conflict)
