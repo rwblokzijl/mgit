@@ -129,5 +129,5 @@ class StateMerger:
                 remotes       = self._merge_remotes(config_state.remotes, system_state.remotes),
                 auto_commands = None,
                 archived      = self._merge_vals(config_state.archived, system_state.archived),
-                categories    = (config_state.categories or set()) | (system_state.categories or set())
+                tags    = (config_state.tags or set()) | (system_state.tags or set())
                 )

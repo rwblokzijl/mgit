@@ -1,6 +1,6 @@
-# TODO order of change
+# Next steps
 
-What do we want concretely?
+rename tags to tags
 
 ## Sync mechanic. How does it work
 
@@ -171,6 +171,6 @@ We need the following commands:
     * will make sure all remotes are up to date with one another
     * If possible this should work without
 
-
+## Tag system
 
 

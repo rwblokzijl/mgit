@@ -16,7 +16,7 @@ class Config:
     [Example]
     repo_id = 42f590dc08f39a8a19a8364fbed2fa317108abe6
     path = ~/devel/example/path
-    categories = school devel
+    tags = school devel
     home-repo = CS4200-B/2018-2019/student-rblokzijl.git
     archived = 1
     parent = some_other_section
@@ -89,9 +89,9 @@ class Config:
         # auto_commands = None, #TODO
         repo_keys.remove("auto_commands")
 
-        if repo_state.categories is not None:
-            section["categories"] = " ".join(sorted(list(repo_state.categories)))
-        repo_keys.remove("categories")
+        if repo_state.tags is not None:
+            section["tags"] = " ".join(sorted(list(repo_state.tags)))
+        repo_keys.remove("tags")
 
         if repo_state.parent is not None:
             section["parent"] = repo_state.parent.name
@@ -278,7 +278,7 @@ class Config:
         return remotes
 
     def _get_categories(self, section):
-        return set(section.get("categories", "").split())
+        return set(section.get("tags", "").split())
 
     def _config_section_to_repo(self, name: str, section):
         if section.get("ignore"):
@@ -308,7 +308,7 @@ class Config:
                 name=name,
                 # origin=self._get_origin(remotes, name, section),
                 auto_commands=None, #TODO
-                categories=self._get_categories(section),
+                tags=self._get_categories(section),
                 parent=parent,
                 archived=bool(section.get("archived"))
                 )

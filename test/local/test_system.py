@@ -126,7 +126,7 @@ class TestSystemState(unittest.TestCase):
                 name          = None,
                 auto_commands = None,
                 archived      = None,
-                categories    = None
+                tags    = None
                 )
 
         with self.assertRaises(System.SystemError):
@@ -154,7 +154,7 @@ class TestSystemState(unittest.TestCase):
                 name          = None,
                 auto_commands = None,
                 archived      = None,
-                categories    = None
+                tags    = None
                 )
 
         with self.assertRaises(System.SystemError):
@@ -192,7 +192,7 @@ class TestSystemState(unittest.TestCase):
                 name          = None,
                 auto_commands = None,
                 archived      = None,
-                categories    = None
+                tags    = None
                 )
 
         System().set_state(repo_state)

@@ -17,7 +17,7 @@ class CommandInit(AbstractLeafCommand):
         parser.add_argument("name", help="Name of the project", nargs="?", default=None, type=str)
         parser.add_argument("--path", help="Path to local repo", metavar="DIR", nargs="?", default=".", type=str)
         parser.add_argument("--remotes", help="Name of remote repo", metavar="REMOTE[:REPO]", nargs="*", default=None, type=str)
-        parser.add_argument("--categories", help="Categories for the repo", nargs="+", default=[], type=str)
+        parser.add_argument("--tags", help="Categories for the repo", nargs="+", default=[], type=str)
 
         # TODO: what to do with origin gets removed??
         # parser.add_argument("--origin", help="Name of remote to be default push", metavar="REMOTE", type=lambda x: self.type_remote_repo(x))
@@ -49,7 +49,7 @@ class CommandInit(AbstractLeafCommand):
         for remote_repo in remote_repos:
             self.remote_system.init_repo(remote_repo)
 
-    def run(self, y, name, path, remotes, categories):
+    def run(self, y, name, path, remotes, tags):
         """ Prepares the details to init a repo """
 
         if not name:
@@ -72,7 +72,7 @@ class CommandInit(AbstractLeafCommand):
                 remotes=RemoteParser(self.config).parse(name, remotes),
                 auto_commands=None,
                 archived=None,
-                categories=set(categories),
+                tags=set(tags),
                 parent=parent
                 )
 

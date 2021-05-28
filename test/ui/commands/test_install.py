@@ -17,13 +17,13 @@ class TestInstallCommand(MgitUnitTestBase):
         with self.assertRaises(self.system.SystemError):
             self.system.get_state(path=path)
 
-        self.run_command(f"install -y -n {name}")
+        self.run_command(f"install -y {name}")
 
         # exists in system
         self.assertIsNotNone(self.system.get_state(path=path))
 
-    def test_install_from_remote(self):
-        config = self.config.get_state(name="test_repo_1")
+    def test_install_from_remote(self, name="test_repo_1"):
+        config = self.config.get_state(name=name)
 
         remote1, remote2 = list(config.remotes)
 
@@ -31,17 +31,28 @@ class TestInstallCommand(MgitUnitTestBase):
 
         # force install from non-existant remote raises
         with self.assertRaises(self.remote_system.RemoteError):
-            self.run_command(f"install -y -n test_repo_1 --remote {remote2.remote.name}")
+            self.run_command(f"install -y {name} --remote {remote2.remote.name}")
 
         # not exists in system
         with self.assertRaises(self.system.SystemError):
             self.system.get_state(path=config.path)
 
         # force install from existant remote succeeds
-        self.run_command(f"install -y -n test_repo_1 --remote {remote1.remote.name}")
+        self.run_command(f"install -y {name} --remote {remote1.remote.name}")
 
         # exists in system
         self.assertIsNotNone(
                 self.system.get_state(path=config.path)
                 )
+
+    @parameterized.expand([ "test_repo_1", "test_repo_2", "test_repo_3", "test_repo_5", "test_repo_6" ])
+    def test_install_missing_name(self, name):
+        # remove path from config
+        config = self.config.get_state(name=name)
+        config.path = None
+        self.config.set_state(config)
+
+        # install without path fails
+        with self.assertRaises(ValueError):
+            self.run_command(f"install -y {name}")
 

@@ -18,7 +18,7 @@ class TestConfigState(unittest.TestCase):
         repo_id = some_id
         path = some_path
         origin = home
-        categories = school
+        tags = school
         home-repo = some_repi
         archived = 1
         parent = some_other_section
@@ -28,7 +28,7 @@ class TestConfigState(unittest.TestCase):
         repo_id = abc123
         path = /tmp/mgit/acceptance/local/test_repo_1
         origin = test_remote_1
-        categories = category1    category2
+        tags = category1    category2
         test_remote_1-repo = test_repo_1
         test_remote_2-repo = test_repo_1
         name = test_repo_1
@@ -36,7 +36,7 @@ class TestConfigState(unittest.TestCase):
         [test_repo_2]
         path = /tmp/mgit/acceptance/local/test_repo_2
         origin = test_remote_1
-        categories = category2
+        tags = category2
         test_remote_1-repo = test_repo_2
         name = test_repo_2
 
@@ -44,7 +44,7 @@ class TestConfigState(unittest.TestCase):
         path = test_repo_3
         parent = test_repo_2
         origin = test_remote_1
-        categories = category2
+        tags = category2
         test_remote_1-repo = test_repo_3
         name = test_repo_3
 
@@ -52,7 +52,7 @@ class TestConfigState(unittest.TestCase):
         path = test_repo_5
         parent = test_repo_3
         origin = test_remote_1
-        categories = category2
+        tags = category2
         test_remote_1-repo = test_repo_5
         name = test_repo_5
 
@@ -96,7 +96,7 @@ class TestConfigState(unittest.TestCase):
             remotes=set(),
             auto_commands=None,
             archived=False,
-            categories=set()))
+            tags=set()))
 
         ans = self.c.get_state(repo_id="abc123")
 
@@ -205,7 +205,7 @@ class TestConfigState(unittest.TestCase):
 
         self.assertEqual(
                 {"category1", "category2"},
-                ans.categories
+                ans.tags
                 )
 
     def test_get_state_categories_empty(self):
@@ -214,7 +214,7 @@ class TestConfigState(unittest.TestCase):
 
         self.assertEqual(
                 set(),
-                ans.categories
+                ans.tags
                 )
 
     def test_get_state_ignored(self):
@@ -238,7 +238,7 @@ class TestConfigState(unittest.TestCase):
         ans.archived = True
         ans.path /= Path("more")
         ans.repo_id = "asdf"
-        ans.categories.add("shoop")
+        ans.tags.add("shoop")
 
         # write to config and read again
         self.c.set_state(ans)
@@ -264,7 +264,7 @@ class TestConfigState(unittest.TestCase):
         ans.archived = True
         # ans.path /= "~/keking/smek"
         ans.repo_id = "asdf"
-        ans.categories = set(["shoop"])
+        ans.tags = set(["shoop"])
         ans.parent = None
 
         # write to config and read again
@@ -409,7 +409,7 @@ class TestConfigState(unittest.TestCase):
                     },
                 auto_commands=None,
                 archived=False,
-                categories=set()
+                tags=set()
                 )
         self.c.set_state(before)
 

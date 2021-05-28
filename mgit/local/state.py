@@ -166,7 +166,7 @@ class RepoState:   # No defaults to catch changes around the code
     # origin:        Optional[RemoteRepo]
     auto_commands: Optional[Set[AutoCommand]]
     archived:      Optional[bool]
-    categories:    Optional[Set[str]]
+    tags:    Optional[Set[str]]
 
     # def __eq__(self, other):
     #     return self.compare(other, hard=True) == []
@@ -202,10 +202,10 @@ class RepoState:   # No defaults to catch changes around the code
                 result[0] += " " * (step) + str(auto)#.represent(step)
 
         add_line(f"archived = {self.archived or False}")
-        if self.categories is not None:
-            add_line(f"categories = {', '.join(self.categories)}")
+        if self.tags is not None:
+            add_line(f"tags = {', '.join(self.tags)}")
         elif verbosity ==2:
-            add_line("categories = ")
+            add_line("tags = ")
         return result[0].strip()
 
     def zip(self, other) -> Iterator[Tuple]:
@@ -279,7 +279,7 @@ class RepoState:   # No defaults to catch changes around the code
         #         break
         # repo_state["origin"] = origin
 
-        repo_state['categories'] = (self.categories or set()).union(other.categories or set())
+        repo_state['tags'] = (self.tags or set()).union(other.tags or set())
 
         return RepoState(**repo_state)
 

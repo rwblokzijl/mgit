@@ -31,7 +31,7 @@ class System:
         repo_keys.remove("name")
         repo_keys.remove("auto_commands")
         repo_keys.remove("archived")
-        repo_keys.remove("categories")
+        repo_keys.remove("tags")
 
         # TODO: validate repo_id and parent?
         repo_keys.remove("repo_id")
@@ -144,7 +144,7 @@ class System:
                 # origin=None,
                 auto_commands=None,
                 archived=None,
-                categories=None
+                tags=None
                 )
         assert rs.path
         return rs

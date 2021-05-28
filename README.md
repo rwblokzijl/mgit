@@ -293,11 +293,11 @@ repo config actions:
 |      | archive   |        | name                    | add archive flag to                                     |
 |      | unarchive |        | name                    | remove archive flag to                                  |
 |      | install   |        | name                    | install a repo from remote by name (add listed remotes) |
-|      | category  |        |                         | category actions                                        |
-|      |           | list   |                         | lists all categories                                    |
-|      |           | show   | category                | show the category and children                          |
-|      |           | add    | repo, category          | add category                                            |
-|      |           | remove | repo, category          | remote category                                         |
+|      | tag  |        |                         | tag actions                                        |
+|      |           | list   |                         | lists all tags                                    |
+|      |           | show   | tag                | show the tag and children                          |
+|      |           | add    | repo, tag          | add tag                                            |
+|      |           | remove | repo, tag          | remote tag                                         |
 | TODO | remote    |        |                         | Repo remote actions                                     |
 | TODO |           | add    | repo, remote, name      | add a remote to the repo, and vv                        |
 | TODO |           | remove | repo, remote, name      | remove a remote from the repo, and vv                   |

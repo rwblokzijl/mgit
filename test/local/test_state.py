@@ -38,7 +38,7 @@ class TestState(unittest.TestCase):
                 path="path",
                 # origin=n_repo,
                 archived=False,
-                categories=[],
+                tags=[],
                 remotes=[ n_repo, u_repo ],
                 auto_commands=[
                     AutoCommand(
@@ -90,7 +90,7 @@ class TestState(unittest.TestCase):
             path=Path("parentPath"),
             # origin=None,
             archived=False,
-            categories={"1"},
+            tags={"1"},
             remotes=set(),
             auto_commands=None,
             parent=None
@@ -108,7 +108,7 @@ class TestState(unittest.TestCase):
                 path=Path("path1"),
                 # origin=n_repo,
                 archived=False,
-                categories={"2", "3"},
+                tags={"2", "3"},
                 remotes={n_repo},
                 auto_commands=[],
                 parent=parent
@@ -121,7 +121,7 @@ class TestState(unittest.TestCase):
                 path=Path("path1"),
                 # origin=u_repo,
                 archived=None,
-                categories=None,
+                tags=None,
                 remotes={u_repo},
                 auto_commands=None,
                 parent=None
@@ -153,8 +153,8 @@ class TestState(unittest.TestCase):
         self.assertIsInstance( list(comb1.remotes)[0], NamedRemoteRepo)
         self.assertEqual( len(comb2.remotes), 1)
         self.assertIsInstance( list(comb2.remotes)[0], NamedRemoteRepo)
-        self.assertEqual( comb1.categories, {"2", "3"})
-        self.assertEqual( comb2.categories, {"2", "3"})
+        self.assertEqual( comb1.tags, {"2", "3"})
+        self.assertEqual( comb2.tags, {"2", "3"})
 
     def test_subpath(self):
         remote=Remote(
