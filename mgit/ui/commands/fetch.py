@@ -2,6 +2,8 @@ from mgit.ui.base_commands import MultiRepoCommand
 from mgit.ui.commands._mgit import MgitCommand
 from mgit.local.state import *
 
+from git import Repo
+
 from typing import *
 
 @MgitCommand.register
@@ -12,6 +14,10 @@ class CommandFetch(MultiRepoCommand):
     def build(self, parser):
         pass
 
-    def run(self, repo_states):
+    def run(self, repo_states: List[RepoState]):
         for repo_state in repo_states:
-            print(repo_state.name)
+            repo = Repo(repo_state.path)
+            print(f"Fetching {repo_state.name}")
+            for remote in repo.remotes:
+                remote.fetch()
+

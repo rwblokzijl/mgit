@@ -23,7 +23,7 @@ class TestMerge(MgitUnitTestBase):
         config_state = self.config.get_state(name=name)
         system_state = self.system.get_state(path=config_state.path)
 
-        self.commit_in_repo(system_state)
+        self.commit_in_repo(system_state.path)
         system_state = self.system.get_state(path=config_state.path)
 
         merged = self.merge(config_state, system_state)
@@ -103,7 +103,7 @@ class TestMerge(MgitUnitTestBase):
         """
         # init config to system
         self.init_repos([name])
-        # self.commit_in_repo(system_state)
+        # self.commit_in_repo(system_state.path)
 
         # Change remote name in config
         config_state = self.config.get_state(name=name)

@@ -107,21 +107,23 @@ class MgitUnitTestBase(unittest.TestCase):
     def init_repos(self, names: List[str]=None, commit=False):
         all_repos = self.get_repo_states(names)
         for repo in all_repos:
-            self.system.set_state(repo)
+            self.system.set_state(repo, init=True)
             if commit:
-                self.commit_in_repo(repo)
+                self.commit_in_repo(repo.path)
 
-    def init_remotes_for_test_repos(self, names: List[str]=None):
+    def init_remotes_for_test_repos(self, names: List[str]=None, commit=False):
         all_repos = self.get_repo_states(names)
         for repo in all_repos:
             for remote_repo in repo.remotes:
                 self.remote_system.init_repo(remote_repo)
+                if commit:
+                    self.commit_in_repo(remote_repo.path)
 
-    def commit_in_repo(self, repo_state: RepoState):
-        repo = Repo(repo_state.path)
-        new_file_path = os.path.join(repo.working_tree_dir, 'new-file')
-        open(new_file_path, 'wb').close()                             # create new file in working tree
-        repo.index.add([new_file_path])     # add it to the index
+    def commit_in_repo(self, path: Path):
+        repo = Repo(path)
+        file_path = os.path.join(repo.working_tree_dir, 'new-file')
+        os.system(f"echo something > {file_path}")
+        repo.index.add([file_path])     # add it to the index
         repo.index.commit("Commit message") # Commit the changes to deviate masters history
 
     def reset_configs(self):
