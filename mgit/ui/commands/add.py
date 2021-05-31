@@ -9,7 +9,7 @@ from pathlib import Path
 import os
 
 @MgitCommand.register
-class CommandInit(AbstractLeafCommand):
+class CommandAdd(AbstractLeafCommand):
     command = "init"
     help="Create a new local/remote repo pair"
 
@@ -19,19 +19,7 @@ class CommandInit(AbstractLeafCommand):
         parser.add_argument("--remotes", help="Name of remote repo", metavar="REMOTE[:REPO]", nargs="*", default=None, type=str)
         parser.add_argument("--tags", help="Categories for the repo", nargs="+", default=[], type=str)
 
-        # TODO: what to do with origin gets removed??
-        # parser.add_argument("--origin", help="Name of remote to be default push", metavar="REMOTE", type=lambda x: self.type_remote_repo(x))
-
         parser.add_argument("-y", help="Skip asking for confirmation", action='store_true')
-
-    def assert_path_available(self, path: Path):
-        try:
-            existing_system_state = self.system.get_state(path=path)
-        except self.system.SystemError:
-            return
-        assert existing_system_state.path
-        if (existing_system_state.path.absolute == path.absolute):
-            raise self.InputError(f"'{path}' is already a git repo use 'mgit add' instead")
 
     def assert_name_available(self, name: str):
         try:
@@ -56,7 +44,8 @@ class CommandInit(AbstractLeafCommand):
             name = os.path.basename(Path('.').absolute())
 
         self.assert_name_available(name)
-        self.assert_path_available(Path(path))
+
+        raise
 
         try:
             system_parent=self.system.get_state(Path(path))

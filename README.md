@@ -307,7 +307,7 @@ mutli repo actions:
 |        | dirty    | repos            | is any repo dirty                              |
 |        | status   | repos            | show status of all repos (clean up ordering)   |
 | ------ | -------- | ---------------- | ---------------------------------------------- |
-| TODO   | fetch    | repos, remotes   | mass fetch                                     |
+| | fetch    | repos, remotes   | mass fetch                                     |
 | TODO   | pull     | repos, remotes   | mass pull                                      |
 | TODO   | push     | repos, remotes   | mass push (after shutdown)                     |
 
