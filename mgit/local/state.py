@@ -47,7 +47,8 @@ class Remote:
         else:
             return False
 
-@dataclass # type: ignore # mypy cannot handle abstract classes properly for some annoying reason
+# @dataclass
+@dataclass(frozen=True, repr=False) # type: ignore # mypy cannot handle abstract classes properly for some annoying reason
 class RemoteRepo(ABC):
     @abstractmethod
     def represent(self, indent=0):
@@ -115,7 +116,7 @@ class UnnamedRemoteRepo(RemoteRepo):
     def url(self) -> str: # type: ignore # pylint: disable=E0102 # Redefinition is needed
         return self._url
 
-    @url.setter
+    @url.setter # this happens only at init time because of "frozen"
     def url(self, url: str) -> None:
         object.__setattr__(self, '_url', url)
 
