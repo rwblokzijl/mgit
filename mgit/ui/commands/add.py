@@ -45,7 +45,7 @@ class CommandAdd(AbstractLeafCommand):
 
         self.assert_name_available(name)
 
-        raise
+        # raise
 
         try:
             system_parent=self.system.get_state(Path(path))

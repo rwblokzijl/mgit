@@ -141,7 +141,7 @@ class Config:
             ans = self._config_section_to_remote(name, self._remotes_config[name])
             if ans:
                 return ans
-        raise self.ConfigError("No remote named 'name' in config")
+        raise self.ConfigError(f"No remote named '{name}' in config")
 
     def get_default_remotes(self) -> List[Remote]:
         if "defaults" not in self._remotes_config:
