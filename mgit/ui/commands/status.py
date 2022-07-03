@@ -106,24 +106,17 @@ class CommandStatus(AbstractLeafCommand):
                         ))
             branch_status.add(BranchStatus(LocalBranch(ref=branch.name), frozenset(remote_branch_status)))
 
-        # if repo.workdir == "/home/bloodyfool/devel/mgit/":
-        #     print(repo.workdir)
-        #     print(repo.status().items())
-
         def dirty(repo, ignore_flags=[pygit2.GIT_STATUS_IGNORED]):
             ignore_mask = reduce(lambda x, y: x | y, ignore_flags)
             inverse_mask = ~ ignore_mask
             return { filepath: flag for filepath, flag in repo.status().items() if flag & inverse_mask }
 
-        # if dirty(repo):
-        #     print(repo.workdir)
-        #     print(dirty(repo))
-
+        untracked_files = {file:flag for file,flag in dirty(repo).items() if flag & pygit2.GIT_STATUS_WT_NEW}
         return Status(
-                repo_state=repo_state,
-                dirty=bool(dirty(repo, [pygit2.GIT_STATUS_IGNORED, pygit2.GIT_STATUS_WT_NEW])),
-                untracked_files=bool(dirty(repo)),
-                branch_status=frozenset(branch_status))
+            repo_state=repo_state,
+            dirty=bool(dirty(repo, [pygit2.GIT_STATUS_IGNORED, pygit2.GIT_STATUS_WT_NEW])),
+            untracked_files=bool(untracked_files),
+            branch_status=frozenset(branch_status))
 
     def get_config_from_name_or_raise(self, name) -> RepoState:
         config_state = self.config.get_state(name=name)
