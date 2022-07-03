@@ -99,11 +99,11 @@ class CommandStatus(AbstractLeafCommand):
                 except KeyError:
                     commits_ahead, commits_behind = 0, 0
                 remote_branch_status.add(RemoteBranchStatus(
-                        RemoteBranch(UnnamedRemoteRepo(remote_name=remote.name, url=remote.url),ref=branch.name),
+                        RemoteBranch(UnnamedRemoteRepo(remote_name=remote.name, url=remote.url),ref=branch_string),
                         commits_ahead=commits_ahead,
                         commits_behind=commits_behind
                         ))
-            branch_status.add(BranchStatus(LocalBranch(ref=branch.name), frozenset(remote_branch_status)))
+            branch_status.add(BranchStatus(LocalBranch(ref=branch_string), frozenset(remote_branch_status)))
 
         def dirty(repo, ignore_flags=[pygit2.GIT_STATUS_IGNORED]):
             ignore_mask = reduce(lambda x, y: x | y, ignore_flags)
