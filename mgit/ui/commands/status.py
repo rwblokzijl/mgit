@@ -86,19 +86,18 @@ class CommandStatus(AbstractLeafCommand):
             return None
 
         branch_status = set()
-        for branch_string in repo.branches:
+        for branch_bytes in repo.raw_listall_branches(pygit2.GIT_BRANCH_LOCAL):
+            branch_string = branch_bytes.decode("utf-8")
             branch = repo.branches.get(branch_string)
             # TODO: use configured branch mappings here
             remote_branch_status = set()
             for remote in repo.remotes:
                 try:
-                    commits_behind = len(list(repo.iter_commits(f'{branch.name}..{remote.name}/{branch.name}')))
-                except:
-                    commits_behind = 0
-                try:
-                    commits_ahead  = len(list(repo.iter_commits(f'{remote.name}/{branch.name}..{branch.name}')))
-                except:
-                    commits_ahead  = 0
+                    local_known_hash =repo.branches[f"{branch_string}"].target.hex
+                    remote_known_hash = repo.branches[f"{remote.name}/{branch_string}"].target.hex
+                    commits_ahead, commits_behind = repo.ahead_behind(local_known_hash, remote_known_hash)
+                except KeyError:
+                    commits_ahead, commits_behind = 0, 0
                 remote_branch_status.add(RemoteBranchStatus(
                         RemoteBranch(UnnamedRemoteRepo(remote_name=remote.name, url=remote.url),ref=branch.name),
                         commits_ahead=commits_ahead,
