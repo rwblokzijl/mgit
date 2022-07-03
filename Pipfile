@@ -11,10 +11,10 @@ mypy = "*"
 jedi = "*"
 
 [packages]
-gitpython = "*"
 fabric = "*"
 configparser = "*"
 tabulate = "*"
+pygit2 = "*"
 
 [requires]
 python_version = "3.8"

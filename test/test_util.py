@@ -10,7 +10,7 @@ from mgit.ui.commands._mgit    import MgitCommand
 from mgit.util.printing        import pretty_string
 from mgit.local.state          import *
 
-from git     import Repo
+from pygit2 import Repository, GitError
 from pathlib import Path
 from typing  import *
 
@@ -119,12 +119,32 @@ class MgitUnitTestBase(unittest.TestCase):
                 if commit:
                     self.commit_in_repo(remote_repo.path)
 
+    def make_dirty(self, names: List[str]=None):
+        all_repos = self.get_repo_states(names)
+        for repo in all_repos:
+            file_path = os.path.join(repo.path, 'new-fileee')
+            os.system(f"echo something > {file_path}")
+
     def commit_in_repo(self, path: Path):
-        repo = Repo(path)
-        file_path = os.path.join(repo.working_tree_dir, 'new-file')
+        repo = Repository(path)
+        file_path = os.path.join(repo.workdir, 'new-file')
+        try:
+            ref = repo.head.name # throws is no head, this means there are no previous commits
+            parents = [repo.head.target]
+        except GitError:
+            parents = [] # initial commit
+
         os.system(f"echo something > {file_path}")
-        repo.index.add([file_path])     # add it to the index
-        repo.index.commit("Commit message") # Commit the changes to deviate masters history
+        repo.index.add_all()
+        repo.index.write()
+        repo.create_commit(
+            "HEAD",                  # reference_name
+            repo.default_signature,  # author
+            repo.default_signature,  # committer
+            "Message",               # message
+            repo.index.write_tree(), # tree
+            parents                  # parents
+        )
 
     def reset_configs(self):
         shutil.copy(self.default_remotes_config, self.remotes_config)

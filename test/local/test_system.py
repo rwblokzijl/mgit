@@ -2,7 +2,10 @@ from mgit.local.system import System
 
 from mgit.local.state import RepoState, UnnamedRemoteRepo
 
-from git import Repo
+# from git import Repo
+import pygit2
+
+from pygit2 import Repository
 
 from pathlib import Path
 
@@ -16,11 +19,20 @@ class TestSystemState(unittest.TestCase):
 
     def create_git_repo_with_commit(self):
         os.makedirs(self.repo_with_commit, exist_ok=True)
-        r = Repo.init(self.repo_with_commit)
-        f = self.repo_with_commit / Path("file.txt")
-        f.touch()
-        r.index.add([str(f)])
-        r.index.commit("Message")
+        repo = pygit2.init_repository(self.repo_with_commit)
+        relative_file_path = Path("file.txt")
+        full_file_path = self.repo_with_commit / relative_file_path
+        full_file_path.touch()
+        repo.index.add(relative_file_path)
+        repo.index.write()
+        repo.create_commit(
+            "HEAD",                  # reference_name
+            repo.default_signature,  # author
+            repo.default_signature,  # committer
+            "Message",               # message
+            repo.index.write_tree(), # tree
+            [] # initial commit      # parents
+        )
 
     def setUp_dirs(self):
         self.unittest_path: Path = Path("/tmp/mgit/")
@@ -54,7 +66,7 @@ class TestSystemState(unittest.TestCase):
         self.rmdir("/tmp/mgit_dir_missing")
 
     def setUp(self):
-        self.repo_dir = Path(Repo(os.path.abspath(__file__), search_parent_directories=True).working_dir) #use this very git repo to test
+        self.repo_dir = Path(Repository(os.path.abspath(__file__)).workdir) #use this very git repo to test
         self.setUp_dirs()
 
     def tearDown(self):
@@ -71,7 +83,7 @@ class TestSystemState(unittest.TestCase):
                 ans.remotes
                 )
         self.assertIn(
-                UnnamedRemoteRepo("bagn", "bloodyfool@bagn.blokzijl.family:/data/git/projects/mgit"),
+                UnnamedRemoteRepo("parents", "bloodyfool@parents.blokzijl.family:/data/git/projects/mgit"),
                 ans.remotes)
 
     def test_get_id(self):

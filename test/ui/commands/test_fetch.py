@@ -3,7 +3,7 @@ from test.test_util import MgitUnitTestBase
 
 import os
 
-from git import Repo
+from pygit2 import Repository, GIT_BRANCH_REMOTE
 from pathlib import Path
 
 from parameterized import parameterized
@@ -20,18 +20,16 @@ class TestFetchCommand(MgitUnitTestBase):
 
         remote = list(system.remotes)[0]
 
-        self.commit_in_repo(remote.url)
-
         # commit exists in remote
-        remote_commit = Repo(remote.url).branches.master.commit
+        self.commit_in_repo(remote.url)
+        remote_commit_hex = Repository(remote.url).branches["master"].target.hex # remote hash exists
 
-        # no local commit
-        self.assertFalse(Repo(system.path).remotes[remote.name].refs)
+        self.assertEqual(len(remote_commit_hex), 40) # Is a proper hash
+        self.assertEqual( Repository(system.path).branches.get(f"{remote.name}/master"), None ) # Branch does not exist locally
 
         # fetch
         self.run_command_raw(f"fetch -n {name}")
 
-        # local commit exists
-        local_commit = Repo(system.path).remotes[remote.name].refs.master.commit
-        self.assertEqual(remote_commit, local_commit)
+        self.assertEqual( Repository(system.path).branches[f"{remote.name}/master"].target.hex, remote_commit_hex ) # Branch exists locally and has same hash as remote
+        self.assertEqual( Repository(system.path).branches.get(f"master"), None ) # Local master is not overwritten on fetch
 

@@ -1,7 +1,11 @@
-from mgit.local.state  import *
-from git         import Repo, GitError
-from typing      import *
-from dataclasses import dataclass
+from mgit.local.state import *
+from typing           import *
+from dataclasses      import dataclass
+from pygit2           import Repository, GitError
+
+import pygit2
+
+from functools import reduce
 
 from mgit.ui.cli            import AbstractLeafCommand
 from mgit.ui.commands._mgit import MgitCommand
@@ -77,12 +81,13 @@ class CommandStatus(AbstractLeafCommand):
 
     def get_status_for_repo(self, repo_state: RepoState) -> Optional[Status]:
         try:
-            repo = Repo(repo_state.path)
+            repo = Repository(repo_state.path)
         except GitError:
             return None
 
         branch_status = set()
-        for branch in repo.branches:
+        for branch_string in repo.branches:
+            branch = repo.branches.get(branch_string)
             # TODO: use configured branch mappings here
             remote_branch_status = set()
             for remote in repo.remotes:
@@ -101,10 +106,23 @@ class CommandStatus(AbstractLeafCommand):
                         ))
             branch_status.add(BranchStatus(LocalBranch(ref=branch.name), frozenset(remote_branch_status)))
 
+        # if repo.workdir == "/home/bloodyfool/devel/mgit/":
+        #     print(repo.workdir)
+        #     print(repo.status().items())
+
+        def dirty(repo, ignore_flags=[pygit2.GIT_STATUS_IGNORED]):
+            ignore_mask = reduce(lambda x, y: x | y, ignore_flags)
+            inverse_mask = ~ ignore_mask
+            return { filepath: flag for filepath, flag in repo.status().items() if flag & inverse_mask }
+
+        # if dirty(repo):
+        #     print(repo.workdir)
+        #     print(dirty(repo))
+
         return Status(
                 repo_state=repo_state,
-                dirty=bool(repo.is_dirty()),
-                untracked_files=bool(repo.untracked_files),
+                dirty=bool(dirty(repo, [pygit2.GIT_STATUS_IGNORED, pygit2.GIT_STATUS_WT_NEW])),
+                untracked_files=bool(dirty(repo)),
                 branch_status=frozenset(branch_status))
 
     def get_config_from_name_or_raise(self, name) -> RepoState:

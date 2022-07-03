@@ -1,10 +1,10 @@
 from mgit.local.state import *
 from typing import *
 
-from git import GitError
 
 from fabric  import Connection
-from git     import Repo
+from pygit2 import Repository, GitError
+import pygit2
 from pathlib import Path
 import os
 
@@ -37,7 +37,8 @@ class LocalRemoteSystem(RemoteSystem):
 
     def init_repo(self, remote_repo: NamedRemoteRepo) -> str:
         try:
-            Repo.init(remote_repo.path, mkdir=True)
+            os.mkdir(remote_repo.path)
+            pygit2.init_repository(remote_repo.path)
             return remote_repo.path
         except GitError as e:
             raise self.RemoteError from e #("Cannot init '{remote_repo.project_name}' in '{remote_repo.remote.name}'")
@@ -46,7 +47,7 @@ class LocalRemoteSystem(RemoteSystem):
         return os.listdir(remote.path)
 
     def get_remote_repo_id_mappings(self, remote: Remote) -> Dict[str, Optional[str]]:
-        return {name:self._get_repo_id(Repo(Path(remote.path) / name )) for name in self.list_remote(remote)}
+        return {name:self._get_repo_id(Repository(Path(remote.path) / name )) for name in self.list_remote(remote)}
 
     def _get_repo_id(self, repo):
         try:
