@@ -9,6 +9,7 @@ from dataclasses import asdict
 from pygit2 import Repository, GitError
 import pygit2
 import fnmatch
+import configparser
 
 class System:
     """
@@ -17,6 +18,18 @@ class System:
     This only interacts with the Repo through the Repo object
     """
 
+    def __init__(self, settings_config="~/.config/mgit/settings.ini"):
+        self._settings_file = os.path.abspath(os.path.expanduser(settings_config))
+
+        self._settings_config = self._read_config()
+
+    def _read_config(self):
+        settings = configparser.ConfigParser(delimiters=('='))
+        if not settings.read(self._settings_file):
+            raise FileNotFoundError(f"Failed to open {self._settings_file}")
+
+        return settings
+
     def get_state(self, path: Union[Path, str]) -> RepoState:
         git_workdir = pygit2.discover_repository(Path(path).expanduser().absolute())
         if git_workdir is None:
@@ -24,7 +37,7 @@ class System:
         repo = Repository(git_workdir)
         return self._get_state_from_repo(repo)
 
-    def set_state(self, repo_state: RepoState, remote: RemoteRepo=None, init=False):
+    def set_state(self, repo_state: RepoState, remote: RemoteRepo|None=None, init=False):
         if not repo_state.path:
             raise ValueError(f"'{repo_state.name}' does not specify a path")
         repo_keys = list(asdict(repo_state).keys())
@@ -74,8 +87,7 @@ class System:
 
     def get_all_local_repos_in_path(self, path: Union[Path, str], ignore_paths=None) -> List[RepoState]:
         if ignore_paths is None:
-            # ignore_paths = []
-            ignore_paths = ['~/.vim/*', '~/.local/*', '~/.oh-my-zsh/*', '~/.cargo/*', '~/.cache/*', '~/.config/vim/*', '*/.terraform*'] # TODO: get from config
+            ignore_paths = self._settings_config["settings"]["local-ignore"].split()
         local_git_paths = self._get_local_git_paths(Path(path), ignore_paths)
         return [state for local_path in local_git_paths if (state := self._get_state_or_none(local_path)) is not None]
 

@@ -30,13 +30,13 @@ def import_commands():
 
 import_commands()
 
-def main(repos_config, remotes_config, args=None):
+def main(repos_config, remotes_config, settings_config, args=None):
     config = Config(
             remotes_file = remotes_config,
             repos_file   = repos_config,
             )
     remote_system = RemoteSystem()
-    system = System()
+    system = System(settings_config)
     ui = CLI(MgitCommand(
         config=config,
         system=system,

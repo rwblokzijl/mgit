@@ -23,7 +23,7 @@ class Config:
     ignore = 1
     """
 
-    def get_state(self, repo_state: RepoState=None,
+    def get_state(self, repo_state: RepoState|None=None,
             repo_id: Optional[str]=None,
             name: Optional[str]=None,
             path: Union[Path, str, None]=None,) -> RepoState:
