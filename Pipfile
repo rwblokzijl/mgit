@@ -9,6 +9,7 @@ parameterized = "*"
 pytest = "*"
 mypy = "*"
 jedi = "*"
+pyright = "*"
 
 [packages]
 fabric = "*"
