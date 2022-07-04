@@ -8,6 +8,7 @@ from dataclasses import asdict
 
 from pygit2 import Repository, GitError
 import pygit2
+import fnmatch
 
 class System:
     """
@@ -74,7 +75,7 @@ class System:
     def get_all_local_repos_in_path(self, path: Union[Path, str], ignore_paths=None) -> List[RepoState]:
         if ignore_paths is None:
             # ignore_paths = []
-            ignore_paths = ['~/.vim', '~/.local', '~/.oh-my-zsh', '~/.cargo', '~/.cache', '~/.config/vim'] # TODO: get from config
+            ignore_paths = ['~/.vim/*', '~/.local/*', '~/.oh-my-zsh/*', '~/.cargo/*', '~/.cache/*', '~/.config/vim/*', '*/.terraform*'] # TODO: get from config
         local_git_paths = self._get_local_git_paths(Path(path), ignore_paths)
         return [state for local_path in local_git_paths if (state := self._get_state_or_none(local_path)) is not None]
 
@@ -154,23 +155,16 @@ class System:
         assert rs.path
         return rs
 
-    def _should_include(self, path: Path, excludes):
-        for exclude in excludes:
-            try:
-                path.relative_to(exclude)
-                return False
-            except ValueError:
-                pass
-        return True
-
     def _get_local_git_paths(self, path: Path, ignore_paths):
-        excludes = [Path(i_path).expanduser().absolute() for i_path in ignore_paths]
+        excludes = [Path(i_path).expanduser() for i_path in ignore_paths]
         command  = f"find {path} -xdev -name '.git'"
         result   = self._run_command(command)
         lines    = [line.strip().decode("utf-8") for line in result]
-        paths    = [Path(line).expanduser().absolute() for line in lines]
-        filtered = [path for path in paths if self._should_include(path, excludes)]
-        repos    = [path.parent for path in filtered]
+        paths    = set([str(Path(line).expanduser().absolute()) for line in lines])
+        for exclude in excludes:
+            paths -= set(fnmatch.filter(paths, str(exclude)))
+        paths    = [Path(path) for path in paths]
+        repos    = [path.parent for path in paths]
         return repos
 
     def _run_command(self, command):
