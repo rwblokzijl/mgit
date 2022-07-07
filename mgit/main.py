@@ -52,6 +52,12 @@ def main_cli(*args, **kwargs):
                 print(step)
         return 0
     except Exception as e:
+        # error 1 (no ssh keys):
+        # raise GitError(message)
+        # _pygit2.GitError: Failed to retrieve list of SSH authentication methods: Failed getting response
+        # error 2 (cannot connect to server):
+        # TODO
+        #
         if str(e):
             print(e, file=sys.stderr)
         raise e # TODO remove when done
