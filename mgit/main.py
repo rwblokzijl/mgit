@@ -56,6 +56,10 @@ def main_cli(*args, **kwargs):
         # raise GitError(message)
         # _pygit2.GitError: Failed to retrieve list of SSH authentication methods: Failed getting response
         # error 2 (cannot connect to server):
+        # File "/home/bloodyfool/.local/share/virtualenvs/mgit-kSFih660/lib/python3.10/site-packages/pygit2/errors.py", line 65, in check_error
+        # raise GitError(message)
+        # _pygit2.GitError: bash: /usr/bin/git-upload-pack: Input/output error
+
         # TODO
         #
         if str(e):
