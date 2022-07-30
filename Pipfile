@@ -10,6 +10,7 @@ pytest = "*"
 mypy = "*"
 jedi = "*"
 pyright = "*"
+jedi-language-server = "*"
 
 [packages]
 fabric = "*"
