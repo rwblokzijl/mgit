@@ -1,16 +1,17 @@
 from mgit.ui.base_commands import MultiRepoCommand
 from mgit.ui.commands._mgit import MgitCommand
 from mgit.local.state import *
-from mgit.util.git_actions import fetch
+from mgit.util.git_actions import fetch, merge
 
 from pygit2 import Repository
+import pygit2
 
 from typing import *
 
 @MgitCommand.register
-class CommandFetch(MultiRepoCommand):
-    command = "fetch"
-    help="Fetch for repos from remotes"
+class CommandPull(MultiRepoCommand):
+    command = "pull"
+    help="Pull remote branches into repo"
 
     def build(self, parser):
         pass
@@ -18,6 +19,7 @@ class CommandFetch(MultiRepoCommand):
     def run(self, repo_states: List[RepoState]):
         for repo_state in repo_states:
             repo = Repository(repo_state.path.expanduser().absolute())
-            print(f"Fetching {repo_state.name}")
+            print(f"Pulling {repo_state.name}")
             fetch(repo)
+            merge(repo)
 

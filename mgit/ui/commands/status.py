@@ -5,10 +5,9 @@ from pygit2           import Repository, GitError
 
 import pygit2
 
-from functools import reduce
-
 from mgit.ui.cli            import AbstractLeafCommand
 from mgit.ui.commands._mgit import MgitCommand
+from mgit.util.git_actions import dirty
 
 @dataclass(frozen=True)
 class RemoteBranchStatus:
@@ -93,7 +92,7 @@ class CommandStatus(AbstractLeafCommand):
             remote_branch_status = set()
             for remote in repo.remotes:
                 try:
-                    local_known_hash =repo.branches[f"{branch_string}"].target.hex
+                    local_known_hash  = repo.branches[f"{branch_string}"].target.hex
                     remote_known_hash = repo.branches[f"{remote.name}/{branch_string}"].target.hex
                     commits_ahead, commits_behind = repo.ahead_behind(local_known_hash, remote_known_hash)
                 except KeyError:
@@ -104,11 +103,6 @@ class CommandStatus(AbstractLeafCommand):
                         commits_behind=commits_behind
                         ))
             branch_status.add(BranchStatus(LocalBranch(ref=branch_string), frozenset(remote_branch_status)))
-
-        def dirty(repo, ignore_flags=[pygit2.GIT_STATUS_IGNORED]):
-            ignore_mask = reduce(lambda x, y: x | y, ignore_flags)
-            inverse_mask = ~ ignore_mask
-            return { filepath: flag for filepath, flag in repo.status().items() if flag & inverse_mask }
 
         untracked_files = {file:flag for file,flag in dirty(repo).items() if flag & pygit2.GIT_STATUS_WT_NEW}
         return Status(
