@@ -10,7 +10,7 @@ import os
 
 @MgitCommand.register
 class CommandAdd(AbstractLeafCommand):
-    command = "init"
+    command = "add"
     help="Create a new local/remote repo pair"
 
     def build(self, parser):
