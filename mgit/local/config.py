@@ -1,5 +1,5 @@
 from mgit.local.state import *
-from typing     import *
+import typing
 
 from pathlib import Path
 
@@ -24,9 +24,9 @@ class Config:
     """
 
     def get_state(self, repo_state: RepoState|None=None,
-            repo_id: Optional[str]=None,
-            name: Optional[str]=None,
-            path: Union[Path, str, None]=None,) -> RepoState:
+            repo_id:        str | None = None,
+            name:           str | None = None,
+            path:    Path | str | None = None,) -> RepoState:
         if repo_state:
             repo_id = repo_state.repo_id
             name = repo_state.name
@@ -107,7 +107,7 @@ class Config:
 
     def _raise_on_duplicate_remote_name(self, remote_repos: Set[RemoteRepo]):
         remote_repos = {self.resolve_remote(rr) for rr in remote_repos}
-        remotes_dict: Dict[str, RemoteRepo]={}
+        remotes_dict: typing.Dict[str, RemoteRepo]={}
         for remote_repo in remote_repos:
             if remote_repo.name in remotes_dict:
                 if remotes_dict.get(remote_repo.name) != remote_repo:
@@ -318,7 +318,7 @@ class Config:
             return self._config_section_to_repo(name, self._repos_config[name])
         return None
 
-    def _get_state_by_path(self, path: Union[str, Path]) -> Optional[RepoState]:
+    def _get_state_by_path(self, path: str |Path) -> Optional[RepoState]:
         def clean(path):
             return str(Path(path).expanduser()).strip().rstrip('/')
         for name, section in self._repos_config.items():

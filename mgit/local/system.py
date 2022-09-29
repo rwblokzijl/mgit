@@ -1,6 +1,6 @@
 from mgit.remote.remote_system import RemoteSystem
 from mgit.local.state import *
-from typing import *
+# from typing import *
 
 from pathlib import Path
 from subprocess import Popen, PIPE, STDOUT
@@ -30,8 +30,8 @@ class System:
 
         return settings
 
-    def get_state(self, path: Union[Path, str]) -> RepoState:
-        git_workdir = pygit2.discover_repository(Path(path).expanduser().absolute())
+    def get_state(self, path: Path | str) -> RepoState:
+        git_workdir = pygit2.discover_repository(str(Path(path).expanduser().absolute()))
         if git_workdir is None:
             raise self.SystemError(f"Not a git dir: {git_workdir}")
         repo = Repository(git_workdir)
@@ -75,9 +75,10 @@ class System:
 
 
     def _remove_remotes(self, path):
-        repo: Repository = self._get_repo_from_path(path)
-        for remote in repo.remotes:
-            repo.remotes.delete(remote.name)
+        repo: Repository | None = self._get_repo_from_path(path)
+        if repo is not None:
+            for remote in repo.remotes:
+                repo.remotes.delete(remote.name)
 
     def _get_state_or_none(self, *args, **kwargs) -> Optional[RepoState]:
         try:
@@ -85,7 +86,7 @@ class System:
         except self.SystemError:
             return None
 
-    def get_all_local_repos_in_path(self, path: Union[Path, str], ignore_paths=None) -> List[RepoState]:
+    def get_all_local_repos_in_path(self, path: Path | str, ignore_paths=None) -> List[RepoState]:
         if ignore_paths is None:
             ignore_paths = self._settings_config["settings"]["local-ignore"].split()
         local_git_paths = self._get_local_git_paths(Path(path), ignore_paths)
@@ -106,7 +107,7 @@ class System:
         return repo
 
     def _init_repo(self, path: Path) -> Repository:
-        return pygit2.init_repository(path=path.expanduser().absolute())
+        return Repository(pygit2.init_repository(path=path.expanduser().absolute()).workdir)
 
     def _clone_repo(self, repo_state: RepoState, default_remote=None):
         repo = None
@@ -116,14 +117,14 @@ class System:
                 break
         return repo
 
-    def _clone_repo_from_remote(self, path, remote_repo: RemoteRepo) -> Repository:
+    def _clone_repo_from_remote(self, path, remote_repo: RemoteRepo) -> Repository | None:
         try:
             # return Repo.clone(url=remote_repo.url, to_path=path.expanduser().absolute(), origin=remote_repo.name)
             return pygit2.clone_repository(url=remote_repo.url, path=path.expanduser().absolute())
         except GitError:
             return None
 
-    def _get_repo_from_path(self, path: Path) -> Optional[Repository]:
+    def _get_repo_from_path(self, path: Path) -> Repository | None:
         try:
             # repo = Repo(path.expanduser().absolute())
             repo = Repository(path.expanduser().absolute())
@@ -142,14 +143,14 @@ class System:
 
     def _get_parent(self, repo):
         parent_path = Path(repo.workdir).parents[0]
-        parent_git_dir = pygit2.discover_repository(parent_path.expanduser().absolute())
+        parent_git_dir = pygit2.discover_repository(str(parent_path.expanduser().absolute()))
         if parent_git_dir is None:
             return None
         parent = Repository(parent_git_dir)
         return self._get_state_from_repo(parent)
 
     def _get_state_from_repo(self, repo: Repository) -> RepoState:
-        remotes: Set[RemoteRepo] = set([UnnamedRemoteRepo(rem.name, rem.url) for rem in repo.remotes])
+        remotes: Set[RemoteRepo] = set([UnnamedRemoteRepo(str(rem.name), str(rem.url)) for rem in repo.remotes])
         rs =  RepoState(
                 source="repo",
                 repo_id=self._get_repo_id(repo) or None,
@@ -184,7 +185,7 @@ class System:
                 shell=True,
                 stdout=PIPE,
                 stderr=STDOUT) as p:
-            while (line := p.stdout.readline()):
+            while (line := p.stdout.readline()): #type: ignore
                 yield line # TODO make non blocking, idk how right now
 
     class SystemError(Exception):
