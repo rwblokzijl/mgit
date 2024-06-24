@@ -1,5 +1,7 @@
 # Mgit - A package manager built on git that probably shouldn't exist
 
+⚠️ This is a project for my personal use, you probably shouldn't use it. In fact
+you probably shouldn't even read this readme ⚠️
 
 `mgit` is a wrapper around the popular VCS `git` that aids the maintenance of
 repos across multiple remotes and developer machines. It maintains a list of all
