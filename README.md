@@ -1,4 +1,4 @@
-title: Mgit - your personal package manager
+# Mgit - A package manager built on git that probably shouldn't exist
 
 # Introduction
 
