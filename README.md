@@ -1,13 +1,10 @@
 # Mgit - A package manager built on git that probably shouldn't exist
 
-# Introduction
 
 `mgit` is a wrapper around the popular VCS `git` that aids the maintenance of
 repos across multiple remotes and developer machines. It maintains a list of all
-repos available across your digital environment and provides a single management
-source, while allowing files to be stored distributed.
-
-# Mgit
+repos in 3 config files which provides a single point of management source, while
+allowing files to be stored distributed using Git.
 
 ## Repos
 
